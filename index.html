@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>comandante.apps — Mis herramientas</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <a class="topbar-logo" href="index.html">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      </div>
+      <span class="logo-text">carepug<span>.apps</span></span>
+    </a>
+    <span class="topbar-badge" id="app-count">4 apps</span>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="hero-emoji">🚀</span>
+    <h1 class="hero-title">Mis <span>apps</span></h1>
+    <p class="hero-subtitle">Una colección de apps simples, útiles y listas para usar.</p>
+    <div class="hero-divider"></div>
+  </div>
+
+  <!-- APPS -->
+  <main class="section">
+    <div class="section-label">Todas las apps</div>
+    <div class="apps-grid">
+
+      <!-- App 1: Mychato -->
+      <a class="app-item" href="apps/mychato/index.html">
+        <div class="app-icon" style="background: linear-gradient(145deg, #0ea5e9, #0284c7);">
+          <div class="badge">nuevo</div>
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <span class="app-name">Mychato</span>
+      </a>
+
+      <!-- App 2: Generador CV -->
+      <a class="app-item" href="apps/generador-cv/index.html">
+        <div class="app-icon" style="background: linear-gradient(145deg, #38bdf8, #0ea5e9);">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+        </div>
+        <span class="app-name">Generador CV</span>
+      </a>
+
+      <!-- App 3: Analizador -->
+      <a class="app-item" href="apps/analizador/index.html">
+        <div class="app-icon" style="background: linear-gradient(145deg, #0369a1, #0ea5e9);">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <span class="app-name">Analizador</span>
+      </a>
+
+      <!-- App 4: Calculadora -->
+      <a class="app-item" href="apps/calculadora/index.html">
+        <div class="app-icon" style="background: linear-gradient(145deg, #7dd3fc, #0ea5e9);">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <span class="app-name">Calculadora</span>
+      </a>
+
+      <!-- Slot vacío -->
+      <div class="add-item">
+        <div class="add-icon">
+          <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </div>
+        <span class="add-name">Nueva app</span>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    hecho con 💙 en Antofagasta
+  </footer>
+
+</body>
+</html>
