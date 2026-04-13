@@ -823,7 +823,7 @@ async function scanWithClaude(b64,mime){
 // ── PROXY CONFIG ──
 // Cambia esta URL por tu Supabase Edge Function URL después de desplegar
 // Ejemplo: 'https://abcdefgh.supabase.co/functions/v1/scan-receipt'
-var PROXY_URL = 'https://kozakmufitkepgpxctxu.supabase.co/functions/v1/scan-receipt';
+var PROXY_URL = '/api/scan-receipt';
 
 function getProxyUrl(){
   return PROXY_URL || sessionStorage.getItem('dc_proxy_url') || '';
