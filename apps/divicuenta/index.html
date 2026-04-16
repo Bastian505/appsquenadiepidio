@@ -294,6 +294,26 @@ input[type=text]::placeholder{color:var(--text3);}
 @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface);border:1.5px solid var(--primary);border-radius:50px;padding:10px 22px;font-size:13px;font-weight:700;color:var(--pd);z-index:999;transition:transform 0.35s cubic-bezier(.4,0,.2,1);white-space:nowrap;box-shadow:0 6px 24px var(--shadowm);}
 .toast.on{transform:translateX(-50%) translateY(0);}
+/* PANTALLA UNIRSE — overlay completo */
+.join-screen{position:fixed;inset:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;padding:32px 24px 24px;gap:12px;text-align:center;overflow-y:auto;}
+.join-logo{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--text);margin-bottom:2px;}
+.join-logo em{font-style:normal;color:var(--primary);}
+.join-restaurante{font-size:13px;font-weight:700;color:var(--pdd);background:var(--surface);border:1.5px solid var(--border);border-radius:50px;padding:5px 14px;box-shadow:0 1px 4px var(--shadow);}
+.join-sub{font-size:15px;font-weight:800;color:var(--text);margin-top:6px;}
+.join-people-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px;margin-top:4px;}
+.join-person-btn{display:flex;align-items:center;gap:12px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:13px 16px;cursor:pointer;transition:all 0.15s;box-shadow:0 2px 8px var(--shadow);}
+.join-person-btn:hover,.join-person-btn:active{border-color:var(--primary);background:var(--ps);transform:scale(0.98);}
+.join-person-btn.taken{opacity:0.4;pointer-events:none;}
+.join-person-av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:white;flex-shrink:0;}
+.join-person-name{font-size:16px;font-weight:800;color:var(--text);flex:1;text-align:left;}
+.join-person-status{font-size:11px;font-weight:700;}
+.join-items-preview{background:var(--surface);border:1.5px solid var(--border);border-radius:12px;padding:11px 14px;width:100%;max-width:320px;text-align:left;}
+.jip-title{font-size:10px;font-weight:800;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:7px;}
+.jip-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--text);border-bottom:0.5px solid var(--border);}
+.jip-row:last-child{border:none;}
+.jip-total{display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--pd);padding:7px 0 0;border-top:1.5px solid var(--border);margin-top:3px;}
+.join-footer-note{font-size:11px;color:var(--text3);font-weight:600;margin-top:4px;}
+
 #share-canvas{display:none;}
 </style>
 </head>
@@ -494,16 +514,17 @@ input[type=text]::placeholder{color:var(--text3);}
 
 <!-- PANTALLA UNIRSE A SESIÓN -->
 <div class="join-screen" id="join-screen" style="display:none;">
-  <div class="join-emoji">🧾</div>
-  <div class="join-title">Únete a <em>DiviCuenta</em></div>
-  <div class="join-sub">Tu grupo ya escaneó la boleta. Ingresa tu nombre para ver la cuenta y marcar lo tuyo.</div>
+  <div class="join-logo">Divi<em>Cuenta</em></div>
   <div class="join-restaurante" id="join-restaurante-name">📍 Cargando...</div>
+  <div class="join-sub">¿Quién eres tú en esta cuenta?</div>
+  <div class="join-people-list" id="join-people-list">
+    <!-- Se rellena con los nombres que el host agregó -->
+  </div>
   <div class="join-items-preview" id="join-items-preview" style="display:none;">
-    <div class="jip-title">Ítems en la mesa</div>
+    <div class="jip-title">En la mesa</div>
     <div id="jip-list"></div>
   </div>
-  <input class="join-input" id="join-name-input" type="text" placeholder="Tu nombre..." maxlength="22" onkeydown="if(event.key==='Enter')joinSession()">
-  <button class="join-btn" onclick="joinSession()">Entrar a la cuenta →</button>
+  <div class="join-footer-note">Selecciona tu nombre para entrar</div>
 </div>
 
 <script>
@@ -541,7 +562,7 @@ async function checkJoinMode(){
   document.getElementById('join-screen').style.display = 'flex';
   document.getElementById('join-restaurante-name').textContent = '📍 Cargando sesión...';
 
-  // Esperar hasta que Supabase CDN esté disponible (máx 5s)
+  // Esperar Supabase CDN (máx 5s)
   var tries = 0;
   while(typeof supabase === 'undefined' && tries < 50){
     await new Promise(function(r){ setTimeout(r, 100); });
@@ -550,108 +571,158 @@ async function checkJoinMode(){
   initSupabase();
 
   if(!sb){
-    document.getElementById('join-restaurante-name').textContent = '⚠️ Error de conexión';
+    document.getElementById('join-restaurante-name').textContent = '⚠️ Sin conexión';
     return;
   }
 
-  // Cargar datos de la sesión
   try {
+    // Cargar sesión e ítems
     var res = await sb.from('sessions').select('*').eq('id', sid).single();
     if(res.error || !res.data){
       document.getElementById('join-restaurante-name').textContent = '⚠️ Sesión no encontrada';
-      document.querySelector('.join-sub').textContent = 'Esta sesión no existe o ya expiró.';
+      document.querySelector('.join-sub').textContent = 'Este link ya expiró o no existe.';
       return;
     }
     var session = res.data;
     document.getElementById('join-restaurante-name').textContent = '📍 ' + (session.restaurante || 'Restaurante');
 
+    // Cargar participantes ya registrados (para marcar quiénes ya entraron)
+    var partRes = await sb.from('participants').select('*').eq('session_id', sid);
+    var joined = partRes.data ? partRes.data.map(function(p){ return p.name.toLowerCase(); }) : [];
+
     // Mostrar preview de ítems
-    var previewEl = document.getElementById('join-items-preview');
-    var listEl = document.getElementById('jip-list');
     if(session.items && session.items.length){
+      var previewEl = document.getElementById('join-items-preview');
+      var listEl = document.getElementById('jip-list');
       var total = session.items.reduce(function(s,it){ return s + it.precio_unitario * it.cantidad; }, 0);
       listEl.innerHTML = session.items.slice(0,5).map(function(it){
         return '<div class="jip-row"><span>'+(it.cantidad>1?it.cantidad+'× ':'')+it.nombre+'</span><span style="font-weight:700;">$'+Math.round(it.precio_unitario*it.cantidad).toLocaleString('es-CL')+'</span></div>';
-      }).join('') + (session.items.length > 5 ? '<div style="font-size:10px;color:var(--text3);padding:4px 0;">+ '+(session.items.length-5)+' ítems más...</div>' : '') +
-      '<div class="jip-total"><span>Total</span><span>$'+Math.round(total).toLocaleString('es-CL')+'</span></div>';
+      }).join('') + (session.items.length > 5 ? '<div style="font-size:10px;color:var(--text3);padding:4px 0;">+ '+(session.items.length-5)+' ítems más</div>' : '') +
+        '<div class="jip-total"><span>Total</span><span>$'+Math.round(total).toLocaleString('es-CL')+'</span></div>';
       previewEl.style.display = 'block';
     }
+
+    // Mostrar lista de personas para seleccionar
+    // Los people vienen guardados en la sesión como metadata
+    var sessionPeople = session.people_list || [];
+    renderJoinPeopleList(sessionPeople, joined, sid, session);
+
+    // Suscribirse para actualizar quién ya entró en tiempo real
+    sb.channel('join-' + sid)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participants', filter: 'session_id=eq.' + sid }, function(payload){
+        joined.push(payload.new.name.toLowerCase());
+        renderJoinPeopleList(sessionPeople, joined, sid, session);
+      })
+      .subscribe();
+
   } catch(e){
     document.getElementById('join-restaurante-name').textContent = '⚠️ Error: ' + e.message;
   }
 }
 
-async function joinSession(){
-  var name = document.getElementById('join-name-input').value.trim();
-  if(!name){ toast('Ingresa tu nombre'); return; }
-  if(!sb){ toast('Error de conexión'); return; }
-
-  var btn = document.querySelector('.join-btn');
-  btn.textContent = 'Entrando...'; btn.disabled = true;
-
-  try {
-    // Obtener la sesión
-    var res = await sb.from('sessions').select('*').eq('id', currentSessionId).single();
-    if(res.error || !res.data){ toast('Sesión no encontrada'); btn.textContent = 'Entrar →'; btn.disabled = false; return; }
-
-    var session = res.data;
-
-    // Registrar participante
-    var color = COLORS[Math.floor(Math.random() * COLORS.length)];
-    var pRes = await sb.from('participants').insert({
-      session_id: currentSessionId,
-      name: name,
-      color: color,
-      assigns: {}
-    }).select().single();
-
-    if(pRes.error){ toast('Error al unirse'); btn.textContent = 'Entrar →'; btn.disabled = false; return; }
-    myParticipantId = pRes.data.id;
-
-    // Cargar datos de la sesión en la app
-    restaurante = session.restaurante;
-    tipPct = session.tip_pct || 0;
-    loadItems(session.restaurante, session.items);
-
-    // Cargar participantes existentes
-    var partRes = await sb.from('participants').select('*').eq('session_id', currentSessionId);
-    if(partRes.data){
-      people = partRes.data.map(function(p){ return {name:p.name, color:p.color, participantId:p.id}; });
-      // Cargar asignaciones existentes
-      partRes.data.forEach(function(p){
-        if(p.assigns && Object.keys(p.assigns).length){
-          var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
-          if(pi > -1) Object.assign(assigns, JSON.parse(JSON.stringify(p.assigns)));
-        }
-      });
-    }
-
-    // Ocultar join screen y mostrar app
-    document.getElementById('join-screen').style.display = 'none';
-    goStep(3);
-    renderPeople();
-    renderAssign();
-
-    // Suscribirse a cambios en tiempo real
-    subscribeToSession(currentSessionId);
-    showSync('En vivo 🟢');
-    toast('¡Entraste! Marca lo que consumiste');
-
-  } catch(e){
-    toast('Error: ' + e.message);
-    btn.textContent = 'Entrar →'; btn.disabled = false;
+function renderJoinPeopleList(sessionPeople, joined, sid, session){
+  var list = document.getElementById('join-people-list');
+  if(!list) return;
+  if(!sessionPeople.length){
+    list.innerHTML = '<div style="font-size:12px;color:var(--text2);padding:10px;">No hay personas en esta sesión</div>';
+    return;
   }
+  list.innerHTML = sessionPeople.map(function(p, i){
+    var isTaken = joined.indexOf(p.name.toLowerCase()) > -1;
+    return '<div class="join-person-btn'+(isTaken?' taken':'')+'" onclick="joinAsName(\''+p.name.replace(/'/g,"\\'")+ '\',\''+p.color+'\')">'+
+      '<div class="join-person-av" style="background:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+
+      '<div class="join-person-name">'+p.name+'</div>'+
+      '<div class="join-person-status" style="color:'+(isTaken?'var(--text3)':'var(--green)')+'">'+
+        (isTaken?'Ya entró ✓':'→')+'</div>'+
+    '</div>';
+  }).join('');
+}
+
+async function joinAsName(name, color){
+  if(!sb || !currentSessionId){ toast('Error de conexión'); return; }
+
+  // Verificar que no haya entrado ya
+  var checkRes = await sb.from('participants').select('id').eq('session_id', currentSessionId).eq('name', name);
+  if(checkRes.data && checkRes.data.length > 0){
+    toast(name + ' ya está en la sesión');
+    return;
+  }
+
+  // Cargar sesión
+  var res = await sb.from('sessions').select('*').eq('id', currentSessionId).single();
+  if(res.error || !res.data){ toast('Sesión no encontrada'); return; }
+  var session = res.data;
+
+  // Registrar participante con ese nombre
+  var pRes = await sb.from('participants').insert({
+    session_id: currentSessionId,
+    name: name,
+    color: color,
+    assigns: {}
+  }).select().single();
+
+  if(pRes.error){ toast('Error al unirse: ' + pRes.error.message); return; }
+  myParticipantId = pRes.data.id;
+  isGroupGuest = true;
+
+  // Cargar todos los participantes
+  var partRes = await sb.from('participants').select('*').eq('session_id', currentSessionId);
+  if(partRes.data){
+    people = session.people_list || partRes.data.map(function(p){ return {name:p.name, color:p.color, participantId:p.id}; });
+    // Asignar participantId a cada person
+    people = people.map(function(person){
+      var match = partRes.data.find(function(p){ return p.name === person.name; });
+      return match ? Object.assign({}, person, {participantId: match.id}) : person;
+    });
+    // Cargar asignaciones existentes
+    partRes.data.forEach(function(p){
+      if(p.assigns && Object.keys(p.assigns).length && p.id !== myParticipantId){
+        var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
+        if(pi > -1){
+          Object.keys(p.assigns).forEach(function(itemIdx){
+            if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
+            var a = p.assigns[itemIdx];
+            if(a.participants) a.participants.forEach(function(remPi){
+              if(assigns[itemIdx].participants.indexOf(remPi) === -1) assigns[itemIdx].participants.push(remPi);
+            });
+            if(a.qty) Object.assign(assigns[itemIdx].qty, a.qty);
+          });
+        }
+      }
+    });
+  }
+
+  // Cargar ítems
+  restaurante = session.restaurante;
+  tipPct = session.tip_pct || 0;
+  loadItems(session.restaurante, session.items);
+
+  // Ocultar join screen, ir a asignar
+  document.getElementById('join-screen').style.display = 'none';
+  // Mostrar la app y ir directo a asignar
+  document.getElementById('topbar').style.display = 'flex';
+  document.getElementById('stepbar').style.display = 'flex';
+  goStep(3);
+  renderPeople();
+  renderAssign();
+
+  // Suscribirse a tiempo real
+  subscribeToSession(currentSessionId);
+  showSync('En vivo 🟢');
+  toast('¡Hola '+name+'! Marca lo que consumiste');
 }
 
 // ── GUARDAR SESIÓN EN SUPABASE (host) ──
 async function saveSessionToSupabase(sessionId, rest, rawItems){
   if(!sb) return;
+  var peopleList = people.map(function(p){ return {name:p.name, color:p.color}; });
   try {
     await sb.from('sessions').upsert({
       id: sessionId,
       restaurante: rest,
       items: rawItems,
-      tip_pct: tipPct
+      tip_pct: tipPct,
+      people_list: peopleList
     });
   } catch(e){ console.error('Error guardando sesión:', e); }
 }
@@ -659,9 +730,26 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
 // ── GUARDAR ASIGNACIONES EN SUPABASE ──
 async function syncAssigns(){
   if(!sb || !currentSessionId || !myParticipantId) return;
+  // Encontrar mi índice en el array people
+  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+  if(myPeopleIdx === -1) return;
+  // Construir objeto solo con mis asignaciones
+  var myAssigns = {};
+  Object.keys(assigns).forEach(function(itemIdx){
+    var a = assigns[itemIdx];
+    if(a && a.participants && a.participants.indexOf(myPeopleIdx) > -1){
+      myAssigns[itemIdx] = {
+        participants: [myPeopleIdx],
+        qty: {}
+      };
+      if(a.qty && a.qty[myPeopleIdx] !== undefined){
+        myAssigns[itemIdx].qty[myPeopleIdx] = a.qty[myPeopleIdx];
+      }
+    }
+  });
   showSync('Sincronizando...', true);
   try {
-    await sb.from('participants').update({ assigns: assigns }).eq('id', myParticipantId);
+    await sb.from('participants').update({ assigns: myAssigns }).eq('id', myParticipantId);
     showSync('En vivo 🟢');
   } catch(e){ console.error('Error sincronizando:', e); }
 }
@@ -686,7 +774,6 @@ function subscribeToSession(sessionId){
 function handleParticipantChange(payload){
   if(payload.eventType === 'INSERT'){
     var p = payload.new;
-    // Agregar nuevo participante si no existe
     var exists = people.find(function(pp){ return pp.participantId === p.id; });
     if(!exists){
       people.push({name: p.name, color: p.color, participantId: p.id});
@@ -697,11 +784,29 @@ function handleParticipantChange(payload){
     }
   } else if(payload.eventType === 'UPDATE'){
     var p = payload.new;
+    // No procesar mis propias actualizaciones
+    if(p.id === myParticipantId) return;
     var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
-    // Actualizar asignaciones de otros (no las mías)
-    if(pi > -1 && p.id !== myParticipantId && p.assigns){
-      Object.keys(p.assigns).forEach(function(k){
-        assigns[k] = p.assigns[k];
+    if(pi > -1 && p.assigns){
+      // Mergear las asignaciones del otro participante
+      // p.assigns tiene índices de ítems como keys
+      Object.keys(p.assigns).forEach(function(itemIdx){
+        var remoteAssign = p.assigns[itemIdx];
+        if(!assigns[itemIdx]){
+          assigns[itemIdx] = remoteAssign;
+        } else {
+          // Mergear participantes: añadir el pi remoto si no está
+          var existing = assigns[itemIdx];
+          if(!existing.participants) existing.participants = [];
+          if(existing.participants.indexOf(pi) === -1){
+            existing.participants.push(pi);
+          }
+          // Mergear cantidades
+          if(remoteAssign.qty && remoteAssign.qty[pi] !== undefined){
+            if(!existing.qty) existing.qty = {};
+            existing.qty[pi] = remoteAssign.qty[pi];
+          }
+        }
       });
       if(step === 3) renderAssign();
       if(step === 4) buildSummary();
@@ -1466,14 +1571,17 @@ function updateTotal(){
 function addPerson(){
   var inp=document.getElementById('p-inp');
   var name=inp.value.trim();if(!name)return;
-  people.push({name:name,color:COLORS[people.length%COLORS.length]});
+  var color=COLORS[people.length%COLORS.length];
+  people.push({name:name,color:color});
   inp.value='';renderPeople();
   document.getElementById('p2-next').disabled=false;
-  // Mostrar QR de sesión cuando hay al menos 1 persona
-  if(people.length >= 1){
-    showSessionQR();
+  // Generar sesión QR y guardar en Supabase
+  showSessionQR();
+  // El host siempre actualiza people_list en Supabase al agregar personas
+  if(isGroupHost && sb && currentSessionId){
+    var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
+    saveSessionToSupabase(currentSessionId, restaurante, rawItems);
   }
-  // Si viene del modo express
   if(sessionStorage.getItem('dc_express')==='1'){
     document.getElementById('p2-next').textContent='⚡ Dividir igual →';
     document.getElementById('p2-next').onclick=function(){
