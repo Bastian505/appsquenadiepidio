@@ -1141,13 +1141,15 @@ async function scanWithClaude(b64,mime){
 var sessionId = null;
 var sessionQR = null;
 
-// URL base — siempre usa el host actual en producción
+// URL base — apunta siempre a DiviCuenta, no al portal raíz
 var APP_BASE_URL = (function(){
   var loc = window.location;
   if(loc.protocol === 'file:' || loc.hostname === 'localhost' || loc.hostname === '127.0.0.1'){
-    return 'https://yporqueno.vercel.app';
+    return 'https://yporqueno.vercel.app/apps/divicuenta';
   }
-  return loc.protocol + '//' + loc.host;
+  // En producción usa la ruta completa donde está este archivo
+  var path = loc.pathname.replace(/\/index\.html$/, '').replace(/\/$/, '');
+  return loc.protocol + '//' + loc.host + path;
 })();
 
 function generateSessionId(){
