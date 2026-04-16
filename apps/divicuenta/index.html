@@ -530,7 +530,6 @@ function initSupabase(){
 
 // ── DETECTAR SI ES JOIN (viene de QR) ──
 async function checkJoinMode(){
-  initSupabase();
   var params = new URLSearchParams(window.location.search);
   var sid = params.get('session');
   if(!sid) return;
@@ -538,16 +537,29 @@ async function checkJoinMode(){
   currentSessionId = sid;
   isGroupGuest = true;
 
-  // Mostrar pantalla de join mientras cargamos
+  // Mostrar pantalla de join inmediatamente
   document.getElementById('join-screen').style.display = 'flex';
   document.getElementById('join-restaurante-name').textContent = '📍 Cargando sesión...';
+
+  // Esperar hasta que Supabase CDN esté disponible (máx 5s)
+  var tries = 0;
+  while(typeof supabase === 'undefined' && tries < 50){
+    await new Promise(function(r){ setTimeout(r, 100); });
+    tries++;
+  }
+  initSupabase();
+
+  if(!sb){
+    document.getElementById('join-restaurante-name').textContent = '⚠️ Error de conexión';
+    return;
+  }
 
   // Cargar datos de la sesión
   try {
     var res = await sb.from('sessions').select('*').eq('id', sid).single();
     if(res.error || !res.data){
       document.getElementById('join-restaurante-name').textContent = '⚠️ Sesión no encontrada';
-      document.getElementById('join-sub') && (document.querySelector('.join-sub').textContent = 'Esta sesión no existe o ya expiró.');
+      document.querySelector('.join-sub').textContent = 'Esta sesión no existe o ya expiró.';
       return;
     }
     var session = res.data;
@@ -565,7 +577,7 @@ async function checkJoinMode(){
       previewEl.style.display = 'block';
     }
   } catch(e){
-    document.getElementById('join-restaurante-name').textContent = '⚠️ Error al cargar';
+    document.getElementById('join-restaurante-name').textContent = '⚠️ Error: ' + e.message;
   }
 }
 
@@ -1129,12 +1141,11 @@ async function scanWithClaude(b64,mime){
 var sessionId = null;
 var sessionQR = null;
 
-// URL base de la app — cambiar por tu dominio cuando tengas uno
+// URL base — siempre usa el host actual en producción
 var APP_BASE_URL = (function(){
   var loc = window.location;
-  // Si es archivo local, usar URL de Vercel
   if(loc.protocol === 'file:' || loc.hostname === 'localhost' || loc.hostname === '127.0.0.1'){
-    return 'https://appsquenadiepidio.vercel.app';
+    return 'https://yporqueno.vercel.app';
   }
   return loc.protocol + '//' + loc.host;
 })();
