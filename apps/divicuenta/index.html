@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>DiviCuenta — Divide sin drama</title>
+<meta name="theme-color" content="#0ea5e9">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="DiviCuenta">
+<link rel="apple-touch-icon" href="https://fav.farm/🧾">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{
   --bg:#f0f9ff;--surface:#fff;--surface2:#f8fbff;
@@ -62,6 +69,7 @@ body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellips
 .welcome-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 24px 20px;gap:16px;text-align:center;position:relative;z-index:1;}
 .welcome-emoji{font-size:68px;animation:float 3.5s ease-in-out infinite;filter:drop-shadow(0 8px 20px rgba(14,165,233,0.25));}
 @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.3;}}
 .welcome-title{font-size:36px;font-weight:800;letter-spacing:-1.5px;color:var(--text);}
 .welcome-title em{font-style:normal;color:var(--primary);}
 .welcome-tag{font-family:'Lora',serif;font-style:italic;font-size:15px;color:var(--text2);max-width:280px;line-height:1.6;}
@@ -233,8 +241,39 @@ input[type=text]::placeholder{color:var(--text3);}
 .sum-row:last-child{border-bottom:none;}
 .sum-row.tip-s{color:var(--amber);}
 
-/* BANCOS */
-.banks-modal{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9998;display:flex;align-items:flex-end;justify-content:center;}
+/* QR SESION */
+.qr-session-box{background:linear-gradient(135deg,rgba(14,165,233,0.08),rgba(2,132,199,0.04));border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;text-align:center;margin-top:12px;}
+.qr-session-title{font-size:13px;font-weight:800;color:var(--text);margin-bottom:4px;}
+.qr-session-sub{font-size:11px;color:var(--text2);font-family:'Lora',serif;font-style:italic;margin-bottom:12px;line-height:1.4;}
+#qr-canvas{display:flex;justify-content:center;margin:10px 0;}
+#qr-canvas img,#qr-canvas canvas{border-radius:8px;border:3px solid white;box-shadow:0 2px 10px var(--shadow);}
+.qr-session-url{font-size:10px;color:var(--text3);font-weight:600;word-break:break-all;margin-top:6px;background:var(--surface2);border-radius:8px;padding:5px 8px;}
+.qr-share-btn{background:var(--primary);color:white;border:none;border-radius:50px;padding:8px 18px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;gap:5px;}
+
+/* QR PAGO */
+.qr-pago-wrap{margin-top:10px;background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px;text-align:center;}
+.qr-pago-label{font-size:11px;font-weight:800;color:var(--text2);margin-bottom:2px;}
+.qr-pago-amount{font-size:20px;font-weight:800;color:var(--pdd);margin-bottom:8px;}
+.qr-pago-canvas{display:flex;justify-content:center;margin:8px 0;}
+.qr-pago-canvas img,.qr-pago-canvas canvas{border-radius:6px;border:2px solid white;box-shadow:0 1px 6px var(--shadow);}
+.qr-pago-hint{font-size:10px;color:var(--text3);font-weight:600;margin-top:6px;line-height:1.4;}
+.banks-deeplink-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;justify-content:center;}
+.bank-deep-btn{display:flex;align-items:center;gap:4px;background:var(--surface);border:1.5px solid var(--border);border-radius:50px;padding:5px 11px;font-family:'Nunito',sans-serif;font-size:11px;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;text-decoration:none;}
+.bank-deep-btn:hover{border-color:var(--primary);background:var(--ps);}
+
+/* PROPINA WARNING */
+.propina-warn{background:rgba(245,158,11,0.10);border:1.5px solid rgba(245,158,11,0.40);border-radius:10px;padding:10px 12px;display:none;align-items:center;gap:8px;margin-top:8px;}
+.propina-warn.show{display:flex;}
+.propina-warn-text{font-size:11px;color:#92400e;font-weight:700;flex:1;line-height:1.4;}
+
+/* ERROR OCR MEJORADO */
+.scan-error-card{background:#fef2f2;border:1.5px solid #fecaca;border-radius:var(--radius);padding:14px;display:none;}
+.scan-error-card.show{display:block;}
+.scan-error-title{font-size:13px;font-weight:800;color:#991b1b;margin-bottom:4px;}
+.scan-error-body{font-size:12px;color:#b91c1c;line-height:1.5;margin-bottom:10px;}
+.scan-error-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-retry{background:#fee2e2;border:1.5px solid #fca5a5;border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:#991b1b;cursor:pointer;}
+.btn-manual{background:var(--primary);border:none;border-radius:50px;padding:7px 14px;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;color:white;cursor:pointer;}
 .banks-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 32px;width:100%;max-width:500px;}
 .banks-title{font-size:15px;font-weight:800;color:var(--text);margin-bottom:4px;}
 .banks-amount{font-size:22px;font-weight:800;color:var(--primary);margin-bottom:16px;}
@@ -329,6 +368,16 @@ input[type=text]::placeholder{color:var(--text3);}
         <div class="scan-overlay" id="scanOv"><div class="scan-beam"></div><div class="scan-spinner"></div><div class="scan-status" id="scan-msg">LEYENDO BOLETA...</div></div>
       </div>
       <button class="btn btn-sm" id="demo-btn" style="width:100%;margin-top:10px" onclick="runDemo()">🎬 Usar datos de ejemplo</button>
+      <!-- ERROR OCR MEJORADO -->
+      <div class="scan-error-card" id="scan-error-card">
+        <div class="scan-error-title">😕 No pudimos leer la boleta</div>
+        <div class="scan-error-body" id="scan-error-body">La foto puede estar muy oscura, borrosa o en un ángulo difícil. Intenta con más luz o más cerca.</div>
+        <div class="scan-error-actions">
+          <button class="btn-retry" onclick="retryScan()">🔄 Otra foto</button>
+          <button class="btn-manual" onclick="activateManual()">✏️ Ingresar a mano</button>
+          <button class="btn-retry" onclick="runDemo()" style="background:#fef9c3;border-color:#fde047;color:#854d0e;">🎬 Usar demo</button>
+        </div>
+      </div>
     </div>
     <div class="card" id="items-card" style="display:none">
       <div class="card-head" style="display:flex;align-items:center;justify-content:space-between;">
@@ -348,6 +397,11 @@ input[type=text]::placeholder{color:var(--text3);}
         <button class="tip-chip" onclick="setTip(10,this)">10%</button>
         <button class="tip-chip" onclick="setTip(15,this)">15%</button>
         <button class="tip-chip" onclick="setTip(20,this)">20%</button>
+      </div>
+      <!-- PROPINA WARNING -->
+      <div class="propina-warn" id="propina-warn">
+        <span style="font-size:18px;">⚠️</span>
+        <span class="propina-warn-text">Claude detectó que la boleta podría incluir propina. Verifica antes de agregar otra — evita cobrar doble.</span>
       </div>
       <div class="total-bar">
         <div><div class="total-tag">Total a dividir</div><div class="total-sub" id="sub-label">—</div></div>
@@ -375,6 +429,23 @@ input[type=text]::placeholder{color:var(--text3);}
       <div class="save-group-row">
         <input class="save-group-input" id="group-name-inp" type="text" placeholder="Nombre del grupo (ej: Amigos del viernes)">
         <button class="btn-sm" onclick="saveGroup()" style="white-space:nowrap;">💾 Guardar</button>
+      </div>
+    </div>
+
+    <!-- QR DE SESIÓN COMPARTIDA -->
+    <div class="qr-session-box" id="qr-session-box" style="display:none;">
+      <div class="qr-session-title">📲 Compartir cuenta con el grupo</div>
+      <div class="qr-session-sub">Los demás escanean el QR o tú les mandas el link. Entran sin registro — solo ponen su nombre.</div>
+      <div id="qr-canvas"></div>
+      <div class="qr-session-url" id="qr-session-url" onclick="copySessionUrl()" title="Toca para copiar"></div>
+      <div class="qr-share-btns">
+        <button class="qr-share-btn" onclick="shareSession()">📤 Compartir</button>
+        <button class="qr-share-btn copy" onclick="copySessionUrl()">📋 Copiar link</button>
+      </div>
+      <!-- Participantes que se van uniendo -->
+      <div id="live-participants-wrap" style="margin-top:12px;display:none;">
+        <div class="realtime-badge"><div class="rt-dot"></div>Conectados ahora</div>
+        <div class="participants-live" id="live-participants-list"></div>
       </div>
     </div>
   </div>
@@ -415,9 +486,240 @@ input[type=text]::placeholder{color:var(--text3);}
 <canvas id="share-canvas"></canvas>
 <div class="toast" id="toastEl"></div>
 
+<!-- SYNC INDICATOR -->
+<div class="sync-indicator hidden" id="sync-indicator">
+  <div class="rt-dot"></div>
+  <span id="sync-text">En vivo</span>
+</div>
+
+<!-- PANTALLA UNIRSE A SESIÓN -->
+<div class="join-screen" id="join-screen" style="display:none;">
+  <div class="join-emoji">🧾</div>
+  <div class="join-title">Únete a <em>DiviCuenta</em></div>
+  <div class="join-sub">Tu grupo ya escaneó la boleta. Ingresa tu nombre para ver la cuenta y marcar lo tuyo.</div>
+  <div class="join-restaurante" id="join-restaurante-name">📍 Cargando...</div>
+  <div class="join-items-preview" id="join-items-preview" style="display:none;">
+    <div class="jip-title">Ítems en la mesa</div>
+    <div id="jip-list"></div>
+  </div>
+  <input class="join-input" id="join-name-input" type="text" placeholder="Tu nombre..." maxlength="22" onkeydown="if(event.key==='Enter')joinSession()">
+  <button class="join-btn" onclick="joinSession()">Entrar a la cuenta →</button>
+</div>
+
 <script>
 var items=[],people=[],assigns={},tipPct=0,step=0,restaurante=null,invitedBy={},pagadorIdx=-1,roundingExtra=0;
+var PROXY_URL='/api/scan-receipt';
 var COLORS=['#0ea5e9','#f472b6','#34d399','#f59e0b','#818cf8','#fb923c','#60a5fa','#4ade80'];
+
+// ── SUPABASE CONFIG ──
+var SUPABASE_URL = 'https://kozakmufitkepgpxctxu.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvemFrbXVmaXRrZXBncHhjdHh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4NDI3NzUsImV4cCI6MjA5MTQxODc3NX0.HXAuXex26Y7ns2HR4VX6_htnSkbo1lldurWNmoGh9-k';
+var sb = null;
+var realtimeChannel = null;
+var myParticipantId = null;
+var isGroupHost = false;
+var isGroupGuest = false;
+var currentSessionId = null;
+
+// Inicializar Supabase cuando esté disponible
+function initSupabase(){
+  if(typeof supabase !== 'undefined' && !sb){
+    sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+}
+
+// ── DETECTAR SI ES JOIN (viene de QR) ──
+async function checkJoinMode(){
+  initSupabase();
+  var params = new URLSearchParams(window.location.search);
+  var sid = params.get('session');
+  if(!sid) return;
+
+  currentSessionId = sid;
+  isGroupGuest = true;
+
+  // Mostrar pantalla de join mientras cargamos
+  document.getElementById('join-screen').style.display = 'flex';
+  document.getElementById('join-restaurante-name').textContent = '📍 Cargando sesión...';
+
+  // Cargar datos de la sesión
+  try {
+    var res = await sb.from('sessions').select('*').eq('id', sid).single();
+    if(res.error || !res.data){
+      document.getElementById('join-restaurante-name').textContent = '⚠️ Sesión no encontrada';
+      document.getElementById('join-sub') && (document.querySelector('.join-sub').textContent = 'Esta sesión no existe o ya expiró.');
+      return;
+    }
+    var session = res.data;
+    document.getElementById('join-restaurante-name').textContent = '📍 ' + (session.restaurante || 'Restaurante');
+
+    // Mostrar preview de ítems
+    var previewEl = document.getElementById('join-items-preview');
+    var listEl = document.getElementById('jip-list');
+    if(session.items && session.items.length){
+      var total = session.items.reduce(function(s,it){ return s + it.precio_unitario * it.cantidad; }, 0);
+      listEl.innerHTML = session.items.slice(0,5).map(function(it){
+        return '<div class="jip-row"><span>'+(it.cantidad>1?it.cantidad+'× ':'')+it.nombre+'</span><span style="font-weight:700;">$'+Math.round(it.precio_unitario*it.cantidad).toLocaleString('es-CL')+'</span></div>';
+      }).join('') + (session.items.length > 5 ? '<div style="font-size:10px;color:var(--text3);padding:4px 0;">+ '+(session.items.length-5)+' ítems más...</div>' : '') +
+      '<div class="jip-total"><span>Total</span><span>$'+Math.round(total).toLocaleString('es-CL')+'</span></div>';
+      previewEl.style.display = 'block';
+    }
+  } catch(e){
+    document.getElementById('join-restaurante-name').textContent = '⚠️ Error al cargar';
+  }
+}
+
+async function joinSession(){
+  var name = document.getElementById('join-name-input').value.trim();
+  if(!name){ toast('Ingresa tu nombre'); return; }
+  if(!sb){ toast('Error de conexión'); return; }
+
+  var btn = document.querySelector('.join-btn');
+  btn.textContent = 'Entrando...'; btn.disabled = true;
+
+  try {
+    // Obtener la sesión
+    var res = await sb.from('sessions').select('*').eq('id', currentSessionId).single();
+    if(res.error || !res.data){ toast('Sesión no encontrada'); btn.textContent = 'Entrar →'; btn.disabled = false; return; }
+
+    var session = res.data;
+
+    // Registrar participante
+    var color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    var pRes = await sb.from('participants').insert({
+      session_id: currentSessionId,
+      name: name,
+      color: color,
+      assigns: {}
+    }).select().single();
+
+    if(pRes.error){ toast('Error al unirse'); btn.textContent = 'Entrar →'; btn.disabled = false; return; }
+    myParticipantId = pRes.data.id;
+
+    // Cargar datos de la sesión en la app
+    restaurante = session.restaurante;
+    tipPct = session.tip_pct || 0;
+    loadItems(session.restaurante, session.items);
+
+    // Cargar participantes existentes
+    var partRes = await sb.from('participants').select('*').eq('session_id', currentSessionId);
+    if(partRes.data){
+      people = partRes.data.map(function(p){ return {name:p.name, color:p.color, participantId:p.id}; });
+      // Cargar asignaciones existentes
+      partRes.data.forEach(function(p){
+        if(p.assigns && Object.keys(p.assigns).length){
+          var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
+          if(pi > -1) Object.assign(assigns, JSON.parse(JSON.stringify(p.assigns)));
+        }
+      });
+    }
+
+    // Ocultar join screen y mostrar app
+    document.getElementById('join-screen').style.display = 'none';
+    goStep(3);
+    renderPeople();
+    renderAssign();
+
+    // Suscribirse a cambios en tiempo real
+    subscribeToSession(currentSessionId);
+    showSync('En vivo 🟢');
+    toast('¡Entraste! Marca lo que consumiste');
+
+  } catch(e){
+    toast('Error: ' + e.message);
+    btn.textContent = 'Entrar →'; btn.disabled = false;
+  }
+}
+
+// ── GUARDAR SESIÓN EN SUPABASE (host) ──
+async function saveSessionToSupabase(sessionId, rest, rawItems){
+  if(!sb) return;
+  try {
+    await sb.from('sessions').upsert({
+      id: sessionId,
+      restaurante: rest,
+      items: rawItems,
+      tip_pct: tipPct
+    });
+  } catch(e){ console.error('Error guardando sesión:', e); }
+}
+
+// ── GUARDAR ASIGNACIONES EN SUPABASE ──
+async function syncAssigns(){
+  if(!sb || !currentSessionId || !myParticipantId) return;
+  showSync('Sincronizando...', true);
+  try {
+    await sb.from('participants').update({ assigns: assigns }).eq('id', myParticipantId);
+    showSync('En vivo 🟢');
+  } catch(e){ console.error('Error sincronizando:', e); }
+}
+
+// ── SUSCRIPCIÓN EN TIEMPO REAL ──
+function subscribeToSession(sessionId){
+  if(!sb) return;
+  if(realtimeChannel) realtimeChannel.unsubscribe();
+
+  realtimeChannel = sb.channel('session-' + sessionId)
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'participants',
+      filter: 'session_id=eq.' + sessionId
+    }, function(payload){
+      handleParticipantChange(payload);
+    })
+    .subscribe();
+}
+
+function handleParticipantChange(payload){
+  if(payload.eventType === 'INSERT'){
+    var p = payload.new;
+    // Agregar nuevo participante si no existe
+    var exists = people.find(function(pp){ return pp.participantId === p.id; });
+    if(!exists){
+      people.push({name: p.name, color: p.color, participantId: p.id});
+      renderPeople();
+      updateLiveParticipants();
+      toast('👋 ' + p.name + ' se unió');
+      if(step === 3) renderAssign();
+    }
+  } else if(payload.eventType === 'UPDATE'){
+    var p = payload.new;
+    var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
+    // Actualizar asignaciones de otros (no las mías)
+    if(pi > -1 && p.id !== myParticipantId && p.assigns){
+      Object.keys(p.assigns).forEach(function(k){
+        assigns[k] = p.assigns[k];
+      });
+      if(step === 3) renderAssign();
+      if(step === 4) buildSummary();
+    }
+  }
+}
+
+function updateLiveParticipants(){
+  var wrap = document.getElementById('live-participants-wrap');
+  var list = document.getElementById('live-participants-list');
+  if(!wrap || !list) return;
+  if(people.length <= 1){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  list.innerHTML = people.map(function(p){
+    return '<div class="participant-live"><div class="pl-dot" style="background:'+p.color+'"></div>'+p.name+'</div>';
+  }).join('');
+}
+
+function showSync(text, syncing){
+  var el = document.getElementById('sync-indicator');
+  var textEl = document.getElementById('sync-text');
+  if(!el) return;
+  el.classList.remove('hidden');
+  el.classList.toggle('syncing', !!syncing);
+  if(textEl) textEl.textContent = text;
+  if(!syncing){
+    clearTimeout(el._hideTimer);
+    el._hideTimer = setTimeout(function(){ el.classList.add('hidden'); }, 3000);
+  }
+}
 var DEMO=[
   {nombre:"Lomo saltado",precio_unitario:11900,cantidad:1},
   {nombre:"Chorrillana",precio_unitario:14500,cantidad:1},
@@ -446,6 +748,9 @@ document.addEventListener('DOMContentLoaded', function(){
     var el = document.getElementById('api-key-input');
     if(el){ el.value = savedKey; onKeyChange(); }
   }
+  // Inicializar Supabase y detectar modo join (después de que el CDN cargó)
+  initSupabase();
+  checkJoinMode();
 });
 
 // ── OFFLINE DETECTION ──
@@ -820,10 +1125,194 @@ async function scanWithClaude(b64,mime){
 
 
 
-// ── PROXY CONFIG ──
-// Cambia esta URL por tu Supabase Edge Function URL después de desplegar
-// Ejemplo: 'https://abcdefgh.supabase.co/functions/v1/scan-receipt'
-var PROXY_URL = '/api/scan-receipt';
+// ── QR SESIÓN COMPARTIDA ──
+var sessionId = null;
+var sessionQR = null;
+
+// URL base de la app — cambiar por tu dominio cuando tengas uno
+var APP_BASE_URL = (function(){
+  var loc = window.location;
+  // Si es archivo local, usar URL de Vercel
+  if(loc.protocol === 'file:' || loc.hostname === 'localhost' || loc.hostname === '127.0.0.1'){
+    return 'https://appsquenadiepidio.vercel.app';
+  }
+  return loc.protocol + '//' + loc.host;
+})();
+
+function generateSessionId(){
+  return 'dc-' + Math.random().toString(36).substring(2,9) + '-' + Date.now().toString(36);
+}
+
+function showSessionQR(){
+  initSupabase();
+  var box = document.getElementById('qr-session-box');
+  var canvas = document.getElementById('qr-canvas');
+  var urlEl = document.getElementById('qr-session-url');
+  if(!sessionId) sessionId = generateSessionId();
+  currentSessionId = sessionId;
+  isGroupHost = true;
+  var sessionUrl = APP_BASE_URL + '?session=' + sessionId;
+  box.style.display = 'block';
+  canvas.innerHTML = '';
+  if(typeof QRCode !== 'undefined'){
+    new QRCode(canvas, {
+      text: sessionUrl,
+      width: 140,
+      height: 140,
+      colorDark: '#0f172a',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+  urlEl.textContent = sessionUrl;
+  // Guardar sesión en Supabase si hay ítems
+  if(items.length > 0){
+    var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
+    saveSessionToSupabase(sessionId, restaurante, rawItems);
+  }
+  // Suscribirse para ver quién se une
+  subscribeToSession(sessionId);
+  updateLiveParticipants();
+}
+
+function shareSession(){
+  if(!sessionId) sessionId = generateSessionId();
+  var sessionUrl = APP_BASE_URL + '?session=' + sessionId;
+  var text = '📲 Únete a DiviCuenta — ve la cuenta y marca lo tuyo:\n' + sessionUrl;
+
+  // Intentar Web Share API (mobile)
+  if(navigator.share){
+    navigator.share({title:'DiviCuenta', text:text, url:sessionUrl})
+      .catch(function(){ copyToClipboardFallback(sessionUrl); });
+    return;
+  }
+
+  // Intentar clipboard API
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(sessionUrl)
+      .then(function(){ toast('✅ Link copiado — pégalo en el grupo de WhatsApp'); })
+      .catch(function(){ openWhatsAppShare(text); });
+    return;
+  }
+
+  // Fallback final: abrir WhatsApp directamente
+  openWhatsAppShare(text);
+}
+
+function copyToClipboardFallback(text){
+  // Método antiguo compatible con todos los browsers
+  var el = document.createElement('textarea');
+  el.value = text;
+  el.style.cssText = 'position:fixed;top:-9999px;left:-9999px;';
+  document.body.appendChild(el);
+  el.focus();el.select();
+  try{
+    document.execCommand('copy');
+    toast('✅ Link copiado — pégalo en el grupo de WhatsApp');
+  }catch(e){
+    openWhatsAppShare('📲 DiviCuenta: ' + text);
+  }
+  document.body.removeChild(el);
+}
+
+function copySessionUrl(){
+  if(!sessionId) sessionId = generateSessionId();
+  var sessionUrl = APP_BASE_URL + '?session=' + sessionId;
+  copyToClipboardFallback(sessionUrl);
+}
+
+function openWhatsAppShare(text){
+  window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+}
+
+// ── QR DE PAGO CON MONTO PRELLENADO ──
+function generatePaymentQR(containerId, amount, personName){
+  var container = document.getElementById(containerId);
+  if(!container || typeof QRCode === 'undefined') return;
+  container.innerHTML = '';
+  // Payload: texto simple con monto — apps de pago lo leen
+  var payload = 'DiviCuenta | ' + personName + ' debe: $' + Math.round(amount).toLocaleString('es-CL');
+  new QRCode(container, {
+    text: payload,
+    width: 120,
+    height: 120,
+    colorDark: '#0f172a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+}
+
+function getMachDeepLink(amount, name){
+  // Mach deep link con monto — abre la app con el monto prellenado
+  return 'mach://send?amount=' + Math.round(amount) + '&description=' + encodeURIComponent('DiviCuenta - ' + name);
+}
+
+function getFpayDeepLink(amount){
+  return 'fpay://transfer?amount=' + Math.round(amount);
+}
+
+function buildBanksWithAmount(personName, amount, pagadorName){
+  var html = '<div class="banks-deeplink-row">';
+  html += '<a class="bank-deep-btn" href="' + getMachDeepLink(amount, 'pago a ' + pagadorName) + '">💳 Mach · $' + Math.round(amount).toLocaleString('es-CL') + '</a>';
+  html += '<a class="bank-deep-btn" href="' + getFpayDeepLink(amount) + '">💚 FPAY</a>';
+  html += '<a class="bank-deep-btn" href="#" onclick="copyAmountToClipboard(' + amount + ',\'' + personName + '\');return false;">📋 Copiar monto</a>';
+  html += '</div>';
+  return html;
+}
+
+function copyAmountToClipboard(amount, name){
+  var txt = 'Transferencia DiviCuenta\nMonto: $' + Math.round(amount).toLocaleString('es-CL');
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(txt).then(function(){ toast('Monto de ' + name + ' copiado'); });
+  }
+}
+
+// ── DETECCIÓN PROPINA EN BOLETA ──
+function checkPropinaIncluida(rawItems){
+  if(!rawItems) return false;
+  var nombres = rawItems.map(function(it){ return (it.nombre||'').toLowerCase(); });
+  var keywords = ['propina','tip','servicio','service','cubierto'];
+  return nombres.some(function(n){
+    return keywords.some(function(k){ return n.indexOf(k) > -1; });
+  });
+}
+
+// ── RETRY / MANUAL OCR ──
+function retryScan(){
+  document.getElementById('scan-error-card').classList.remove('show');
+  document.getElementById('upzone').classList.remove('loaded');
+  document.getElementById('prev-img').style.display='none';
+  document.getElementById('up-ph').style.display='block';
+  document.getElementById('up-ph').innerHTML='<div class="upload-icon">🧾</div><div class="upload-main">Toca para subir foto</div><div class="upload-hint">Intenta con más luz, más cerca y sin flash · JPG / PNG</div>';
+  document.getElementById('file-inp').value='';
+  document.getElementById('demo-btn').style.display='block';
+  document.getElementById('items-card').style.display='none';
+  if(scanTimeout)clearTimeout(scanTimeout);
+}
+
+function activateManual(){
+  document.getElementById('scan-error-card').classList.remove('show');
+  loadItems('Mi restaurante', []);
+  document.getElementById('items-card').style.display = 'block';
+  toast('Ingresa los ítems manualmente');
+  setTimeout(function(){
+    document.getElementById('new-item-name').focus();
+  }, 300);
+}
+
+// ── OVERRIDES PARA MEJORAR showScanError ──
+function showScanError(msg){
+  var ov = document.getElementById('scanOv');
+  if(ov) ov.classList.remove('on');
+  var card = document.getElementById('scan-error-card');
+  var body = document.getElementById('scan-error-body');
+  if(card && body){
+    body.textContent = msg || 'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.';
+    card.classList.add('show');
+  }
+}
+
+// ── SHOW QR SESSION WHEN FIRST PERSON ADDED ──
 
 function getProxyUrl(){
   return PROXY_URL || sessionStorage.getItem('dc_proxy_url') || '';
@@ -854,7 +1343,7 @@ async function scanWithProxy(b64,mime,proxyUrl){
     }
     var data=await res.json();
     if(!data.ok||!data.items||!data.items.length){
-      showScanError(data.error||'No se detectaron ítems. Prueba otra foto.');
+      showScanError(data.error||'No se detectaron ítems. Asegúrate que la foto muestre la boleta completa con buena luz.');
       return;
     }
     loadItems(data.restaurante||'Restaurante',data.items);
@@ -887,16 +1376,6 @@ function parseClaudeJSON(text){
   return null;
 }
 
-function showScanError(msg){
-  var err=document.getElementById('scan-error');
-  if(!err){
-    err=document.createElement('div');err.id='scan-error';
-    err.style.cssText='background:rgba(239,68,68,0.08);border:1.5px solid rgba(239,68,68,0.3);border-radius:12px;padding:10px 14px;font-size:12px;font-weight:600;color:var(--danger);margin-top:8px;';
-    document.getElementById('upzone').parentNode.insertBefore(err,document.getElementById('upzone').nextSibling);
-  }
-  err.textContent='⚠️ '+msg;err.style.display='block';
-}
-
 function runDemo(){
   document.getElementById('up-ph').innerHTML='<div class="upload-icon">🧾</div><div class="upload-main">Boleta de ejemplo</div><div class="upload-hint">El Parron — Antofagasta</div>';
   document.getElementById('upzone').classList.add('loaded');
@@ -913,6 +1392,16 @@ function loadItems(rest,raw){
   });
   renderItems();updateTotal();
   document.getElementById('items-card').style.display='block';
+  // Detectar propina incluida en boleta
+  if(checkPropinaIncluida(raw)){
+    document.getElementById('propina-warn').classList.add('show');
+  } else {
+    document.getElementById('propina-warn').classList.remove('show');
+  }
+  // Si es host y ya tiene sessionId, actualizar Supabase con los ítems
+  if(isGroupHost && currentSessionId && sb){
+    saveSessionToSupabase(currentSessionId, rest, raw);
+  }
 }
 
 // ── ITEMS ──
@@ -967,6 +1456,10 @@ function addPerson(){
   people.push({name:name,color:COLORS[people.length%COLORS.length]});
   inp.value='';renderPeople();
   document.getElementById('p2-next').disabled=false;
+  // Mostrar QR de sesión cuando hay al menos 1 persona
+  if(people.length >= 1){
+    showSessionQR();
+  }
   // Si viene del modo express
   if(sessionStorage.getItem('dc_express')==='1'){
     document.getElementById('p2-next').textContent='⚡ Dividir igual →';
@@ -1047,11 +1540,13 @@ function toggleParticipant(idx,pi){
   initAssign(idx);var a=assigns[idx],pos=a.participants.indexOf(pi);
   if(pos>-1){a.participants.splice(pos,1);delete a.qty[pi];}else a.participants.push(pi);
   renderAssign();
+  debouncedSync();
 }
 function toggleAll(idx){
   initAssign(idx);var a=assigns[idx];
   if(a.participants.length===people.length){a.participants=[];a.qty={};}else a.participants=people.map(function(_,i){return i;});
   renderAssign();
+  debouncedSync();
 }
 function changeQty(idx,pi,delta){
   initAssign(idx);var a=assigns[idx];
@@ -1061,6 +1556,7 @@ function changeQty(idx,pi,delta){
   var newVal=Math.max(0,Math.min(it.qty-othersQty,cur+delta));
   if(newVal===0)delete a.qty[pi];else a.qty[pi]=newVal;
   renderAssign();
+  debouncedSync();
 }
 function splitEqually(idx){
   initAssign(idx);var a=assigns[idx];
@@ -1069,6 +1565,14 @@ function splitEqually(idx){
   a.qty={};var base=Math.floor(it.qty/n),rem=it.qty%n;
   a.participants.forEach(function(pi,i){var v=base+(i<rem?1:0);if(v>0)a.qty[pi]=v;});
   renderAssign();
+  debouncedSync();
+}
+
+// Debounce para no spamear Supabase
+var syncTimer = null;
+function debouncedSync(){
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(function(){ syncAssigns(); }, 600);
 }
 
 function getUnassigned(){
@@ -1182,8 +1686,18 @@ function buildSummary(){
       ?'<div class="sum-total" style="color:var(--green);font-size:13px;text-align:right;">💳 Pagó todo</div>'
       :'<div class="sum-total" style="color:'+t.person.color+'">$'+t.amount.toLocaleString('es-CL')+'</div>';
     var transferBtn='';
-     if(pagadorIdx>=0&&!esPagador){
+    var qrPagoHtml='';
+    if(pagadorIdx>=0&&!esPagador&&t.amount>0){
+      var pagadorName=totals[pagadorIdx]?totals[pagadorIdx].person.name:'';
+      var qrId='qrp-'+i;
       transferBtn='<button class="btn-transfer" onclick="transferirA('+pagadorIdx+','+t.amount+')" >🏦 Transferir</button>';
+      qrPagoHtml='<div class="qr-pago-wrap">'+
+        '<div class="qr-pago-label">Le debe a '+pagadorName+'</div>'+
+        '<div class="qr-pago-amount">$'+Math.round(t.amount).toLocaleString('es-CL')+'</div>'+
+        '<div class="qr-pago-canvas" id="'+qrId+'"></div>'+
+        buildBanksWithAmount(t.person.name, t.amount, pagadorName)+
+        '<div class="qr-pago-hint">Escanea el QR con Mach, FPAY o cualquier app de pago</div>'+
+        '</div>';
     }
     div.innerHTML=
       '<div class="sum-head">'+
@@ -1196,8 +1710,13 @@ function buildSummary(){
       '<div class="sum-actions">'+
         '<button class="btn-copy-person" onclick="copyPerson('+i+')">📋 Copiar</button>'+
         transferBtn+
-      '</div>';
+      '</div>'+
+      qrPagoHtml;
     body.appendChild(div);
+    // Generar QR de pago después de insertar al DOM
+    if(qrPagoHtml){
+      (function(qid, amt){ setTimeout(function(){ generatePaymentQR(qid, amt, ''); }, 100); })(qrId, t.amount);
+    }
   });
   saveSessionHistory(debts,grandTotal);
   addShareCard(body,grandTotal,debts);
@@ -1423,7 +1942,15 @@ function reset(){
   document.getElementById('p2-next').onclick=function(){goStep(3);};
   document.getElementById('file-inp').value='';
   sessionStorage.removeItem('dc_express');
+  sessionId=null; currentSessionId=null; isGroupHost=false; isGroupGuest=false; myParticipantId=null;
+  if(realtimeChannel){ realtimeChannel.unsubscribe(); realtimeChannel=null; }
+  var qrBox=document.getElementById('qr-session-box');if(qrBox)qrBox.style.display='none';
+  var qrCanvas=document.getElementById('qr-canvas');if(qrCanvas)qrCanvas.innerHTML='';
+  var pwarn=document.getElementById('propina-warn');if(pwarn)pwarn.classList.remove('show');
+  var serr=document.getElementById('scan-error-card');if(serr)serr.classList.remove('show');
   var err=document.getElementById('scan-error');if(err)err.style.display='none';
+  var lp=document.getElementById('live-participants-wrap');if(lp)lp.style.display='none';
+  var si=document.getElementById('sync-indicator');if(si)si.classList.add('hidden');
   var pill=document.getElementById('mode-pill');if(pill){pill.className='mode-pill demo';pill.textContent='🎬 Demo';}
   document.getElementById('s'+step).classList.remove('visible');
   document.getElementById('topbar').style.display='none';
