@@ -728,23 +728,37 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
   } catch(e){ console.error('Error guardando sesión:', e); }
 }
 
-// ── SYNC CENTRAL: guarda assigns completo en sessions.assigns_data ──
+// ── SYNC CENTRAL: usa función merge_assigns en Supabase (atomic, sin race condition) ──
 async function syncAssigns(){
   if(!sb || !currentSessionId) return;
   showSync('Sincronizando...', true);
   try {
-    // Convertir assigns a formato serializable
-    var assignsData = {};
+    var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+
+    // Construir solo MIS asignaciones para enviar al merge
+    var myAssigns = {};
     Object.keys(assigns).forEach(function(k){
       var a = assigns[k];
-      assignsData[k] = {
-        participants: a.participants ? a.participants.slice() : [],
-        qty: a.qty ? Object.assign({}, a.qty) : {}
+      if(!a) return;
+      var participants = a.participants || [];
+      var qty = a.qty || {};
+      myAssigns[k] = {
+        participants: participants.slice(),
+        qty: Object.assign({}, qty)
       };
     });
-    await sb.from('sessions').update({ assigns_data: assignsData }).eq('id', currentSessionId);
+
+    // Llamar la función de merge en Supabase — atómica, sin race condition
+    await sb.rpc('merge_assigns', {
+      session_id_param: currentSessionId,
+      new_assigns: myAssigns
+    });
+
     showSync('En vivo 🟢');
-  } catch(e){ console.error('Error sync:', e); showSync(''); }
+  } catch(e){
+    console.error('Error sync:', e);
+    showSync('');
+  }
 }
 
 // ── SUSCRIPCIÓN EN TIEMPO REAL — escucha sessions (assigns_data) ──
@@ -777,28 +791,40 @@ function subscribeToSession(sessionId){
 function handleSessionUpdate(payload){
   if(!payload.new || !payload.new.assigns_data) return;
   var remoteAssigns = payload.new.assigns_data;
-  // Mergear: tomar los del remote para ítems que YO no haya asignado
-  // y preservar los míos para ítems que sí haya asignado
-  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+  // REGLA SIMPLE: solo SUMAR, nunca quitar
+  // El remote es la fuente de verdad para todos los participantes
+  // Solo protejo mis asignaciones locales que el remote no conoce aún
   Object.keys(remoteAssigns).forEach(function(k){
     var remote = remoteAssigns[k];
     if(!assigns[k]){
-      assigns[k] = remote;
+      assigns[k] = {
+        participants: remote.participants ? remote.participants.slice() : [],
+        qty: remote.qty ? Object.assign({}, remote.qty) : {}
+      };
     } else {
-      // Preservar mis participaciones, añadir las de otros
       var mine = assigns[k];
-      remote.participants.forEach(function(pi){
-        if(pi !== myPeopleIdx && mine.participants.indexOf(pi) === -1){
-          mine.participants.push(pi);
-        }
+      // Agregar participantes del remote que no estén localmente
+      (remote.participants || []).forEach(function(pi){
+        if(mine.participants.indexOf(pi) === -1) mine.participants.push(pi);
       });
-      // Mergear qty de otros
+      // Mergear qty del remote (sin pisar los míos)
+      var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
       Object.keys(remote.qty || {}).forEach(function(qk){
         if(parseInt(qk) !== myPeopleIdx){
           if(!mine.qty) mine.qty = {};
           mine.qty[qk] = remote.qty[qk];
         }
       });
+    }
+  });
+  // También limpiar asignaciones que el remote eliminó explícitamente
+  // Solo si el remote tiene el ítem con lista vacía
+  Object.keys(remoteAssigns).forEach(function(k){
+    var remote = remoteAssigns[k];
+    if(assigns[k] && remote.participants && remote.participants.length === 0){
+      var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+      // Limpiar todos excepto el mío
+      assigns[k].participants = assigns[k].participants.filter(function(pi){ return pi === myPeopleIdx; });
     }
   });
   if(step === 3) renderAssign();
