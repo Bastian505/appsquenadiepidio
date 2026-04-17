@@ -731,33 +731,30 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
 // ── SYNC CENTRAL: usa función merge_assigns en Supabase (atomic, sin race condition) ──
 async function syncAssigns(){
   if(!sb || !currentSessionId) return;
+  isSyncing = true;
+  lastSyncTime = Date.now();
   showSync('Sincronizando...', true);
   try {
-    var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
-
-    // Construir solo MIS asignaciones para enviar al merge
     var myAssigns = {};
     Object.keys(assigns).forEach(function(k){
       var a = assigns[k];
       if(!a) return;
-      var participants = a.participants || [];
-      var qty = a.qty || {};
       myAssigns[k] = {
-        participants: participants.slice(),
-        qty: Object.assign({}, qty)
+        participants: (a.participants || []).slice(),
+        qty: Object.assign({}, a.qty || {})
       };
     });
-
-    // Llamar la función de merge en Supabase — atómica, sin race condition
     await sb.rpc('merge_assigns', {
       session_id_param: currentSessionId,
       new_assigns: myAssigns
     });
-
     showSync('En vivo 🟢');
   } catch(e){
     console.error('Error sync:', e);
     showSync('');
+  } finally {
+    // Ignorar updates de Realtime por 2 segundos después de sincronizar
+    setTimeout(function(){ isSyncing = false; }, 2000);
   }
 }
 
@@ -790,41 +787,40 @@ function subscribeToSession(sessionId){
 // Cuando llega un UPDATE de sessions — alguien cambió assigns_data
 function handleSessionUpdate(payload){
   if(!payload.new || !payload.new.assigns_data) return;
+  // Ignorar updates que lleguen dentro de 2s después de mi propio sync
+  if(isSyncing || (Date.now() - lastSyncTime) < 2000) return;
   var remoteAssigns = payload.new.assigns_data;
-  // REGLA SIMPLE: solo SUMAR, nunca quitar
-  // El remote es la fuente de verdad para todos los participantes
-  // Solo protejo mis asignaciones locales que el remote no conoce aún
+  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+  // Aplicar remote pero NUNCA tocar mis propias asignaciones
   Object.keys(remoteAssigns).forEach(function(k){
     var remote = remoteAssigns[k];
     if(!assigns[k]){
       assigns[k] = {
-        participants: remote.participants ? remote.participants.slice() : [],
-        qty: remote.qty ? Object.assign({}, remote.qty) : {}
+        participants: (remote.participants || []).slice(),
+        qty: Object.assign({}, remote.qty || {})
       };
     } else {
       var mine = assigns[k];
-      // Agregar participantes del remote que no estén localmente
+      // Agregar participantes remotos que no sean míos
       (remote.participants || []).forEach(function(pi){
-        if(mine.participants.indexOf(pi) === -1) mine.participants.push(pi);
+        if(pi !== myPeopleIdx && mine.participants.indexOf(pi) === -1){
+          mine.participants.push(pi);
+        }
       });
-      // Mergear qty del remote (sin pisar los míos)
-      var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+      // Mergear qty solo de otros
       Object.keys(remote.qty || {}).forEach(function(qk){
         if(parseInt(qk) !== myPeopleIdx){
           if(!mine.qty) mine.qty = {};
           mine.qty[qk] = remote.qty[qk];
         }
       });
-    }
-  });
-  // También limpiar asignaciones que el remote eliminó explícitamente
-  // Solo si el remote tiene el ítem con lista vacía
-  Object.keys(remoteAssigns).forEach(function(k){
-    var remote = remoteAssigns[k];
-    if(assigns[k] && remote.participants && remote.participants.length === 0){
-      var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
-      // Limpiar todos excepto el mío
-      assigns[k].participants = assigns[k].participants.filter(function(pi){ return pi === myPeopleIdx; });
+      // Si el remote quitó a alguien que no soy yo, quitarlo localmente
+      if(mine.participants){
+        mine.participants = mine.participants.filter(function(pi){
+          if(pi === myPeopleIdx) return true; // preservar siempre el mío
+          return (remote.participants || []).indexOf(pi) > -1;
+        });
+      }
     }
   });
   if(step === 3) renderAssign();
@@ -1732,9 +1728,12 @@ function splitEqually(idx){
 
 // Debounce para no spamear Supabase
 var syncTimer = null;
+var isSyncing = false;
+var lastSyncTime = 0;
+
 function debouncedSync(){
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(function(){ syncAssigns(); }, 600);
+  syncTimer = setTimeout(function(){ syncAssigns(); }, 800);
 }
 
 function getUnassigned(){
