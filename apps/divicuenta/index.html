@@ -722,96 +722,104 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
       restaurante: rest,
       items: rawItems,
       tip_pct: tipPct,
-      people_list: peopleList
+      people_list: peopleList,
+      assigns_data: {}
     });
   } catch(e){ console.error('Error guardando sesión:', e); }
 }
 
-// ── GUARDAR ASIGNACIONES EN SUPABASE ──
+// ── SYNC CENTRAL: guarda assigns completo en sessions.assigns_data ──
 async function syncAssigns(){
-  if(!sb || !currentSessionId || !myParticipantId) return;
-  // Encontrar mi índice en el array people
-  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
-  if(myPeopleIdx === -1) return;
-  // Construir objeto solo con mis asignaciones
-  var myAssigns = {};
-  Object.keys(assigns).forEach(function(itemIdx){
-    var a = assigns[itemIdx];
-    if(a && a.participants && a.participants.indexOf(myPeopleIdx) > -1){
-      myAssigns[itemIdx] = {
-        participants: [myPeopleIdx],
-        qty: {}
-      };
-      if(a.qty && a.qty[myPeopleIdx] !== undefined){
-        myAssigns[itemIdx].qty[myPeopleIdx] = a.qty[myPeopleIdx];
-      }
-    }
-  });
+  if(!sb || !currentSessionId) return;
   showSync('Sincronizando...', true);
   try {
-    await sb.from('participants').update({ assigns: myAssigns }).eq('id', myParticipantId);
+    // Convertir assigns a formato serializable
+    var assignsData = {};
+    Object.keys(assigns).forEach(function(k){
+      var a = assigns[k];
+      assignsData[k] = {
+        participants: a.participants ? a.participants.slice() : [],
+        qty: a.qty ? Object.assign({}, a.qty) : {}
+      };
+    });
+    await sb.from('sessions').update({ assigns_data: assignsData }).eq('id', currentSessionId);
     showSync('En vivo 🟢');
-  } catch(e){ console.error('Error sincronizando:', e); }
+  } catch(e){ console.error('Error sync:', e); showSync(''); }
 }
 
-// ── SUSCRIPCIÓN EN TIEMPO REAL ──
+// ── SUSCRIPCIÓN EN TIEMPO REAL — escucha sessions (assigns_data) ──
 function subscribeToSession(sessionId){
   if(!sb) return;
   if(realtimeChannel) realtimeChannel.unsubscribe();
-
   realtimeChannel = sb.channel('session-' + sessionId)
     .on('postgres_changes', {
-      event: '*',
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'sessions',
+      filter: 'id=eq.' + sessionId
+    }, function(payload){
+      handleSessionUpdate(payload);
+    })
+    .on('postgres_changes', {
+      event: 'INSERT',
       schema: 'public',
       table: 'participants',
       filter: 'session_id=eq.' + sessionId
     }, function(payload){
-      handleParticipantChange(payload);
+      handleNewParticipant(payload);
     })
-    .subscribe();
+    .subscribe(function(status){
+      if(status === 'SUBSCRIBED') showSync('En vivo 🟢');
+    });
 }
 
-function handleParticipantChange(payload){
-  if(payload.eventType === 'INSERT'){
-    var p = payload.new;
-    var exists = people.find(function(pp){ return pp.participantId === p.id; });
-    if(!exists){
-      people.push({name: p.name, color: p.color, participantId: p.id});
-      renderPeople();
-      updateLiveParticipants();
-      toast('👋 ' + p.name + ' se unió');
-      if(step === 3) renderAssign();
-    }
-  } else if(payload.eventType === 'UPDATE'){
-    var p = payload.new;
-    // No procesar mis propias actualizaciones
-    if(p.id === myParticipantId) return;
-    var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
-    if(pi > -1 && p.assigns){
-      // Mergear las asignaciones del otro participante
-      // p.assigns tiene índices de ítems como keys
-      Object.keys(p.assigns).forEach(function(itemIdx){
-        var remoteAssign = p.assigns[itemIdx];
-        if(!assigns[itemIdx]){
-          assigns[itemIdx] = remoteAssign;
-        } else {
-          // Mergear participantes: añadir el pi remoto si no está
-          var existing = assigns[itemIdx];
-          if(!existing.participants) existing.participants = [];
-          if(existing.participants.indexOf(pi) === -1){
-            existing.participants.push(pi);
-          }
-          // Mergear cantidades
-          if(remoteAssign.qty && remoteAssign.qty[pi] !== undefined){
-            if(!existing.qty) existing.qty = {};
-            existing.qty[pi] = remoteAssign.qty[pi];
-          }
+// Cuando llega un UPDATE de sessions — alguien cambió assigns_data
+function handleSessionUpdate(payload){
+  if(!payload.new || !payload.new.assigns_data) return;
+  var remoteAssigns = payload.new.assigns_data;
+  // Mergear: tomar los del remote para ítems que YO no haya asignado
+  // y preservar los míos para ítems que sí haya asignado
+  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+  Object.keys(remoteAssigns).forEach(function(k){
+    var remote = remoteAssigns[k];
+    if(!assigns[k]){
+      assigns[k] = remote;
+    } else {
+      // Preservar mis participaciones, añadir las de otros
+      var mine = assigns[k];
+      remote.participants.forEach(function(pi){
+        if(pi !== myPeopleIdx && mine.participants.indexOf(pi) === -1){
+          mine.participants.push(pi);
         }
       });
-      if(step === 3) renderAssign();
-      if(step === 4) buildSummary();
+      // Mergear qty de otros
+      Object.keys(remote.qty || {}).forEach(function(qk){
+        if(parseInt(qk) !== myPeopleIdx){
+          if(!mine.qty) mine.qty = {};
+          mine.qty[qk] = remote.qty[qk];
+        }
+      });
     }
+  });
+  if(step === 3) renderAssign();
+  if(step === 4) buildSummary();
+}
+
+// Cuando llega un INSERT de participants — alguien nuevo entró
+function handleNewParticipant(payload){
+  var p = payload.new;
+  var existsByName = people.findIndex(function(pp){ return pp.name.toLowerCase() === p.name.toLowerCase(); });
+  if(existsByName > -1){
+    if(!people[existsByName].participantId){
+      people[existsByName].participantId = p.id;
+    }
+  } else {
+    people.push({name: p.name, color: p.color, participantId: p.id});
   }
+  renderPeople();
+  updateLiveParticipants();
+  if(p.id !== myParticipantId) toast('👋 ' + p.name + ' se unió');
+  if(step === 3) renderAssign();
 }
 
 function updateLiveParticipants(){
@@ -1024,7 +1032,14 @@ function goStep(n){
   document.getElementById('s'+n).classList.add('visible');
   step=n;updateStepBar();
   window.scrollTo({top:0,behavior:'smooth'});
-  if(n===3){renderAssign();updateProgressBadge();}
+  if(n===3){
+    renderAssign();updateProgressBadge();
+    // Host se suscribe al entrar a asignar
+    if(isGroupHost && currentSessionId && !realtimeChannel){
+      subscribeToSession(currentSessionId);
+      showSync('En vivo 🟢');
+    }
+  }
   if(n===4)buildSummary();
 }
 
