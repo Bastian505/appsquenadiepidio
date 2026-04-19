@@ -472,7 +472,7 @@ input[type=text]::placeholder{color:var(--text3);}
       </div>
     </div>
 
-    <!-- QR DE SESIÓN COMPARTIDA -->
+    <!-- QR DE SESIÓN COMPARTIDA — se mueve al selector de modo -->
     <div class="qr-session-box" id="qr-session-box" style="display:none;">
       <div class="qr-session-title">📲 Compartir cuenta con el grupo</div>
       <div class="qr-session-sub">Los demás escanean el QR o tú les mandas el link. Entran sin registro — solo ponen su nombre.</div>
@@ -482,7 +482,6 @@ input[type=text]::placeholder{color:var(--text3);}
         <button class="qr-share-btn" onclick="shareSession()">📤 Compartir</button>
         <button class="qr-share-btn copy" onclick="copySessionUrl()">📋 Copiar link</button>
       </div>
-      <!-- Participantes que se van uniendo -->
       <div id="live-participants-wrap" style="margin-top:12px;display:none;">
         <div style="font-size:10px;font-weight:800;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
           <div class="rt-dot"></div>Conectados ahora
@@ -503,7 +502,8 @@ input[type=text]::placeholder{color:var(--text3);}
   <div class="screen-body" style="display:flex;flex-direction:column;gap:14px;padding:24px 16px;">
     <p style="font-size:13px;color:var(--text2);font-family:Lora,serif;font-style:italic;text-align:center;">Elige cómo quieren asignar los ítems</p>
 
-    <div class="mode-card" onclick="chooseModo('solo')">
+    <!-- Opción Solo -->
+    <div class="mode-card" id="modo-solo-card" onclick="chooseModo('solo')">
       <div class="mode-card-icon">👤</div>
       <div class="mode-card-body">
         <div class="mode-card-title">Yo me encargo</div>
@@ -512,13 +512,35 @@ input[type=text]::placeholder{color:var(--text3);}
       <div class="mode-card-arrow">→</div>
     </div>
 
-    <div class="mode-card" onclick="chooseModo('grupo')">
+    <!-- Opción Grupo -->
+    <div class="mode-card" id="modo-grupo-card" onclick="activarModoGrupo()">
       <div class="mode-card-icon">👥</div>
       <div class="mode-card-body">
         <div class="mode-card-title">Lo hacemos juntos</div>
-        <div class="mode-card-sub">Cada persona escanea el QR y marca lo suyo en su propio teléfono. En tiempo real.</div>
+        <div class="mode-card-sub">Cada persona marca lo suyo desde su teléfono en tiempo real.</div>
       </div>
       <div class="mode-card-arrow">→</div>
+    </div>
+
+    <!-- QR aparece aquí cuando se elige Lo hacemos juntos -->
+    <div id="modo-grupo-qr" style="display:none;">
+      <div class="qr-session-box" style="display:block;margin-top:0;">
+        <div class="qr-session-title">📲 Comparte este link con el grupo</div>
+        <div class="qr-session-sub">Cada uno entra, elige su nombre y asigna lo suyo.</div>
+        <div id="qr-canvas"></div>
+        <div class="qr-session-url" id="qr-session-url" onclick="copySessionUrl()" title="Toca para copiar"></div>
+        <div class="qr-share-btns">
+          <button class="qr-share-btn" onclick="shareSession()">📤 Compartir</button>
+          <button class="qr-share-btn copy" onclick="copySessionUrl()">📋 Copiar link</button>
+        </div>
+        <div id="live-participants-wrap" style="margin-top:12px;display:none;">
+          <div style="font-size:10px;font-weight:800;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+            <div class="rt-dot"></div>Conectados ahora
+          </div>
+          <div id="live-participants-list" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
+        </div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="chooseModo('grupo')">Comenzar a asignar →</button>
     </div>
   </div>
 </div>
@@ -1107,17 +1129,41 @@ function showModeSelector(){
   document.documentElement.scrollTop=0;document.body.scrollTop=0;
 }
 
+function activarModoGrupo(){
+  // Ocultar las dos tarjetas, mostrar QR
+  document.getElementById('modo-solo-card').style.display = 'none';
+  document.getElementById('modo-grupo-card').style.display = 'none';
+  document.getElementById('modo-grupo-qr').style.display = 'block';
+  // Generar sesión
+  isGroupHost = true;
+  initSupabase();
+  if(!sessionId) sessionId = generateSessionId();
+  currentSessionId = sessionId;
+  // Dibujar QR en el canvas del selector de modo
+  var canvas = document.getElementById('qr-canvas');
+  if(canvas) canvas.innerHTML = '';
+  var sessionUrl = APP_BASE_URL + '?session=' + sessionId;
+  if(typeof QRCode !== 'undefined' && canvas){
+    new QRCode(canvas, {text: sessionUrl, width:140, height:140, colorDark:'#0f172a', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M});
+  }
+  var urlEl = document.getElementById('qr-session-url');
+  if(urlEl) urlEl.textContent = sessionUrl;
+  // Guardar en Supabase
+  var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
+  saveSessionToSupabase(sessionId, restaurante, rawItems);
+  // Suscribirse para ver quién se une
+  subscribeToSession(sessionId);
+}
+
 function chooseModo(modo){
   document.getElementById('s-mode').classList.remove('visible');
+  // Restaurar tarjetas para próxima vez
+  document.getElementById('modo-solo-card').style.display = '';
+  document.getElementById('modo-grupo-card').style.display = '';
+  document.getElementById('modo-grupo-qr').style.display = 'none';
   if(modo === 'grupo'){
-    isGroupHost = true;
-    // Generar sesión y guardar people_list en Supabase
-    showSessionQR();
-    var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
-    saveSessionToSupabase(currentSessionId || sessionId, restaurante, rawItems);
     goStep(3);
   } else {
-    // Modo solo — sin Supabase
     isGroupHost = false;
     isGroupGuest = false;
     goStep(3);
