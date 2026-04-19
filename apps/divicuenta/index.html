@@ -314,6 +314,14 @@ input[type=text]::placeholder{color:var(--text3);}
 .jip-total{display:flex;justify-content:space-between;font-size:13px;font-weight:800;color:var(--pd);padding:7px 0 0;border-top:1.5px solid var(--border);margin-top:3px;}
 .join-footer-note{font-size:11px;color:var(--text3);font-weight:600;margin-top:4px;}
 
+.mode-card{display:flex;align-items:center;gap:14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px 16px;cursor:pointer;transition:all 0.15s;box-shadow:0 2px 8px var(--shadow);}
+.mode-card:hover,.mode-card:active{border-color:var(--primary);background:var(--ps);transform:scale(0.98);}
+.mode-card-icon{font-size:28px;flex-shrink:0;}
+.mode-card-body{flex:1;}
+.mode-card-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:3px;}
+.mode-card-sub{font-size:12px;color:var(--text2);line-height:1.4;}
+.mode-card-arrow{font-size:18px;color:var(--primary);font-weight:800;}
+
 #share-canvas{display:none;}
 
 /* SPLASH SCREEN */
@@ -483,7 +491,36 @@ input[type=text]::placeholder{color:var(--text3);}
       </div>
     </div>
   </div>
-  <div class="screen-footer"><button class="btn btn-primary" id="p2-next" onclick="goStep(3)" disabled>Asignar ítems →</button></div>
+  <div class="screen-footer"><button class="btn btn-primary" id="p2-next" onclick="showModeSelector()" disabled>Asignar ítems →</button></div>
+</div>
+
+<!-- MODO SELECTOR — antes de asignar -->
+<div class="screen" id="s-mode">
+  <div class="screen-header">
+    <button class="back-btn" onclick="goStep(2)">← Volver</button>
+    <span class="screen-title">¿Cómo van a dividir?</span>
+  </div>
+  <div class="screen-body" style="display:flex;flex-direction:column;gap:14px;padding:24px 16px;">
+    <p style="font-size:13px;color:var(--text2);font-family:Lora,serif;font-style:italic;text-align:center;">Elige cómo quieren asignar los ítems</p>
+
+    <div class="mode-card" onclick="chooseModo('solo')">
+      <div class="mode-card-icon">👤</div>
+      <div class="mode-card-body">
+        <div class="mode-card-title">Yo me encargo</div>
+        <div class="mode-card-sub">Una persona asigna todo desde esta pantalla. Rápido y simple.</div>
+      </div>
+      <div class="mode-card-arrow">→</div>
+    </div>
+
+    <div class="mode-card" onclick="chooseModo('grupo')">
+      <div class="mode-card-icon">👥</div>
+      <div class="mode-card-body">
+        <div class="mode-card-title">Lo hacemos juntos</div>
+        <div class="mode-card-sub">Cada persona escanea el QR y marca lo suyo en su propio teléfono. En tiempo real.</div>
+      </div>
+      <div class="mode-card-arrow">→</div>
+    </div>
+  </div>
 </div>
 
 <!-- S3: ASIGNAR -->
@@ -1061,16 +1098,48 @@ function updateProgressBadge(){
   }
 }
 
+function showModeSelector(){
+  if(people.length===0){toast('Agrega al menos una persona');return;}
+  // Ocultar pantalla actual
+  if(step>0) document.getElementById('s'+step).classList.remove('visible');
+  // Mostrar selector — si ya hay sesión de grupo activa, ir directo a grupo
+  if(isGroupHost && currentSessionId){
+    chooseModo('grupo');
+    return;
+  }
+  document.getElementById('s-mode').classList.add('visible');
+  document.documentElement.scrollTop=0;document.body.scrollTop=0;
+}
+
+function chooseModo(modo){
+  // Ocultar selector
+  document.getElementById('s-mode').classList.remove('visible');
+  if(modo === 'grupo'){
+    // Modo grupo: mostrar QR primero si no hay sesión activa
+    if(!currentSessionId){
+      isGroupHost = true;
+      showSessionQR();
+    }
+    goStep(3);
+  } else {
+    // Modo solo: ir directo a asignar sin Supabase
+    isGroupHost = false;
+    isGroupGuest = false;
+    goStep(3);
+  }
+}
+
 function goStep(n){
   if(n===2&&!items.some(function(i){return i.selected;})){toast('Selecciona al menos un item');return;}
   if(n===3&&people.length===0){toast('Agrega al menos una persona');return;}
+  // Ocultar modo selector si está visible
+  document.getElementById('s-mode').classList.remove('visible');
   if(step>0)document.getElementById('s'+step).classList.remove('visible');
   document.getElementById('s'+n).classList.add('visible');
   step=n;updateStepBar();
   document.documentElement.scrollTop=0;document.body.scrollTop=0;
   if(n===3){
     renderAssign();updateProgressBadge();
-    // Host se suscribe al entrar a asignar
     if(isGroupHost && currentSessionId && !realtimeChannel){
       subscribeToSession(currentSessionId);
       showSync('En vivo 🟢');
