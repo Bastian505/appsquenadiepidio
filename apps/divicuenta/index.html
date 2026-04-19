@@ -688,20 +688,26 @@ async function joinAsName(name, color){
       var match = partRes.data.find(function(p){ return p.name === person.name; });
       return match ? Object.assign({}, person, {participantId: match.id}) : person;
     });
-    // Cargar asignaciones existentes
+    // Cargar my_assigns de cada participante al estado local
     partRes.data.forEach(function(p){
-      if(p.assigns && Object.keys(p.assigns).length && p.id !== myParticipantId){
-        var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
-        if(pi > -1){
-          Object.keys(p.assigns).forEach(function(itemIdx){
-            if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
-            var a = p.assigns[itemIdx];
-            if(a.participants) a.participants.forEach(function(remPi){
-              if(assigns[itemIdx].participants.indexOf(remPi) === -1) assigns[itemIdx].participants.push(remPi);
-            });
-            if(a.qty) Object.assign(assigns[itemIdx].qty, a.qty);
-          });
-        }
+      if(p.id === myParticipantId) return; // mis propias las manejo localmente
+      var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
+      if(pi === -1) return;
+      var source = p.my_assigns && Object.keys(p.my_assigns).length ? p.my_assigns : p.assigns;
+      if(source && Object.keys(source).length){
+        Object.keys(source).forEach(function(itemIdx){
+          if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
+          var a = source[itemIdx];
+          var participants = a.participants || [];
+          // Mapear al índice real de esta persona
+          if(participants.length > 0){
+            if(assigns[itemIdx].participants.indexOf(pi) === -1) assigns[itemIdx].participants.push(pi);
+            if(a.qty){
+              var qtyKey = Object.keys(a.qty)[0];
+              if(qtyKey !== undefined) assigns[itemIdx].qty[pi] = a.qty[qtyKey];
+            }
+          }
+        });
       }
     });
   }
@@ -742,121 +748,101 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
   } catch(e){ console.error('Error guardando sesión:', e); }
 }
 
-// ── SYNC CENTRAL: usa función merge_assigns en Supabase (atomic, sin race condition) ──
+// ── SYNC: cada persona escribe SOLO en su propia fila (my_assigns) ──
 async function syncAssigns(){
-  if(!sb || !currentSessionId) return;
-  isSyncing = true;
-  lastSyncTime = Date.now();
+  if(!sb || !currentSessionId || !myParticipantId) return;
   showSync('Sincronizando...', true);
   try {
+    // Extraer solo MIS asignaciones del objeto assigns global
+    var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+    if(myPeopleIdx === -1) return;
     var myAssigns = {};
     Object.keys(assigns).forEach(function(k){
       var a = assigns[k];
-      if(!a) return;
-      myAssigns[k] = {
-        participants: (a.participants || []).slice(),
-        qty: Object.assign({}, a.qty || {})
-      };
+      if(a && a.participants && a.participants.indexOf(myPeopleIdx) > -1){
+        myAssigns[k] = {
+          participants: [myPeopleIdx],
+          qty: {}
+        };
+        if(a.qty && a.qty[myPeopleIdx] !== undefined){
+          myAssigns[k].qty[myPeopleIdx] = a.qty[myPeopleIdx];
+        }
+      }
     });
-    await sb.rpc('merge_assigns', {
-      session_id_param: currentSessionId,
-      new_assigns: myAssigns
-    });
+    // Escribir SOLO en mi fila — nadie más toca esta columna
+    await sb.from('participants').update({ my_assigns: myAssigns }).eq('id', myParticipantId);
     showSync('En vivo 🟢');
-  } catch(e){
-    console.error('Error sync:', e);
-    showSync('');
-  } finally {
-    // Ignorar updates de Realtime por 2 segundos después de sincronizar
-    setTimeout(function(){ isSyncing = false; }, 2000);
-  }
+  } catch(e){ console.error('Error sync:', e); showSync(''); }
 }
 
-// ── SUSCRIPCIÓN EN TIEMPO REAL — escucha sessions (assigns_data) ──
+// ── SUSCRIPCIÓN EN TIEMPO REAL ──
 function subscribeToSession(sessionId){
   if(!sb) return;
   if(realtimeChannel) realtimeChannel.unsubscribe();
   realtimeChannel = sb.channel('session-' + sessionId)
     .on('postgres_changes', {
-      event: 'UPDATE',
-      schema: 'public',
-      table: 'sessions',
-      filter: 'id=eq.' + sessionId
-    }, function(payload){
-      handleSessionUpdate(payload);
-    })
-    .on('postgres_changes', {
-      event: 'INSERT',
+      event: '*',
       schema: 'public',
       table: 'participants',
       filter: 'session_id=eq.' + sessionId
     }, function(payload){
-      handleNewParticipant(payload);
+      handleParticipantChange(payload);
     })
     .subscribe(function(status){
       if(status === 'SUBSCRIBED') showSync('En vivo 🟢');
     });
 }
 
-// Cuando llega un UPDATE de sessions — alguien cambió assigns_data
-function handleSessionUpdate(payload){
-  if(!payload.new || !payload.new.assigns_data) return;
-  // Ignorar updates que lleguen dentro de 2s después de mi propio sync
-  if(isSyncing || (Date.now() - lastSyncTime) < 2000) return;
-  var remoteAssigns = payload.new.assigns_data;
-  var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
-  // Aplicar remote pero NUNCA tocar mis propias asignaciones
-  Object.keys(remoteAssigns).forEach(function(k){
-    var remote = remoteAssigns[k];
-    if(!assigns[k]){
-      assigns[k] = {
-        participants: (remote.participants || []).slice(),
-        qty: Object.assign({}, remote.qty || {})
-      };
+function handleParticipantChange(payload){
+  if(payload.eventType === 'INSERT'){
+    var p = payload.new;
+    var existsByName = people.findIndex(function(pp){ return pp.name.toLowerCase() === p.name.toLowerCase(); });
+    if(existsByName > -1){
+      if(!people[existsByName].participantId) people[existsByName].participantId = p.id;
     } else {
-      var mine = assigns[k];
-      // Agregar participantes remotos que no sean míos
-      (remote.participants || []).forEach(function(pi){
-        if(pi !== myPeopleIdx && mine.participants.indexOf(pi) === -1){
-          mine.participants.push(pi);
-        }
-      });
-      // Mergear qty solo de otros
-      Object.keys(remote.qty || {}).forEach(function(qk){
-        if(parseInt(qk) !== myPeopleIdx){
-          if(!mine.qty) mine.qty = {};
-          mine.qty[qk] = remote.qty[qk];
-        }
-      });
-      // Si el remote quitó a alguien que no soy yo, quitarlo localmente
-      if(mine.participants){
-        mine.participants = mine.participants.filter(function(pi){
-          if(pi === myPeopleIdx) return true; // preservar siempre el mío
-          return (remote.participants || []).indexOf(pi) > -1;
-        });
-      }
+      people.push({name: p.name, color: p.color, participantId: p.id});
     }
-  });
-  if(step === 3) renderAssign();
-  if(step === 4) buildSummary();
+    renderPeople();
+    updateLiveParticipants();
+    if(p.id !== myParticipantId) toast('👋 ' + p.name + ' se unió');
+    if(step === 3) renderAssign();
+
+  } else if(payload.eventType === 'UPDATE'){
+    var p = payload.new;
+    if(p.id === myParticipantId) return; // ignorar mis propios updates
+    // Encontrar el índice de esta persona
+    var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
+    if(pi === -1) return;
+    // Aplicar sus my_assigns al estado local — solo sus ítems, no tocar los míos
+    var myPeopleIdx = people.findIndex(function(pp){ return pp.participantId === myParticipantId; });
+    if(p.my_assigns && Object.keys(p.my_assigns).length){
+      Object.keys(p.my_assigns).forEach(function(k){
+        if(!assigns[k]) assigns[k] = {participants:[], qty:{}};
+        // Quitar el índice de esta persona si estaba
+        var pos = assigns[k].participants.indexOf(pi);
+        if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
+        // Agregar si está en sus my_assigns
+        var remoteA = p.my_assigns[k];
+        if(remoteA && remoteA.participants && remoteA.participants.length > 0){
+          assigns[k].participants.push(pi);
+          if(remoteA.qty && remoteA.qty[pi] !== undefined){
+            assigns[k].qty[pi] = remoteA.qty[pi];
+          }
+        }
+      });
+      // Limpiar ítems donde esta persona se quitó
+      Object.keys(assigns).forEach(function(k){
+        if(!p.my_assigns[k]){
+          var pos = assigns[k].participants.indexOf(pi);
+          if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
+        }
+      });
+      if(step === 3) renderAssign();
+      if(step === 4) buildSummary();
+    }
+  }
 }
 
-// Cuando llega un INSERT de participants — alguien nuevo entró
-function handleNewParticipant(payload){
-  var p = payload.new;
-  var existsByName = people.findIndex(function(pp){ return pp.name.toLowerCase() === p.name.toLowerCase(); });
-  if(existsByName > -1){
-    if(!people[existsByName].participantId){
-      people[existsByName].participantId = p.id;
-    }
-  } else {
-    people.push({name: p.name, color: p.color, participantId: p.id});
-  }
-  renderPeople();
-  updateLiveParticipants();
-  if(p.id !== myParticipantId) toast('👋 ' + p.name + ' se unió');
-  if(step === 3) renderAssign();
-}
 
 function updateLiveParticipants(){
   var wrap = document.getElementById('live-participants-wrap');
@@ -1348,10 +1334,26 @@ function showSessionQR(){
     });
   }
   urlEl.textContent = sessionUrl;
-  // Guardar sesión en Supabase si hay ítems
+  // Guardar sesión en Supabase
   if(items.length > 0){
     var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
-    saveSessionToSupabase(sessionId, restaurante, rawItems);
+    saveSessionToSupabase(sessionId, restaurante, rawItems).then(function(){
+      // Registrar al host como participante si aún no tiene ID
+      if(!myParticipantId && sb && people.length > 0){
+        var hostPerson = people[0];
+        sb.from('participants').insert({
+          session_id: currentSessionId,
+          name: hostPerson.name,
+          color: hostPerson.color,
+          assigns: {}
+        }).select().single().then(function(res){
+          if(!res.error && res.data){
+            myParticipantId = res.data.id;
+            people[0].participantId = res.data.id;
+          }
+        });
+      }
+    });
   }
   // Suscribirse para ver quién se une
   subscribeToSession(sessionId);
@@ -1670,23 +1672,36 @@ function renderAssign(){
   var body=document.getElementById('assign-body');body.innerHTML='';
   var hint=document.createElement('p');
   hint.style.cssText='font-size:12px;color:var(--text2);font-family:Lora,serif;font-style:italic;padding:0 2px 4px;';
-  hint.textContent='Toca quienes consumieron cada item. Si son varios, se divide en partes iguales.';
-  body.appendChild(hint);
-  // Botón global "todos compartimos todo"
-  var globalBtn=document.createElement('button');
-  globalBtn.className='btn btn-sm';
-  globalBtn.style.cssText='width:100%;margin-bottom:12px;font-size:13px;background:var(--ps);border-color:var(--primary);color:var(--pd);font-weight:800;';
-  globalBtn.innerHTML='👥 Todos compartimos todo';
-  globalBtn.onclick=function(){
-    sel.forEach(function(_,idx){
-      initAssign(idx);
-      assigns[idx].participants=people.map(function(_,i){return i;});
-      assigns[idx].qty={};
-    });
-    renderAssign();
-    toast('Todos los ítems divididos entre todos');
-  };
-  body.appendChild(globalBtn);
+
+  // Modo grupo: cada uno asigna solo su nombre
+  var myPeopleIdx = isGroupGuest || isGroupHost ? people.findIndex(function(p){ return p.participantId === myParticipantId; }) : -1;
+  var isModoGrupo = (isGroupGuest || isGroupHost) && myPeopleIdx > -1;
+
+  if(isModoGrupo){
+    hint.textContent = 'Marca lo que TÚ consumiste. Verás en tiempo real lo que marcan los demás.';
+  } else {
+    hint.textContent = 'Toca quienes consumieron cada item. Si son varios, se divide en partes iguales.';
+    // Botón global solo en modo solo
+    var globalBtn=document.createElement('button');
+    globalBtn.className='btn btn-sm';
+    globalBtn.style.cssText='width:100%;margin-bottom:12px;font-size:13px;background:var(--ps);border-color:var(--primary);color:var(--pd);font-weight:800;';
+    globalBtn.innerHTML='👥 Todos compartimos todo';
+    globalBtn.onclick=function(){
+      sel.forEach(function(_,idx){
+        initAssign(idx);
+        assigns[idx].participants=people.map(function(_,i){return i;});
+        assigns[idx].qty={};
+      });
+      renderAssign();
+      debouncedSync();
+      toast('Todos los ítems divididos entre todos');
+    };
+    body.appendChild(hint);
+    body.appendChild(globalBtn);
+    hint = null;
+  }
+  if(hint) body.appendChild(hint);
+
   sel.forEach(function(it,idx){
     initAssign(idx);
     var a=assigns[idx],parts=a.participants,isMulti=it.qty>1,n=parts.length;
@@ -1698,10 +1713,25 @@ function renderAssign(){
     people.forEach(function(p,pi){
       var isOn=parts.indexOf(pi)>-1;
       var style=isOn?'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';':'';
-      chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+      if(isModoGrupo){
+        // En modo grupo: solo mi chip es clickeable
+        var isMine = pi === myPeopleIdx;
+        if(isMine){
+          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+        } else {
+          // Chips de otros — visibles pero no clickeables
+          var lockedStyle = isOn ? 'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';opacity:0.85;cursor:default;' : 'opacity:0.5;cursor:default;';
+          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+lockedStyle+'"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+        }
+      } else {
+        chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+      }
     });
-    var allOn=parts.length===people.length;
-    chipsHTML+='<div class="p-toggle all-btn'+(allOn?' on':'')+'" style="'+(allOn?'border-color:var(--primary);background:var(--ps);color:var(--pd);':'')+'" onclick="toggleAll('+idx+')">Todos</div>';
+    // Botón Todos solo en modo solo
+    if(!isModoGrupo){
+      var allOn=parts.length===people.length;
+      chipsHTML+='<div class="p-toggle all-btn'+(allOn?' on':'')+'" style="'+(allOn?'border-color:var(--primary);background:var(--ps);color:var(--pd);':'')+'" onclick="toggleAll('+idx+')">Todos</div>';
+    }
     chipsHTML+='</div>';
     var qtyHTML='';
     if(isMulti&&n>0){
@@ -1711,9 +1741,14 @@ function renderAssign(){
         var p=people[pi],val=a.qty[pi]||0;
         var othersQty=parts.reduce(function(s,opi){return s+(opi===pi?0:(a.qty[opi]||0));},0);
         var maxVal=it.qty-othersQty;
-        qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('+idx+','+pi+',-1)" '+(val===0?'disabled':'')+'>-</button><span class="qty-num">'+val+'</span><button class="qty-btn" onclick="changeQty('+idx+','+pi+',1)" '+(val>=maxVal?'disabled':'')+'>+</button></div></div>';
+        var canEdit = !isModoGrupo || pi === myPeopleIdx;
+        if(canEdit){
+          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('+idx+','+pi+',-1)" '+(val===0?'disabled':'')+'>-</button><span class="qty-num">'+val+'</span><button class="qty-btn" onclick="changeQty('+idx+','+pi+',1)" '+(val>=maxVal?'disabled':'')+'>+</button></div></div>';
+        } else {
+          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'" style="opacity:0.6;"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><span class="qty-num">'+val+'</span></div></div>';
+        }
       });
-      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button></div></div>';
+      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(canEdit?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
     }
     var div=document.createElement('div');div.className='assign-block';
     div.innerHTML='<div class="assign-block-head"><div class="assign-item-name">'+it.name+(it.qty>1?' x'+it.qty:'')+'</div><div class="assign-item-price">$'+it.total.toLocaleString('es-CL')+'</div></div><div class="assign-hint">'+hintText+'</div>'+chipsHTML+qtyHTML;
@@ -1730,7 +1765,8 @@ function toggleParticipant(idx,pi){
 }
 function toggleAll(idx){
   initAssign(idx);var a=assigns[idx];
-  if(a.participants.length===people.length){a.participants=[];a.qty={};}else a.participants=people.map(function(_,i){return i;});
+  if(a.participants.length===people.length){a.participants=[];a.qty={};}
+  else{a.participants=people.map(function(_,i){return i;});}
   renderAssign();
   debouncedSync();
 }
@@ -1756,12 +1792,10 @@ function splitEqually(idx){
 
 // Debounce para no spamear Supabase
 var syncTimer = null;
-var isSyncing = false;
-var lastSyncTime = 0;
 
 function debouncedSync(){
   clearTimeout(syncTimer);
-  syncTimer = setTimeout(function(){ syncAssigns(); }, 800);
+  syncTimer = setTimeout(function(){ syncAssigns(); }, 600);
 }
 
 function getUnassigned(){
