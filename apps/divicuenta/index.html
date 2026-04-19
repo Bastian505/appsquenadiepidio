@@ -1102,27 +1102,22 @@ function showModeSelector(){
   if(people.length===0){toast('Agrega al menos una persona');return;}
   // Ocultar pantalla actual
   if(step>0) document.getElementById('s'+step).classList.remove('visible');
-  // Mostrar selector — si ya hay sesión de grupo activa, ir directo a grupo
-  if(isGroupHost && currentSessionId){
-    chooseModo('grupo');
-    return;
-  }
+  // Siempre mostrar el selector — el usuario decide
   document.getElementById('s-mode').classList.add('visible');
   document.documentElement.scrollTop=0;document.body.scrollTop=0;
 }
 
 function chooseModo(modo){
-  // Ocultar selector
   document.getElementById('s-mode').classList.remove('visible');
   if(modo === 'grupo'){
-    // Modo grupo: mostrar QR primero si no hay sesión activa
-    if(!currentSessionId){
-      isGroupHost = true;
-      showSessionQR();
-    }
+    isGroupHost = true;
+    // Generar sesión y guardar people_list en Supabase
+    showSessionQR();
+    var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
+    saveSessionToSupabase(currentSessionId || sessionId, restaurante, rawItems);
     goStep(3);
   } else {
-    // Modo solo: ir directo a asignar sin Supabase
+    // Modo solo — sin Supabase
     isGroupHost = false;
     isGroupGuest = false;
     goStep(3);
@@ -1711,19 +1706,12 @@ function addPerson(){
   people.push({name:name,color:color});
   inp.value='';renderPeople();
   document.getElementById('p2-next').disabled=false;
-  // Generar sesión QR y guardar en Supabase
-  showSessionQR();
-  // El host siempre actualiza people_list en Supabase al agregar personas
-  if(isGroupHost && sb && currentSessionId){
-    var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
-    saveSessionToSupabase(currentSessionId, restaurante, rawItems);
-  }
   if(sessionStorage.getItem('dc_express')==='1'){
     document.getElementById('p2-next').textContent='⚡ Dividir igual →';
     document.getElementById('p2-next').onclick=function(){
       sessionStorage.removeItem('dc_express');
       document.getElementById('p2-next').textContent='Asignar ítems →';
-      document.getElementById('p2-next').onclick=function(){goStep(3);};
+      document.getElementById('p2-next').onclick=function(){showModeSelector();};
       goExpress();
     };
   }
