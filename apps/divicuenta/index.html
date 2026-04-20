@@ -472,23 +472,6 @@ input[type=text]::placeholder{color:var(--text3);}
       </div>
     </div>
 
-    <!-- QR DE SESIÓN COMPARTIDA — se mueve al selector de modo -->
-    <div class="qr-session-box" id="qr-session-box" style="display:none;">
-      <div class="qr-session-title">📲 Compartir cuenta con el grupo</div>
-      <div class="qr-session-sub">Los demás escanean el QR o tú les mandas el link. Entran sin registro — solo ponen su nombre.</div>
-      <div id="qr-canvas"></div>
-      <div class="qr-session-url" id="qr-session-url" onclick="copySessionUrl()" title="Toca para copiar"></div>
-      <div class="qr-share-btns">
-        <button class="qr-share-btn" onclick="shareSession()">📤 Compartir</button>
-        <button class="qr-share-btn copy" onclick="copySessionUrl()">📋 Copiar link</button>
-      </div>
-      <div id="live-participants-wrap" style="margin-top:12px;display:none;">
-        <div style="font-size:10px;font-weight:800;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-          <div class="rt-dot"></div>Conectados ahora
-        </div>
-        <div id="live-participants-list" style="display:flex;flex-wrap:wrap;gap:7px;"></div>
-      </div>
-    </div>
   </div>
   <div class="screen-footer"><button class="btn btn-primary" id="p2-next" onclick="showModeSelector()" disabled>Asignar ítems →</button></div>
 </div>
@@ -496,7 +479,7 @@ input[type=text]::placeholder{color:var(--text3);}
 <!-- MODO SELECTOR — antes de asignar -->
 <div class="screen" id="s-mode">
   <div class="screen-header">
-    <button class="back-btn" onclick="goStep(2)">← Volver</button>
+    <button class="back-btn" onclick="cancelModeSelector()">← Volver</button>
     <span class="screen-title">¿Cómo van a dividir?</span>
   </div>
   <div class="screen-body" style="display:flex;flex-direction:column;gap:14px;padding:24px 16px;">
@@ -1120,6 +1103,21 @@ function updateProgressBadge(){
   }
 }
 
+function cancelModeSelector(){
+  // Limpiar estado grupo si se cancela
+  isGroupHost = false;
+  myParticipantId = null;
+  currentSessionId = null;
+  sessionId = null;
+  if(realtimeChannel){ realtimeChannel.unsubscribe(); realtimeChannel = null; }
+  // Resetear tarjetas
+  document.getElementById('modo-solo-card').style.display = '';
+  document.getElementById('modo-grupo-card').style.display = '';
+  document.getElementById('modo-grupo-qr').style.display = 'none';
+  document.getElementById('s-mode').classList.remove('visible');
+  goStep(2);
+}
+
 function showModeSelector(){
   if(people.length===0){toast('Agrega al menos una persona');return;}
   // Ocultar pantalla actual
@@ -1129,17 +1127,15 @@ function showModeSelector(){
   document.documentElement.scrollTop=0;document.body.scrollTop=0;
 }
 
-function activarModoGrupo(){
-  // Ocultar las dos tarjetas, mostrar QR
+async function activarModoGrupo(){
   document.getElementById('modo-solo-card').style.display = 'none';
   document.getElementById('modo-grupo-card').style.display = 'none';
   document.getElementById('modo-grupo-qr').style.display = 'block';
-  // Generar sesión
   isGroupHost = true;
   initSupabase();
   if(!sessionId) sessionId = generateSessionId();
   currentSessionId = sessionId;
-  // Dibujar QR en el canvas del selector de modo
+  // Dibujar QR
   var canvas = document.getElementById('qr-canvas');
   if(canvas) canvas.innerHTML = '';
   var sessionUrl = APP_BASE_URL + '?session=' + sessionId;
@@ -1148,10 +1144,28 @@ function activarModoGrupo(){
   }
   var urlEl = document.getElementById('qr-session-url');
   if(urlEl) urlEl.textContent = sessionUrl;
-  // Guardar en Supabase
+  // Guardar sesión
   var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
-  saveSessionToSupabase(sessionId, restaurante, rawItems);
-  // Suscribirse para ver quién se une
+  await saveSessionToSupabase(sessionId, restaurante, rawItems);
+  // Registrar al host como participante — buscar su nombre en people
+  if(!myParticipantId && sb && people.length > 0){
+    // El host es la primera persona de la lista
+    var hostName = people[0].name;
+    var hostColor = people[0].color;
+    try {
+      var res = await sb.from('participants').insert({
+        session_id: currentSessionId,
+        name: hostName,
+        color: hostColor,
+        assigns: {},
+        my_assigns: {}
+      }).select().single();
+      if(!res.error && res.data){
+        myParticipantId = res.data.id;
+        people[0].participantId = res.data.id;
+      }
+    } catch(e){ console.error('Error registrando host:', e); }
+  }
   subscribeToSession(sessionId);
 }
 
@@ -1776,15 +1790,19 @@ function renderAssign(){
   var hint=document.createElement('p');
   hint.style.cssText='font-size:12px;color:var(--text2);font-family:Lora,serif;font-style:italic;padding:0 2px 4px;';
 
-  // Modo grupo: cada uno asigna solo su nombre
-  var myPeopleIdx = isGroupGuest || isGroupHost ? people.findIndex(function(p){ return p.participantId === myParticipantId; }) : -1;
-  var isModoGrupo = (isGroupGuest || isGroupHost) && myPeopleIdx > -1;
+  // Modo grupo: detectar si hay sesión activa Y quién soy yo
+  var myPeopleIdx = -1;
+  if(myParticipantId){
+    myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
+  }
+  // isModoGrupo = hay sesión activa (host o guest con participantId registrado)
+  var isModoGrupo = (isGroupGuest || isGroupHost) && myParticipantId && myPeopleIdx > -1;
 
   if(isModoGrupo){
     hint.textContent = 'Marca lo que TÚ consumiste. Verás en tiempo real lo que marcan los demás.';
+    body.appendChild(hint);
   } else {
     hint.textContent = 'Toca quienes consumieron cada item. Si son varios, se divide en partes iguales.';
-    // Botón global solo en modo solo
     var globalBtn=document.createElement('button');
     globalBtn.className='btn btn-sm';
     globalBtn.style.cssText='width:100%;margin-bottom:12px;font-size:13px;background:var(--ps);border-color:var(--primary);color:var(--pd);font-weight:800;';
@@ -1801,9 +1819,7 @@ function renderAssign(){
     };
     body.appendChild(hint);
     body.appendChild(globalBtn);
-    hint = null;
   }
-  if(hint) body.appendChild(hint);
 
   sel.forEach(function(it,idx){
     initAssign(idx);
@@ -1812,47 +1828,51 @@ function renderAssign(){
     if(n===0)hintText='Toca quien lo consumio';
     else if(!isMulti){if(n===1)hintText='Solo '+people[parts[0]].name+' — paga el total';else hintText='Compartido entre '+n+' — $'+Math.round(it.price/n).toLocaleString('es-CL')+' c/u';}
     else{var tq=parts.reduce(function(s,pi){return s+(a.qty[pi]||0);},0);hintText=(it.qty-tq)>0?'Faltan '+(it.qty-tq)+' por asignar':'Todas asignadas ✓';}
+
     var chipsHTML='<div class="person-chips">';
     people.forEach(function(p,pi){
       var isOn=parts.indexOf(pi)>-1;
       var style=isOn?'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';':'';
       if(isModoGrupo){
-        // En modo grupo: solo mi chip es clickeable
         var isMine = pi === myPeopleIdx;
         if(isMine){
           chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
         } else {
-          // Chips de otros — visibles pero no clickeables
-          var lockedStyle = isOn ? 'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';opacity:0.85;cursor:default;' : 'opacity:0.5;cursor:default;';
+          var lockedStyle = isOn ? 'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';opacity:0.85;cursor:default;' : 'opacity:0.45;cursor:default;';
           chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+lockedStyle+'"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
         }
       } else {
         chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
       }
     });
-    // Botón Todos solo en modo solo
     if(!isModoGrupo){
       var allOn=parts.length===people.length;
       chipsHTML+='<div class="p-toggle all-btn'+(allOn?' on':'')+'" style="'+(allOn?'border-color:var(--primary);background:var(--ps);color:var(--pd);':'')+'" onclick="toggleAll('+idx+')">Todos</div>';
     }
     chipsHTML+='</div>';
+
     var qtyHTML='';
     if(isMulti&&n>0){
       var tq2=parts.reduce(function(s,pi){return s+(a.qty[pi]||0);},0),rem2=it.qty-tq2;
       qtyHTML='<div class="qty-section">';
+      var lastCanEdit = false;
       parts.forEach(function(pi){
         var p=people[pi],val=a.qty[pi]||0;
         var othersQty=parts.reduce(function(s,opi){return s+(opi===pi?0:(a.qty[opi]||0));},0);
         var maxVal=it.qty-othersQty;
         var canEdit = !isModoGrupo || pi === myPeopleIdx;
+        lastCanEdit = canEdit;
         if(canEdit){
           qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('+idx+','+pi+',-1)" '+(val===0?'disabled':'')+'>-</button><span class="qty-num">'+val+'</span><button class="qty-btn" onclick="changeQty('+idx+','+pi+',1)" '+(val>=maxVal?'disabled':'')+'>+</button></div></div>';
         } else {
           qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'" style="opacity:0.6;"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><span class="qty-num">'+val+'</span></div></div>';
         }
       });
-      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(canEdit?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
+      var myIsInParts = parts.indexOf(myPeopleIdx) > -1;
+      var showSplit = !isModoGrupo || myIsInParts;
+      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(showSplit?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
     }
+
     var div=document.createElement('div');div.className='assign-block';
     div.innerHTML='<div class="assign-block-head"><div class="assign-item-name">'+it.name+(it.qty>1?' x'+it.qty:'')+'</div><div class="assign-item-price">$'+it.total.toLocaleString('es-CL')+'</div></div><div class="assign-hint">'+hintText+'</div>'+chipsHTML+qtyHTML;
     body.appendChild(div);
