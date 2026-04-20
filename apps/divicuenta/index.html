@@ -337,6 +337,21 @@ input[type=text]::placeholder{color:var(--text3);}
 .splash-dot:nth-child(2){animation-delay:0.2s;}
 .splash-dot:nth-child(3){animation-delay:0.4s;}
 @keyframes dotPulse{0%,80%,100%{background:rgba(255,255,255,0.3);}40%{background:rgba(255,255,255,0.9);}}
+
+/* REALTIME INDICATORS */
+.rt-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(16,185,129,0.6);animation:rtPulse 1.8s ease-in-out infinite;flex-shrink:0;}
+@keyframes rtPulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,0.55);}70%{box-shadow:0 0 0 8px rgba(16,185,129,0);}100%{box-shadow:0 0 0 0 rgba(16,185,129,0);}}
+
+.sync-indicator{position:fixed;top:60px;right:14px;background:var(--surface);border:1.5px solid var(--green);border-radius:50px;padding:5px 12px;display:flex;align-items:center;gap:7px;font-size:11px;font-weight:800;color:#065f46;z-index:20;box-shadow:0 3px 14px var(--shadowm);transition:opacity 0.3s,transform 0.3s;}
+.sync-indicator.hidden{opacity:0;transform:translateY(-10px);pointer-events:none;}
+.sync-indicator.syncing{border-color:var(--amber);color:#92400e;}
+.sync-indicator.syncing .rt-dot{background:var(--amber);}
+
+.qr-share-btns{display:flex;gap:7px;justify-content:center;margin-top:10px;flex-wrap:wrap;}
+.qr-share-btn.copy{background:var(--surface);color:var(--pdd);border:1.5px solid var(--border);}
+
+/* BANKS MODAL OVERLAY */
+.banks-modal{position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9998;align-items:flex-end;justify-content:center;padding:0;}
 </style>
 </head>
 <body>
@@ -496,13 +511,22 @@ input[type=text]::placeholder{color:var(--text3);}
     </div>
 
     <!-- Tarjeta Grupo -->
-    <div class="mode-card" id="modo-grupo-card" onclick="activarModoGrupo()">
+    <div class="mode-card" id="modo-grupo-card" onclick="abrirSelectorHost()">
       <div class="mode-card-icon">👥</div>
       <div class="mode-card-body">
         <div class="mode-card-title">Lo hacemos juntos</div>
         <div class="mode-card-sub">Cada persona escanea el QR y marca lo suyo en tiempo real.</div>
       </div>
       <div class="mode-card-arrow">→</div>
+    </div>
+
+    <!-- Selector de identidad del host -->
+    <div id="host-identity-selector" style="display:none;">
+      <div style="background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px;box-shadow:0 2px 10px var(--shadow);">
+        <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:3px;">👋 ¿Quién eres tú?</div>
+        <div style="font-size:12px;color:var(--text2);font-family:Lora,serif;font-style:italic;margin-bottom:12px;">Cada persona verá sólo su propio nombre como clickeable. Elige cuál eres tú.</div>
+        <div id="host-identity-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
     </div>
 
     <!-- QR aparece aquí al elegir Lo hacemos juntos -->
@@ -1115,15 +1139,46 @@ function cancelModeSelector(){
   var sc = document.getElementById('modo-solo-card');
   var gc = document.getElementById('modo-grupo-card');
   var gq = document.getElementById('modo-grupo-qr');
+  var hs = document.getElementById('host-identity-selector');
   if(sc) sc.style.display = '';
   if(gc) gc.style.display = '';
   if(gq) gq.style.display = 'none';
+  if(hs) hs.style.display = 'none';
   document.getElementById('s-mode').classList.remove('visible');
   goStep(2);
 }
 
-async function activarModoGrupo(){
-  // Ocultar tarjetas, mostrar QR dentro del selector
+function abrirSelectorHost(){
+  // Si solo hay 1 persona, ir directo sin preguntar
+  if(people.length === 1){
+    activarModoGrupo(0);
+    return;
+  }
+  // Ocultar tarjetas, mostrar selector
+  document.getElementById('modo-solo-card').style.display = 'none';
+  document.getElementById('modo-grupo-card').style.display = 'none';
+  var sel = document.getElementById('host-identity-selector');
+  var list = document.getElementById('host-identity-list');
+  list.innerHTML = people.map(function(p, i){
+    return '<div class="mode-card" style="padding:12px 14px;" onclick="activarModoGrupo('+i+')">'+
+      '<div class="p-av" style="background:'+p.color+'22;color:'+p.color+';width:32px;height:32px;font-size:14px;">'+p.name.charAt(0).toUpperCase()+'</div>'+
+      '<div class="mode-card-body"><div class="mode-card-title" style="font-size:14px;">'+escHtml(p.name)+'</div></div>'+
+      '<div class="mode-card-arrow">→</div>'+
+    '</div>';
+  }).join('');
+  sel.style.display = 'block';
+}
+
+async function activarModoGrupo(hostIdx){
+  if(hostIdx === undefined || hostIdx === null) hostIdx = 0;
+  // Reordenar: poner al host en people[0] para simplicidad downstream
+  if(hostIdx > 0){
+    var hostPerson = people.splice(hostIdx, 1)[0];
+    people.unshift(hostPerson);
+  }
+  // Ocultar selector de host y tarjetas, mostrar QR
+  var hsel = document.getElementById('host-identity-selector');
+  if(hsel) hsel.style.display = 'none';
   document.getElementById('modo-solo-card').style.display = 'none';
   document.getElementById('modo-grupo-card').style.display = 'none';
   document.getElementById('modo-grupo-qr').style.display = 'block';
@@ -1143,7 +1198,7 @@ async function activarModoGrupo(){
   // Guardar sesión en Supabase
   var rawItems = items.map(function(it){ return {nombre:it.name, precio_unitario:it.price, cantidad:it.qty}; });
   await saveSessionToSupabase(sessionId, restaurante, rawItems);
-  // Registrar host como participante
+  // Registrar host como participante (ahora people[0] es el host correcto)
   if(!myParticipantId && sb && people.length > 0){
     try {
       var res = await sb.from('participants').insert({
@@ -1171,9 +1226,11 @@ function chooseModo(modo){
   var sc = document.getElementById('modo-solo-card');
   var gc = document.getElementById('modo-grupo-card');
   var gq = document.getElementById('modo-grupo-qr');
+  var hs = document.getElementById('host-identity-selector');
   if(sc) sc.style.display = '';
   if(gc) gc.style.display = '';
   if(gq) gq.style.display = 'none';
+  if(hs) hs.style.display = 'none';
   if(modo === 'grupo'){
     // isGroupHost y myParticipantId ya están seteados por activarModoGrupo
     goStep(3);
@@ -1853,6 +1910,7 @@ function renderAssign(){
     var qtyHTML='';
     if(isMulti&&n>0){
       var tq2=parts.reduce(function(s,pi){return s+(a.qty[pi]||0);},0),rem2=it.qty-tq2;
+      var iCanEditBlock = !isModoGrupo || parts.indexOf(myPeopleIdx)>-1;
       qtyHTML='<div class="qty-section">';
       parts.forEach(function(pi){
         var p=people[pi],val=a.qty[pi]||0;
@@ -1865,7 +1923,7 @@ function renderAssign(){
           qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'" style="opacity:0.6;"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><span class="qty-num">'+val+'</span></div></div>';
         }
       });
-      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(canEdit?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
+      qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(iCanEditBlock && !isModoGrupo?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
     }
     var div=document.createElement('div');div.className='assign-block';
     div.innerHTML='<div class="assign-block-head"><div class="assign-item-name">'+it.name+(it.qty>1?' x'+it.qty:'')+'</div><div class="assign-item-price">$'+it.total.toLocaleString('es-CL')+'</div></div><div class="assign-hint">'+hintText+'</div>'+chipsHTML+qtyHTML;
@@ -1875,8 +1933,21 @@ function renderAssign(){
 }
 
 function toggleParticipant(idx,pi){
-  initAssign(idx);var a=assigns[idx],pos=a.participants.indexOf(pi);
-  if(pos>-1){a.participants.splice(pos,1);delete a.qty[pi];}else a.participants.push(pi);
+  initAssign(idx);
+  var a=assigns[idx],pos=a.participants.indexOf(pi);
+  var it=items.filter(function(i){return i.selected;})[idx];
+  if(pos>-1){
+    a.participants.splice(pos,1);
+    delete a.qty[pi];
+  } else {
+    a.participants.push(pi);
+    // Multi-cantidad: auto-asignar el restante (o 1 si hay otros ya asignados)
+    if(it && it.qty>1){
+      var othersQty=a.participants.reduce(function(s,opi){return s+(opi===pi?0:(a.qty[opi]||0));},0);
+      var remaining=it.qty-othersQty;
+      if(remaining>0) a.qty[pi]=(a.participants.length===1)?it.qty:Math.max(1,Math.min(remaining,1));
+    }
+  }
   renderAssign();
   debouncedSync();
 }
