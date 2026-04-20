@@ -709,59 +709,63 @@ async function joinAsName(name, color){
   if(res.error || !res.data){ toast('Sesión no encontrada'); return; }
   var session = res.data;
 
-  // Registrar participante con ese nombre
+  // Registrar participante — incluir my_assigns para cumplir NOT NULL
   var pRes = await sb.from('participants').insert({
     session_id: currentSessionId,
     name: name,
     color: color,
-    assigns: {}
+    assigns: {},
+    my_assigns: {}
   }).select().single();
 
   if(pRes.error){ toast('Error al unirse: ' + pRes.error.message); return; }
   myParticipantId = pRes.data.id;
   isGroupGuest = true;
 
-  // Cargar todos los participantes
+  // Cargar todos los participantes actuales
   var partRes = await sb.from('participants').select('*').eq('session_id', currentSessionId);
   if(partRes.data){
-    people = session.people_list || partRes.data.map(function(p){ return {name:p.name, color:p.color, participantId:p.id}; });
-    // Asignar participantId a cada person
-    people = people.map(function(person){
-      var match = partRes.data.find(function(p){ return p.name === person.name; });
-      return match ? Object.assign({}, person, {participantId: match.id}) : person;
-    });
-    // Cargar my_assigns de cada participante al estado local
+    // Usar people_list del servidor si existe, si no construir desde participants
+    if(session.people_list && session.people_list.length > 0){
+      people = session.people_list.map(function(person){
+        var match = partRes.data.find(function(p){ return p.name === person.name; });
+        return match ? Object.assign({}, person, {participantId: match.id}) : person;
+      });
+      // Agregar participantes que no estaban en people_list (si llegaron después)
+      partRes.data.forEach(function(p){
+        var exists = people.find(function(pp){ return pp.name === p.name; });
+        if(!exists) people.push({name: p.name, color: p.color, participantId: p.id});
+      });
+    } else {
+      people = partRes.data.map(function(p){ return {name:p.name, color:p.color, participantId:p.id}; });
+    }
+
+    // Cargar my_assigns de cada participante — formato on/qty
     partRes.data.forEach(function(p){
-      if(p.id === myParticipantId) return; // mis propias las manejo localmente
+      if(p.id === myParticipantId) return;
       var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
       if(pi === -1) return;
-      var source = p.my_assigns && Object.keys(p.my_assigns).length ? p.my_assigns : p.assigns;
-      if(source && Object.keys(source).length){
-        Object.keys(source).forEach(function(itemIdx){
-          if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
-          var a = source[itemIdx];
-          var participants = a.participants || [];
-          // Mapear al índice real de esta persona
-          if(participants.length > 0){
+      // Intentar my_assigns primero (formato on/qty), luego assigns (formato viejo)
+      if(p.my_assigns && Object.keys(p.my_assigns).length){
+        Object.keys(p.my_assigns).forEach(function(itemIdx){
+          var a = p.my_assigns[itemIdx];
+          if(a && a.on){
+            if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
             if(assigns[itemIdx].participants.indexOf(pi) === -1) assigns[itemIdx].participants.push(pi);
-            if(a.qty){
-              var qtyKey = Object.keys(a.qty)[0];
-              if(qtyKey !== undefined) assigns[itemIdx].qty[pi] = a.qty[qtyKey];
-            }
+            if(a.qty !== null && a.qty !== undefined) assigns[itemIdx].qty[pi] = a.qty;
           }
         });
       }
     });
   }
 
-  // Cargar ítems
+  // Cargar ítems DESPUÉS de cargar assigns — loadItems no resetea assigns
   restaurante = session.restaurante;
   tipPct = session.tip_pct || 0;
   loadItems(session.restaurante, session.items);
 
   // Ocultar join screen, ir a asignar
   document.getElementById('join-screen').style.display = 'none';
-  // Mostrar la app y ir directo a asignar
   document.getElementById('topbar').style.display = 'flex';
   document.getElementById('stepbar').style.display = 'flex';
   goStep(3);
@@ -795,23 +799,19 @@ async function syncAssigns(){
   if(!sb || !currentSessionId || !myParticipantId) return;
   showSync('Sincronizando...', true);
   try {
-    // Extraer solo MIS asignaciones del objeto assigns global
     var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
     if(myPeopleIdx === -1) return;
+    // Formato on/qty — sin índices numéricos que varían entre teléfonos
     var myAssigns = {};
     Object.keys(assigns).forEach(function(k){
       var a = assigns[k];
       if(a && a.participants && a.participants.indexOf(myPeopleIdx) > -1){
         myAssigns[k] = {
-          participants: [myPeopleIdx],
-          qty: {}
+          on: true,
+          qty: (a.qty && a.qty[myPeopleIdx] !== undefined) ? a.qty[myPeopleIdx] : null
         };
-        if(a.qty && a.qty[myPeopleIdx] !== undefined){
-          myAssigns[k].qty[myPeopleIdx] = a.qty[myPeopleIdx];
-        }
       }
     });
-    // Escribir SOLO en mi fila — nadie más toca esta columna
     await sb.from('participants').update({ my_assigns: myAssigns }).eq('id', myParticipantId);
     showSync('En vivo 🟢');
   } catch(e){ console.error('Error sync:', e); showSync(''); }
@@ -847,36 +847,28 @@ function handleParticipantChange(payload){
     renderPeople();
     updateLiveParticipants();
     if(p.id !== myParticipantId) toast('👋 ' + p.name + ' se unió');
-    if(step === 3) renderAssign();
+    // Solo re-renderizar si myParticipantId ya está listo — evita mostrar chips incorrectos
+    if(step === 3 && myParticipantId) renderAssign();
 
   } else if(payload.eventType === 'UPDATE'){
     var p = payload.new;
-    if(p.id === myParticipantId) return; // ignorar mis propios updates
-    // Encontrar el índice de esta persona
+    if(p.id === myParticipantId) return;
     var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
     if(pi === -1) return;
-    // Aplicar sus my_assigns al estado local — solo sus ítems, no tocar los míos
-    var myPeopleIdx = people.findIndex(function(pp){ return pp.participantId === myParticipantId; });
-    if(p.my_assigns && Object.keys(p.my_assigns).length){
-      Object.keys(p.my_assigns).forEach(function(k){
-        if(!assigns[k]) assigns[k] = {participants:[], qty:{}};
-        // Quitar el índice de esta persona si estaba
+    if(p.my_assigns){
+      // Limpiar todas las asignaciones anteriores de esta persona
+      Object.keys(assigns).forEach(function(k){
+        if(!assigns[k]) return;
         var pos = assigns[k].participants.indexOf(pi);
         if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
-        // Agregar si está en sus my_assigns
-        var remoteA = p.my_assigns[k];
-        if(remoteA && remoteA.participants && remoteA.participants.length > 0){
-          assigns[k].participants.push(pi);
-          if(remoteA.qty && remoteA.qty[pi] !== undefined){
-            assigns[k].qty[pi] = remoteA.qty[pi];
-          }
-        }
       });
-      // Limpiar ítems donde esta persona se quitó
-      Object.keys(assigns).forEach(function(k){
-        if(!p.my_assigns[k]){
-          var pos = assigns[k].participants.indexOf(pi);
-          if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
+      // Aplicar nuevas — formato on/qty sin índices numéricos
+      Object.keys(p.my_assigns).forEach(function(k){
+        var remoteA = p.my_assigns[k];
+        if(remoteA && remoteA.on){
+          if(!assigns[k]) assigns[k] = {participants:[], qty:{}};
+          if(assigns[k].participants.indexOf(pi) === -1) assigns[k].participants.push(pi);
+          if(remoteA.qty !== null && remoteA.qty !== undefined) assigns[k].qty[pi] = remoteA.qty;
         }
       });
       if(step === 3) renderAssign();
