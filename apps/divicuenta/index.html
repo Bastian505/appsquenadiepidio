@@ -732,22 +732,17 @@ async function joinAsName(name, color){
     });
     // Cargar my_assigns de cada participante al estado local
     partRes.data.forEach(function(p){
-      if(p.id === myParticipantId) return; // mis propias las manejo localmente
+      if(p.id === myParticipantId) return;
       var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
       if(pi === -1) return;
-      var source = p.my_assigns && Object.keys(p.my_assigns).length ? p.my_assigns : p.assigns;
-      if(source && Object.keys(source).length){
+      var source = p.my_assigns && Object.keys(p.my_assigns).length ? p.my_assigns : null;
+      if(source){
         Object.keys(source).forEach(function(itemIdx){
-          if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
           var a = source[itemIdx];
-          var participants = a.participants || [];
-          // Mapear al índice real de esta persona
-          if(participants.length > 0){
+          if(a && a.on){
+            if(!assigns[itemIdx]) assigns[itemIdx] = {participants:[], qty:{}};
             if(assigns[itemIdx].participants.indexOf(pi) === -1) assigns[itemIdx].participants.push(pi);
-            if(a.qty){
-              var qtyKey = Object.keys(a.qty)[0];
-              if(qtyKey !== undefined) assigns[itemIdx].qty[pi] = a.qty[qtyKey];
-            }
+            if(a.qty !== null && a.qty !== undefined) assigns[itemIdx].qty[pi] = a.qty;
           }
         });
       }
@@ -790,28 +785,24 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
   } catch(e){ console.error('Error guardando sesión:', e); }
 }
 
-// ── SYNC: cada persona escribe SOLO en su propia fila (my_assigns) ──
+// ── SYNC: guarda mis asignaciones con clave 'me' — sin índices numéricos ──
 async function syncAssigns(){
   if(!sb || !currentSessionId || !myParticipantId) return;
   showSync('Sincronizando...', true);
   try {
-    // Extraer solo MIS asignaciones del objeto assigns global
     var myPeopleIdx = people.findIndex(function(p){ return p.participantId === myParticipantId; });
     if(myPeopleIdx === -1) return;
+    // Guardar con clave 'me' — no depende de índices del array local
     var myAssigns = {};
     Object.keys(assigns).forEach(function(k){
       var a = assigns[k];
       if(a && a.participants && a.participants.indexOf(myPeopleIdx) > -1){
         myAssigns[k] = {
-          participants: [myPeopleIdx],
-          qty: {}
+          on: true,
+          qty: a.qty && a.qty[myPeopleIdx] !== undefined ? a.qty[myPeopleIdx] : null
         };
-        if(a.qty && a.qty[myPeopleIdx] !== undefined){
-          myAssigns[k].qty[myPeopleIdx] = a.qty[myPeopleIdx];
-        }
       }
     });
-    // Escribir SOLO en mi fila — nadie más toca esta columna
     await sb.from('participants').update({ my_assigns: myAssigns }).eq('id', myParticipantId);
     showSync('En vivo 🟢');
   } catch(e){ console.error('Error sync:', e); showSync(''); }
@@ -851,32 +842,28 @@ function handleParticipantChange(payload){
 
   } else if(payload.eventType === 'UPDATE'){
     var p = payload.new;
-    if(p.id === myParticipantId) return; // ignorar mis propios updates
-    // Encontrar el índice de esta persona
+    if(p.id === myParticipantId) return;
+    // Encontrar el índice LOCAL de esta persona
     var pi = people.findIndex(function(pp){ return pp.participantId === p.id; });
     if(pi === -1) return;
-    // Aplicar sus my_assigns al estado local — solo sus ítems, no tocar los míos
-    var myPeopleIdx = people.findIndex(function(pp){ return pp.participantId === myParticipantId; });
-    if(p.my_assigns && Object.keys(p.my_assigns).length){
-      Object.keys(p.my_assigns).forEach(function(k){
-        if(!assigns[k]) assigns[k] = {participants:[], qty:{}};
-        // Quitar el índice de esta persona si estaba
-        var pos = assigns[k].participants.indexOf(pi);
-        if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
-        // Agregar si está en sus my_assigns
-        var remoteA = p.my_assigns[k];
-        if(remoteA && remoteA.participants && remoteA.participants.length > 0){
-          assigns[k].participants.push(pi);
-          if(remoteA.qty && remoteA.qty[pi] !== undefined){
-            assigns[k].qty[pi] = remoteA.qty[pi];
-          }
+    if(p.my_assigns){
+      // Limpiar todas las asignaciones anteriores de esta persona
+      Object.keys(assigns).forEach(function(k){
+        var pos = assigns[k] ? assigns[k].participants.indexOf(pi) : -1;
+        if(pos > -1){
+          assigns[k].participants.splice(pos, 1);
+          delete assigns[k].qty[pi];
         }
       });
-      // Limpiar ítems donde esta persona se quitó
-      Object.keys(assigns).forEach(function(k){
-        if(!p.my_assigns[k]){
-          var pos = assigns[k].participants.indexOf(pi);
-          if(pos > -1){ assigns[k].participants.splice(pos,1); delete assigns[k].qty[pi]; }
+      // Aplicar sus nuevas asignaciones — la qty viene con clave 'me' convertida
+      Object.keys(p.my_assigns).forEach(function(k){
+        var remoteA = p.my_assigns[k];
+        if(remoteA && remoteA.on){
+          if(!assigns[k]) assigns[k] = {participants:[], qty:{}};
+          if(assigns[k].participants.indexOf(pi) === -1) assigns[k].participants.push(pi);
+          if(remoteA.qty !== null && remoteA.qty !== undefined){
+            assigns[k].qty[pi] = remoteA.qty;
+          }
         }
       });
       if(step === 3) renderAssign();
