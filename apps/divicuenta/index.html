@@ -352,6 +352,45 @@ input[type=text]::placeholder{color:var(--text3);}
 
 /* BANKS MODAL OVERLAY */
 .banks-modal{position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9998;align-items:flex-end;justify-content:center;padding:0;}
+
+/* ════ CAPA 2: IDENTITY + LEDGER ════ */
+.identity-screen{position:fixed;inset:0;background:var(--bg);z-index:99998;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:18px;overflow-y:auto;}
+.identity-screen.show{display:flex;}
+.identity-emoji{font-size:62px;animation:float 3.5s ease-in-out infinite;}
+.identity-title{font-size:28px;font-weight:800;letter-spacing:-0.5px;color:var(--text);}
+.identity-title em{font-style:normal;color:var(--primary);}
+.identity-sub{font-family:'Lora',serif;font-style:italic;font-size:14px;color:var(--text2);text-align:center;max-width:300px;line-height:1.5;}
+.identity-form{width:100%;max-width:320px;display:flex;flex-direction:column;gap:10px;margin-top:8px;}
+.identity-form input{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:13px 16px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;color:var(--text);outline:none;}
+.identity-form input:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--ps);}
+.identity-btn{background:linear-gradient(135deg,var(--primary),var(--pd));color:white;border:none;padding:14px;border-radius:50px;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px var(--pg);margin-top:4px;}
+.identity-btn:disabled{opacity:0.4;cursor:not-allowed;}
+.ledger-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px;box-shadow:0 3px 12px var(--shadow);width:100%;max-width:320px;}
+.ledger-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ledger-title{font-size:11px;font-weight:800;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;}
+.ledger-balance{font-size:22px;font-weight:800;margin:4px 0;}
+.ledger-balance.pos{color:var(--green);}
+.ledger-balance.neg{color:var(--danger);}
+.ledger-balance.zero{color:var(--text3);}
+.ledger-balance-sub{font-size:11px;color:var(--text2);font-family:'Lora',serif;font-style:italic;margin-bottom:8px;}
+.ledger-list{display:flex;flex-direction:column;gap:6px;}
+.ledger-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all 0.15s;}
+.ledger-row:hover{border-color:var(--primary);background:var(--ps);}
+.ledger-row-left{display:flex;align-items:center;gap:8px;flex:1;min-width:0;}
+.ledger-row-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0;}
+.ledger-row-info{flex:1;min-width:0;}
+.ledger-row-name{font-size:13px;font-weight:800;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ledger-row-detail{font-size:10px;color:var(--text3);font-weight:600;}
+.ledger-row-amount{font-size:14px;font-weight:800;flex-shrink:0;margin-left:8px;}
+.ledger-row-amount.pos{color:var(--green);}
+.ledger-row-amount.neg{color:var(--danger);}
+.ledger-empty{text-align:center;padding:16px 10px;color:var(--text3);font-size:12px;font-weight:600;}
+.ledger-empty-emoji{font-size:28px;margin-bottom:6px;}
+.user-pill{display:flex;align-items:center;gap:6px;background:var(--surface2);border:1.5px solid var(--border);border-radius:50px;padding:3px 10px 3px 3px;cursor:pointer;transition:all 0.15s;}
+.user-pill:hover{border-color:var(--primary);}
+.user-pill-av{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:white;}
+.user-pill-name{font-size:12px;font-weight:800;color:var(--text);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
 </style>
 </head>
 <body>
@@ -368,6 +407,18 @@ input[type=text]::placeholder{color:var(--text3);}
   </div>
 </div>
 
+<!-- IDENTITY SCREEN (Capa 2 — primera vez) -->
+<div class="identity-screen" id="identity-screen">
+  <div class="identity-emoji">👋</div>
+  <div class="identity-title">Bienvenido a Divi<em>Cuenta</em></div>
+  <div class="identity-sub">Para registrar tus deudas con amigos necesitamos saber quién eres.</div>
+  <div class="identity-form">
+    <input type="text" id="identity-name-inp" placeholder="Tu nombre (ej: Bastian)" maxlength="30" autocomplete="name">
+    <input type="tel" id="identity-phone-inp" placeholder="Tu teléfono (ej: +56 9 1234 5678)" maxlength="20" autocomplete="tel">
+    <button class="identity-btn" id="identity-submit-btn" onclick="submitIdentity()" disabled>Crear mi cuenta →</button>
+  </div>
+</div>
+
 <!-- S0: BIENVENIDA -->
 <div class="screen visible" id="s0">
   <div class="welcome-wrap">
@@ -375,6 +426,9 @@ input[type=text]::placeholder{color:var(--text3);}
     <div class="welcome-title">Divi<em>Cuenta</em></div>
     <p class="welcome-tag">Divide la cuenta sin drama, sin confusiones y sin que nadie quede debiendo.</p>
     <div class="welcome-divider"></div>
+    <!-- Ledger de deudas persistentes (Capa 2) -->
+    <div id="ledger-wrap" style="display:none;width:100%;max-width:320px;"></div>
+    <!-- Historial local antiguo (se oculta si hay ledger) -->
     <div id="pending-debts-wrap" style="display:none;width:100%;max-width:300px;"></div>
     <div class="welcome-feats">
       <div class="feat-row"><span class="feat-icon">📷</span><span class="feat-text">IA lee la boleta automáticamente</span></div>
@@ -628,6 +682,230 @@ function initSupabase(){
     sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════════
+// CAPA 2: IDENTIDAD PERSISTENTE + LEDGER DE DEUDAS (Modular — sin tocar flujo anterior)
+// ═══════════════════════════════════════════════════════════════════════════════════
+
+var me = null; // {id, phone, name, color} — identidad del usuario actual
+var myLedger = []; // deudas activas con otros usuarios
+
+function normalizePhone(raw){
+  if(!raw) return '';
+  var digits = String(raw).replace(/[^\d+]/g,'');
+  if(!digits.startsWith('+')){ 
+    if(digits.startsWith('56')) digits = '+' + digits;
+    else if(digits.startsWith('9') && digits.length >= 8) digits = '+56' + digits;
+    else digits = '+' + digits;
+  }
+  return digits;
+}
+
+function loadMyIdentity(){
+  try {
+    var raw = localStorage.getItem('dc_me');
+    if(!raw) return null;
+    me = JSON.parse(raw);
+    return me;
+  } catch(e){ return null; }
+}
+
+function saveMyIdentity(identity){
+  me = identity;
+  try { localStorage.setItem('dc_me', JSON.stringify(identity)); } catch(e){}
+  updateUserPill();
+}
+
+function updateUserPill(){
+  if(!me) return;
+  var pill = document.getElementById('user-pill');
+  var av = document.getElementById('user-pill-av');
+  var nm = document.getElementById('user-pill-name');
+  if(pill && av && nm){
+    av.style.background = me.color || '#0ea5e9';
+    av.textContent = (me.name || '?').charAt(0).toUpperCase();
+    nm.textContent = me.name || '—';
+    pill.style.display = 'flex';
+  }
+}
+
+async function ensureIdentity(){
+  var stored = loadMyIdentity();
+  if(stored && stored.id && stored.phone) {
+    if(sb){ sb.from('dc_users').update({ last_seen_at: new Date().toISOString() }).eq('id', stored.id).then(function(){}); }
+    return stored;
+  }
+  return new Promise(function(resolve){
+    window._identityResolve = resolve;
+    var screen = document.getElementById('identity-screen');
+    if(screen) screen.classList.add('show');
+    var nameInp = document.getElementById('identity-name-inp');
+    var phoneInp = document.getElementById('identity-phone-inp');
+    var btn = document.getElementById('identity-submit-btn');
+    function validate(){
+      var n = (nameInp.value||'').trim();
+      var p = normalizePhone(phoneInp.value||'');
+      btn.disabled = !(n.length >= 2 && p.length >= 8);
+    }
+    if(nameInp) nameInp.addEventListener('input', validate);
+    if(phoneInp) phoneInp.addEventListener('input', validate);
+    setTimeout(function(){ if(nameInp) nameInp.focus(); }, 150);
+  });
+}
+
+async function submitIdentity(){
+  var nameInp = document.getElementById('identity-name-inp');
+  var phoneInp = document.getElementById('identity-phone-inp');
+  var btn = document.getElementById('identity-submit-btn');
+  var name = (nameInp.value||'').trim();
+  var phone = normalizePhone(phoneInp.value||'');
+  if(!name || name.length < 2){ toast('Ingresa tu nombre'); return; }
+  if(!phone || phone.length < 8){ toast('Ingresa un teléfono válido'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Creando...';
+  initSupabase();
+  if(!sb){ toast('Sin conexión — intenta de nuevo'); btn.disabled=false; btn.textContent='Crear mi cuenta →'; return; }
+  try {
+    var exRes = await sb.from('dc_users').select('*').eq('phone', phone).maybeSingle();
+    var user;
+    if(exRes.data){
+      user = exRes.data;
+      if(user.name !== name){ await sb.from('dc_users').update({ name: name, last_seen_at: new Date().toISOString() }).eq('id', user.id); user.name = name; }
+    } else {
+      var color = COLORS[Math.floor(Math.random()*COLORS.length)];
+      var insRes = await sb.from('dc_users').insert({ phone: phone, name: name, color: color }).select().single();
+      if(insRes.error) throw insRes.error;
+      user = insRes.data;
+    }
+    saveMyIdentity({ id: user.id, phone: user.phone, name: user.name, color: user.color });
+    var screen = document.getElementById('identity-screen');
+    if(screen) screen.classList.remove('show');
+    if(window._identityResolve){ window._identityResolve(me); window._identityResolve = null; }
+    toast('¡Hola '+user.name+'! 👋');
+    loadLedger();
+  } catch(e){
+    console.error(e);
+    toast('Error: ' + (e.message||'intenta de nuevo'));
+    btn.disabled = false;
+    btn.textContent = 'Crear mi cuenta →';
+  }
+}
+
+async function loadLedger(){
+  if(!me || !sb) return;
+  try {
+    var res = await sb.from('dc_debts')
+      .select('*, from_user:from_user_id(id,name,color,phone), to_user:to_user_id(id,name,color,phone)')
+      .or('from_user_id.eq.'+me.id+',to_user_id.eq.'+me.id)
+      .in('status', ['pending','paid_claimed'])
+      .order('created_at', { ascending: false });
+    if(res.error){ console.error(res.error); return; }
+    myLedger = res.data || [];
+    renderLedger();
+  } catch(e){ console.error('loadLedger:', e); }
+}
+
+function computeNetBalances(){
+  if(!me) return [];
+  var byPerson = {};
+  myLedger.forEach(function(d){
+    var iAmFrom = d.from_user_id === me.id;
+    var other = iAmFrom ? d.to_user : d.from_user;
+    if(!other || !other.id) return;
+    if(!byPerson[other.id]){ byPerson[other.id] = { other: other, debts: [], net: 0 }; }
+    byPerson[other.id].debts.push(d);
+    byPerson[other.id].net += iAmFrom ? -d.amount : d.amount;
+  });
+  return Object.values(byPerson).filter(function(g){ return g.net !== 0; });
+}
+
+function renderLedger(){
+  var wrap = document.getElementById('ledger-wrap');
+  if(!wrap || !me){ if(wrap) wrap.style.display = 'none'; return; }
+  var balances = computeNetBalances();
+  var oldWrap = document.getElementById('pending-debts-wrap');
+  if(oldWrap) oldWrap.style.display = 'none';
+  if(balances.length === 0){
+    wrap.style.display = 'block';
+    wrap.innerHTML = '<div class="ledger-card"><div class="ledger-header"><div class="ledger-title">💸 Mis deudas</div></div><div class="ledger-empty"><div class="ledger-empty-emoji">✨</div>No tienes deudas pendientes.<br>¡Estás al día!</div></div>';
+    return;
+  }
+  var totalOwedToMe = balances.filter(function(b){return b.net>0;}).reduce(function(s,b){return s+b.net;},0);
+  var totalIOwe = balances.filter(function(b){return b.net<0;}).reduce(function(s,b){return s+Math.abs(b.net);},0);
+  var netBalance = totalOwedToMe - totalIOwe;
+  var balanceClass = netBalance > 0 ? 'pos' : (netBalance < 0 ? 'neg' : 'zero');
+  var balanceSign = netBalance > 0 ? '+' : '';
+  var balanceLabel = netBalance > 0 ? 'A tu favor' : (netBalance < 0 ? 'Debes en total' : 'Al día');
+  wrap.style.display = 'block';
+  var html = '<div class="ledger-card"><div class="ledger-header"><div class="ledger-title">💸 Mis deudas</div><div style="font-size:10px;color:var(--text3);font-weight:700;cursor:pointer;" onclick="loadLedger()">🔄 Actualizar</div></div><div class="ledger-balance-sub">'+balanceLabel+'</div><div class="ledger-balance '+balanceClass+'">'+balanceSign+'$'+Math.abs(netBalance).toLocaleString('es-CL')+'</div><div class="ledger-list">';
+  balances.forEach(function(b){
+    var owes = b.net > 0;
+    var amountClass = owes ? 'pos' : 'neg';
+    var sign = owes ? '+' : '-';
+    var detailText = owes ? 'te debe' : 'le debes';
+    var color = b.other.color || '#0ea5e9';
+    html += '<div class="ledger-row" onclick="openDebtDetail(\''+b.other.id+'\')"><div class="ledger-row-left"><div class="ledger-row-av" style="background:'+color+'22;color:'+color+'">'+b.other.name.charAt(0).toUpperCase()+'</div><div class="ledger-row-info"><div class="ledger-row-name">'+escHtml(b.other.name)+'</div><div class="ledger-row-detail">'+detailText+' · '+b.debts.length+' '+(b.debts.length===1?'cuenta':'cuentas')+'</div></div></div><div class="ledger-row-amount '+amountClass+'">'+sign+'$'+Math.abs(b.net).toLocaleString('es-CL')+'</div></div>';
+  });
+  html += '</div></div>';
+  wrap.innerHTML = html;
+}
+
+async function persistDebts(totals, pagadorIdxLocal){
+  if(!me || !sb) return;
+  if(pagadorIdxLocal < 0) return;
+  var pagador = totals[pagadorIdxLocal];
+  if(!pagador) return;
+  var sessKey = currentSessionId || ('local_' + (window._localSessionId || (window._localSessionId = 'l' + Date.now() + Math.random().toString(36).slice(2,7))));
+  var myPeopleIdx = people.findIndex(function(p){ return p.name.toLowerCase() === me.name.toLowerCase(); });
+  var iAmPagador = (myPeopleIdx === pagadorIdxLocal);
+  var persistedCount = 0, skippedCount = 0;
+  try {
+    await sb.from('dc_debts').delete()
+      .eq('session_id', sessKey)
+      .or('from_user_id.eq.'+me.id+',to_user_id.eq.'+me.id)
+      .in('status', ['pending','paid_claimed']);
+    if(iAmPagador){
+      for(var i=0; i<totals.length; i++){
+        if(i === pagadorIdxLocal) continue;
+        var t = totals[i];
+        if(t.amount <= 0) continue;
+        var otherUserId = await resolveUserIdForPerson(t.person);
+        if(!otherUserId){ skippedCount++; continue; }
+        await sb.from('dc_debts').insert({ from_user_id: otherUserId, to_user_id: me.id, amount: t.amount, restaurante: restaurante || null, session_id: sessKey, status: 'pending' });
+        persistedCount++;
+      }
+    } else if(myPeopleIdx >= 0){
+      var myTotal = totals[myPeopleIdx];
+      if(myTotal && myTotal.amount > 0){
+        var pagadorUserId = await resolveUserIdForPerson(pagador.person);
+        if(pagadorUserId){
+          await sb.from('dc_debts').insert({ from_user_id: me.id, to_user_id: pagadorUserId, amount: myTotal.amount, restaurante: restaurante || null, session_id: sessKey, status: 'pending' });
+          persistedCount++;
+        } else { skippedCount++; }
+      }
+    }
+    if(window._debtFeedbackTimer) clearTimeout(window._debtFeedbackTimer);
+    window._debtFeedbackTimer = setTimeout(function(){
+      if(persistedCount > 0){ toast('💾 '+persistedCount+' deuda'+(persistedCount>1?'s':'')+' en tu ledger'); }
+      else if(skippedCount > 0){ toast('💡 Para guardar deudas, usa modo grupo (QR)'); }
+    }, 800);
+  } catch(e){ console.error('persistDebts:', e); }
+}
+
+async function resolveUserIdForPerson(person){
+  if(!sb) return null;
+  if(person.userId) return person.userId;
+  if(person.phone){
+    var phone = normalizePhone(person.phone);
+    var r = await sb.from('dc_users').select('id').eq('phone', phone).maybeSingle();
+    if(r.data) return r.data.id;
+    var ins = await sb.from('dc_users').insert({ phone: phone, name: person.name, color: person.color || '#0ea5e9' }).select('id').single();
+    if(!ins.error) return ins.data.id;
+  }
+  return null;
+}
+
+// FIN CAPA 2 ═══════════════════════════════════════════════════════════════════════════════════════
 
 // ── DETECTAR SI ES JOIN (viene de QR) ──
 async function checkJoinMode(){
@@ -969,6 +1247,12 @@ document.addEventListener('DOMContentLoaded', function(){
   }
   // Inicializar Supabase y detectar modo join (después de que el CDN cargó)
   initSupabase();
+  // Capa 2: cargar identidad si existe, si no pedir después del splash
+  var stored = loadMyIdentity();
+  if(stored){ updateUserPill(); loadLedger(); }
+  else {
+    setTimeout(function(){ ensureIdentity(); }, 2000);
+  }
   checkJoinMode();
 });
 
@@ -1327,6 +1611,7 @@ function buildExpressSummary(){
 function toggleKeyVis(){var el=document.getElementById('api-key-input');if(el)el.type=el.type==='password'?'text':'password';}
 function toggleApiCard(){
   var body=document.getElementById('api-body'),btn=document.getElementById('api-toggle');
+  if(!body || !btn) return; // Guard: estos elementos no existen en HTML
   if(body.style.display==='none'){body.style.display='block';btn.textContent='Ocultar';}
   else{body.style.display='none';btn.textContent='Mostrar';}
 }
@@ -1395,9 +1680,7 @@ function handleFile(e){
         if(proxyUrl){
           scanWithProxy(b64,mime,proxyUrl);
         } else {
-          document.getElementById('scan-msg').textContent='CARGANDO DEMO...';
-          document.getElementById('scanOv').classList.add('on');
-          setTimeout(function(){document.getElementById('scanOv').classList.remove('on');loadItems('El Parron',DEMO);},1800);
+          showScanError('🔑 Necesitas una API key de Claude (sk-ant-...) o un proxy /api/scan-receipt en Vercel. Lee la documentación.');
         }
       }
     };
@@ -1406,16 +1689,51 @@ function handleFile(e){
   reader.readAsDataURL(file);
 }
 
+// ── NORMALIZACIÓN INTERNACIONAL ──
+// Convierte cualquier moneda a entero para que loadItems() funcione sin cambios
+function normalizeInternationalItems(json){
+  var moneda=(json.moneda||'CLP').toUpperCase().trim();
+  // Factor de escala: monedas con decimales × 100, monedas sin decimales × 1
+  var sinDecimales={'CLP':1,'JPY':1,'KRW':1,'VND':1,'IDR':1,'TWD':1,'KHR':1,'MMK':1,'UGX':1,'RWF':1,'TZS':1,'XOF':1,'XAF':1,'GNF':1,'BIF':1,'MGA':1};
+  var factor = sinDecimales[moneda]!==undefined ? sinDecimales[moneda] : 100;
+  var simbolos={'EUR':'€','USD':'$','GBP':'£','BRL':'R$','MXN':'$','ARS':'$','JPY':'¥','CNY':'¥','KRW':'₩','INR':'₹','TRY':'₺','THB':'฿','VND':'₫','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'zł','CZK':'Kč','HUF':'Ft','RON':'lei','BGN':'лв','HRK':'kn','RSD':'дин','UAH':'₴','GEL':'₾','MAD':'د.م.','EGP':'ج.م','NGN':'₦','KES':'Ksh','ZAR':'R','PHP':'₱','SGD':'S$','HKD':'HK$','MYR':'RM','IDR':'Rp','BDT':'৳'};
+  var items=(json.items||[]).map(function(it,i){
+    var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
+    if(typeof raw==='string'){
+      var s=String(raw).trim();
+      // Detectar formato europeo "1.234,56" vs americano "1,234.56" vs simple "1,74"
+      if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)){
+        // Europeo con miles: "1.234,56" → 1234.56
+        raw=parseFloat(s.replace(/\./g,'').replace(',','.'));
+      } else if(/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)){
+        // Americano con miles: "1,234.56" → 1234.56
+        raw=parseFloat(s.replace(/,/g,''));
+      } else if(/^\d+,\d{1,2}$/.test(s)){
+        // Simple europeo: "1,74" → 1.74
+        raw=parseFloat(s.replace(',','.'));
+      } else {
+        raw=parseFloat(s.replace(',','.'));
+      }
+    }
+    var precio=isNaN(raw)?0:raw;
+    var precioEntero=Math.round(precio*factor);
+    return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:precioEntero,cantidad:parseInt(it.cantidad)||1};
+  }).filter(function(it){return it.precio_unitario>0;});
+  return{restaurante:json.restaurante||json.establecimiento||json.tienda||null,moneda:moneda,simbolo:simbolos[moneda]||moneda,items:items,total_original:json.total||null};
+}
+
 async function scanWithClaude(b64,mime){
   var ov=document.getElementById('scanOv'),msg=document.getElementById('scan-msg');
   ov.classList.add('on');
   msg.textContent='ENVIANDO A CLAUDE...';
-  var ticker=setInterval(function(){msg.textContent='LEYENDO BOLETA...';},1500);
+  var msgs=['LEYENDO BOLETA...','DETECTANDO IDIOMA...','EXTRAYENDO ITEMS...','CASI LISTO...'];
+  var mi=0;
+  var ticker=setInterval(function(){mi=(mi+1)%msgs.length;msg.textContent=msgs[mi];},1400);
   clearTimeout(scanTimeout);
   scanTimeout=setTimeout(function(){
     clearInterval(ticker);ov.classList.remove('on');
-    showScanError('Sin respuesta en 20s. Revisa tu conexion.');
-  },20000);
+    showScanError('Sin respuesta en 30s. Revisa tu conexion.');
+  },30000);
   try{
     var res=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -1426,13 +1744,13 @@ async function scanWithClaude(b64,mime){
       },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:1024,
-        system:'Eres un experto en analisis de boletas de restaurantes chilenos. Responde SOLO con JSON valido sin markdown ni texto extra. Formato exacto: {"restaurante":"nombre o null","items":[{"nombre":"nombre del plato","precio_unitario":numero_entero_CLP,"cantidad":numero_entero}]}. Si no puedes leer la boleta devuelve {"restaurante":null,"items":[]}.',
+        max_tokens:1500,
+        system:'Eres un experto en analisis de boletas y recibos de todo el mundo. La boleta puede estar en cualquier idioma y moneda. REGLAS ESTRICTAS: 1) Detecta idioma y moneda automaticamente. 2) Extrae SOLO los items comprados con sus precios y cantidades. 3) IGNORA: impuestos (MWST, VAT, IVA, Tax, ICMS), depositos retornables (Pfand, Pfandruckgabe), numeros de transaccion, subtotales, codigos, publicidad, metodos de pago. 4) Precios como NUMEROS con punto decimal (ejemplo: 1.74 no "1,74"). 5) RESPONDE SOLO con JSON valido sin markdown ni texto extra. FORMATO EXACTO: {"restaurante":"nombre del lugar o null","moneda":"codigo ISO de 3 letras","items":[{"nombre":"nombre en idioma original","precio_unitario":numero,"cantidad":numero}],"total":numero}. Si no puedes leer devuelve {"restaurante":null,"moneda":"CLP","items":[],"total":0}.',
         messages:[{
           role:'user',
           content:[
             {type:'image',source:{type:'base64',media_type:mime,data:b64}},
-            {type:'text',text:'Analiza esta boleta y extrae todos los items con sus precios exactos.'}
+            {type:'text',text:'Analiza esta boleta. Extrae solo los productos/items comprados. Ignora impuestos y depositos.'}
           ]
         }]
       })
@@ -1458,12 +1776,22 @@ async function scanWithClaude(b64,mime){
     }
     var rawText=textBlock.text;
     var json=parseClaudeJSON(rawText);
-    if(!json||!json.items||!json.items.length){
-      showScanError('JSON invalido. Claude respondio: '+rawText.substring(0,200));
+    if(!json||!json.items){
+      showScanError('No se pudo parsear. Claude respondio: '+rawText.substring(0,200));
       return;
     }
-    loadItems(json.restaurante||'Restaurante',json.items);
-    toast('Boleta leida — '+json.items.length+' items');
+    var normalized=normalizeInternationalItems(json);
+    if(!normalized.items||!normalized.items.length){
+      showScanError('No se encontraron items en la boleta.');
+      return;
+    }
+    window._currentCurrency=normalized.moneda;
+    window._currentSymbol=normalized.simbolo;
+    var label=normalized.moneda!=='CLP'
+      ?(normalized.restaurante||'Establecimiento')+' ['+normalized.moneda+']'
+      :(normalized.restaurante||'Restaurante');
+    loadItems(label,normalized.items);
+    toast('Boleta leida — '+normalized.items.length+' items ('+normalized.moneda+')');
   }catch(err){
     clearTimeout(scanTimeout);
     clearInterval(ticker);
@@ -1471,7 +1799,6 @@ async function scanWithClaude(b64,mime){
     showScanError('Error: '+err.message+' | '+err.name);
   }
 }
-
 
 
 // ── QR SESIÓN COMPARTIDA ──
@@ -2160,6 +2487,22 @@ function addPagadorSelector(body,totals){
 function setPagador(idx){
   pagadorIdx=idx;
   buildSummary();
+  // Capa 2: persistir deudas en el ledger del usuario (debounced)
+  if(idx >= 0 && me){
+    if(window._persistDebtsTimer) clearTimeout(window._persistDebtsTimer);
+    window._persistDebtsTimer = setTimeout(function(){
+      var totals = calcTotals();
+      // Aplicar el mismo redondeo que buildSummary
+      if(roundingExtra!==0 && people.length>0){
+        var baseExtra=Math.floor(roundingExtra/people.length);
+        var remainderExtra=roundingExtra-(baseExtra*people.length);
+        totals = totals.map(function(t,i){
+          return{person:t.person,amount:t.amount+baseExtra+(i<remainderExtra?1:0),myItems:t.myItems};
+        });
+      }
+      persistDebts(totals, idx);
+    }, 600);
+  }
 }
 
 
@@ -2359,7 +2702,6 @@ function reset(){
   var qrCanvas=document.getElementById('qr-canvas');if(qrCanvas)qrCanvas.innerHTML='';
   var pwarn=document.getElementById('propina-warn');if(pwarn)pwarn.classList.remove('show');
   var serr=document.getElementById('scan-error-card');if(serr)serr.classList.remove('show');
-  var err=document.getElementById('scan-error');if(err)err.style.display='none';
   var lp=document.getElementById('live-participants-wrap');if(lp)lp.style.display='none';
   var si=document.getElementById('sync-indicator');if(si)si.classList.add('hidden');
   var pill=document.getElementById('mode-pill');if(pill){pill.className='mode-pill demo';pill.textContent='🎬 Demo';}
@@ -2368,6 +2710,8 @@ function reset(){
   document.getElementById('stepbar').style.display='none';
   document.getElementById('s0').classList.add('visible');
   step=0;loadSavedGroups();loadPendingDebts();
+  // Capa 2: refrescar ledger de deudas persistentes
+  if(me) loadLedger();
 }
 
 // Init
