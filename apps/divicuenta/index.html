@@ -1408,7 +1408,21 @@ function handleFile(e){
 
 // ── MONEDA DINÁMICA ──
 function currSym(){return window._currentSymbol||'$';}
-function fmtP(n){var s=currSym();var suf=['kr','zl','Kc','Ft','lei','Fr'];var v=Math.round(n).toLocaleString('es-CL');return suf.indexOf(s)>-1?v+' '+s:s+v;}
+function fmtP(n){
+  var s=currSym();
+  var sinDec=['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP'];
+  var esSinDecimal=sinDec.indexOf(window._currentCurrency||'CLP')>-1;
+  var suf=['kr','zl','Kc','Ft','lei','Fr','AED','SAR'];
+  var esSufijo=suf.indexOf(s)>-1;
+  var v;
+  if(esSinDecimal){
+    v=Math.round(n).toLocaleString('es-CL');
+  } else {
+    var num=parseFloat(n)||0;
+    v=num.toFixed(2).replace('.',',');
+  }
+  return esSufijo?v+' '+s:s+v;
+}
 
 // ── NORMALIZACIÓN INTERNACIONAL ──
 function normalizeInternationalItems(json){
@@ -1418,7 +1432,7 @@ function normalizeInternationalItems(json){
   // NO aplicar factor ×100 — los precios ya vienen en escala correcta desde el pipeline
   var sinD=['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA'];
   var esMonedaSinDecimal=sinD.indexOf(moneda)>-1;
-  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$'};
+  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei'};
   var items=(json.items||[]).map(function(it,i){
     var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
     if(typeof raw==='string'){
@@ -1518,7 +1532,21 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
     if(countryHint){ payload.country_hint=countryHint; }
     if(isConfirmation){ payload.is_confirmation=true; }
 
-    var res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    // Retry automático 1 vez en error de red (Vercel cold start)
+    var res;
+    var bodyStr=JSON.stringify(payload);
+    try{
+      res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+    }catch(netErr){
+      msg.textContent='REINTENTANDO...';
+      await new Promise(function(r){setTimeout(r,2000);});
+      try{
+        res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+      }catch(netErr2){
+        clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
+        showScanError('Sin conexión al servidor. Verifica tu internet e intenta de nuevo.');return;
+      }
+    }
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
 
     if(res.status===401){showScanError('API key incorrecta (401)');return;}
