@@ -12,7 +12,7 @@ const COUNTRY_RULES = {
   PE: { name:'Perú', currency:'PEN', symbol:'S/', has_decimals:true, tax_included:true, tax_kw:['igv','tributo'], deposit_kw:[], refund_kw:[], tip_behavior:'none', tip_kw:[], total_kw:['total','precio total'], price_format:'standard', signals:['ruc','sunat','boleta de venta'], decimal_sep:'.', format:'S/ = soles. IGV 18% incluido.' },
   BR: { name:'Brasil', currency:'BRL', symbol:'R$', has_decimals:true, tax_included:false, tax_kw:['icms','pis','cofins','ipi','iss'], deposit_kw:[], refund_kw:['devolucao'], tip_behavior:'optional_10_percent', tip_kw:['gorjeta','servico'], total_kw:['total','valor total','a pagar'], price_format:'standard', signals:['cnpj','cpf','nfe','nota fiscal'], decimal_sep:',', format:'R$ = reales. Decimal con coma. Gorjeta 10% opcional.' },
   DE: { name:'Alemania', currency:'EUR', symbol:'€', has_decimals:true, tax_included:true, tax_kw:['mwst','ust','steuer'], deposit_kw:['pfand','leergut'], refund_kw:['pfandruckgabe','pfandrückgabe'], tip_behavior:'rounding', tip_kw:['trinkgeld'], total_kw:['zu zahlen','summe','gesamt','brutto'], price_format:'unit_x_qty_equals_total', signals:['mwst','ust-idnr','eur'], decimal_sep:',', format:'EUR. Pfand = depósito (incluir +). Pfandrückgabe = devolución (incluir -). MWST = impuesto (ignorar). Formato "0,29 x 6 = 1,74" → usar 1.74 precio total, cantidad=1.' },
-  ES: { name:'España', currency:'EUR', symbol:'€', has_decimals:true, tax_included:true, tax_kw:['iva','base imponible'], deposit_kw:[], refund_kw:['devolucion'], tip_behavior:'rounding', tip_kw:[], total_kw:['total','importe total','a pagar'], price_format:'standard', signals:['nif','cif','factura simplificada'], decimal_sep:',', format:'EUR. IVA incluido.' },
+  ES: { name:'España', currency:'EUR', symbol:'€', has_decimals:true, tax_included:true, tax_kw:['iva','base imponible'], deposit_kw:[], refund_kw:['devolucion'], tip_behavior:'rounding', tip_kw:[], total_kw:['total','importe total','a pagar'], price_format:'two_column', signals:['nif','cif','factura simplificada'], decimal_sep:',', format:'EUR. IVA incluido. Sin propina obligatoria. CRÍTICO: boletas con columnas "Precio" e "Importe" → usar siempre la columna IMPORTE (precio × cantidad = importe). El precio unitario puede estar en la columna izquierda pero el precio correcto del ítem es el IMPORTE de la columna derecha. Nombres de ítem que ocupan dos líneas son UN SOLO ítem.' },
   FR: { name:'Francia', currency:'EUR', symbol:'€', has_decimals:true, tax_included:true, tax_kw:['tva','taxe'], deposit_kw:['consigne'], refund_kw:['remboursement'], tip_behavior:'included_service', tip_kw:['pourboire','service'], total_kw:['total','a payer','solde'], price_format:'standard', signals:['siret','siren','tva'], decimal_sep:',', format:'EUR. TVA incluida. Service incluido en restaurantes.' },
   GB: { name:'Reino Unido', currency:'GBP', symbol:'£', has_decimals:true, tax_included:true, tax_kw:['vat','tax'], deposit_kw:[], refund_kw:['refund'], tip_behavior:'optional_service_charge', tip_kw:['tip','gratuity','service charge'], total_kw:['total','amount due','to pay'], price_format:'standard', signals:['vat reg','vat no','gbp','£'], decimal_sep:'.', format:'£ = GBP. VAT 20% incluido.' },
   IT: { name:'Italia', currency:'EUR', symbol:'€', has_decimals:true, tax_included:true, tax_kw:['iva','imposta'], deposit_kw:[], refund_kw:['rimborso'], tip_behavior:'coperto_charge', tip_kw:['mancia','coperto'], total_kw:['totale','da pagare'], price_format:'standard', signals:['p.iva','codice fiscale','scontrino'], decimal_sep:',', format:'EUR. Coperto = cargo cubierto (incluir).' },
@@ -75,6 +75,8 @@ function buildPrompt(countryCode) {
     : `- Sin propina en ${r.name}. Ignorar cualquier sugerencia de propina.`;
   const priceLine = r.price_format === 'unit_x_qty_equals_total'
     ? `- Formato "PRECIO x CANTIDAD = TOTAL": usar el TOTAL como precio_unitario y 1 como cantidad. Ej: "0,29 x 6 = 1,74" → precio_unitario:1.74, cantidad:1`
+    : r.price_format === 'two_column'
+    ? `- Formato DOS COLUMNAS "Precio | Importe": usar SIEMPRE el valor de la columna IMPORTE (la última columna, derecha) como precio_unitario. La columna "Precio" es el precio unitario antes de multiplicar — NO usarla. Ej: "2 PAN 1,00 2,00" → precio_unitario:2.00 cantidad:2. IMPORTANTE: si el nombre del ítem ocupa dos líneas, es UN SOLO ítem — no crear dos ítems separados.`
     : `- Decimal con "${r.decimal_sep}". En JSON siempre punto: "1${r.decimal_sep}74" → 1.74`;
 
   return `Eres experto en boletas de ${r.name}. Moneda: ${r.currency} (${r.symbol}).
@@ -167,22 +169,38 @@ function reconcile(items, totalReported) {
 // ── CAPA 6: Normalización de precios ─────────────────────────────────────────
 function normalizeItems(items, countryCode) {
   const r = COUNTRY_RULES[countryCode] || {};
+  // Monedas SIN decimales: Claude devuelve enteros (440 para ¥440, 12000 para ₩12000)
+  // Monedas CON decimales: Claude devuelve float (7.90 para €7,90, 1.65 para €1,65)
+  // NO aplicar factor ×100 — los precios ya vienen en escala correcta desde Claude
   const noDecimal = ['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF'];
-  const factor = !r.has_decimals || noDecimal.includes(r.currency) ? 1 : 100;
+  const isNoDecimal = noDecimal.includes(r.currency || '');
 
   return items.map((it,i) => {
     let raw = it.precio_unitario ?? it.precio ?? 0;
+
+    // Normalizar si viene como string (separadores europeos, etc.)
     if (typeof raw === 'string') {
       const s = raw.trim();
+      // Formato europeo miles: "1.234,56"
       if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)) raw = parseFloat(s.replace(/\./g,'').replace(',','.'));
+      // Formato europeo simple: "7,90"
       else if (/^\d+,\d{1,2}$/.test(s)) raw = parseFloat(s.replace(',','.'));
+      // Formato americano miles: "1,234.56"
       else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s)) raw = parseFloat(s.replace(/,/g,''));
       else raw = parseFloat(s.replace(',','.'));
     }
+
     if (isNaN(raw)) raw = 0;
+
+    // Para monedas sin decimales: redondear al entero más cercano
+    // Para monedas con decimales: conservar 2 decimales exactos (sin ×100)
+    const precioFinal = isNoDecimal
+      ? Math.round(raw)
+      : Math.round(raw * 100) / 100;  // mantener 2 decimales, NO multiplicar
+
     return {
       nombre: it.nombre || it.name || `Item ${i+1}`,
-      precio_unitario: Math.round(raw * factor),
+      precio_unitario: precioFinal,
       cantidad: Math.max(1, parseInt(it.cantidad)||1)
     };
   }).filter(it => it.precio_unitario !== 0);
