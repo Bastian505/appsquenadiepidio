@@ -1410,79 +1410,18 @@ function handleFile(e){
 function currSym(){return window._currentSymbol||'$';}
 function fmtP(n){var s=currSym();var suf=['kr','zl','Kc','Ft','lei','Fr'];var v=Math.round(n).toLocaleString('es-CL');return suf.indexOf(s)>-1?v+' '+s:s+v;}
 
-// ── PARSER UNIVERSAL DE PRECIOS v2.0 ──
-// Soporta boletas de cualquier país: Chile, Argentina, Alemania, USA, etc.
-// Detecta el formato numérico analizando TODA la boleta de una vez.
-
-function _dcDetectFormat(rawPrices){
-  var eu=0,am=0,miles=0;
-  rawPrices.forEach(function(raw){
-    var c=String(raw).replace(/[^0-9.,]/g,'');
-    if(!c)return;
-    var lc=c.lastIndexOf(','),ld=c.lastIndexOf('.');
-    if(lc>ld){eu++;}
-    else if(ld>lc&&lc!==-1){am++;}
-    else if(lc===-1&&ld!==-1){
-      var ad=c.substring(ld+1);
-      if(ad.length===3){miles++;}else if(ad.length<=2){am++;}
-    }else if(ld===-1&&lc!==-1){
-      var ac=c.substring(lc+1);
-      if(ac.length<=2){eu++;}
-    }
-  });
-  if(eu>0&&eu>=am)return'european';
-  if(am>0)return'american';
-  if(miles>0)return'plain_miles';
-  return'plain';
-}
-
-function _dcNormalizePrice(raw,fmt){
-  var s=String(raw||'');
-  var neg=s.indexOf('-')!==-1;
-  var c=s.replace(/[^0-9.,]/g,'');
-  if(!c)return 0;
-  var r;
-  if(fmt==='european'){r=parseFloat(c.replace(/\./g,'').replace(',','.'));}
-  else if(fmt==='american'){r=parseFloat(c.replace(/,/g,''));}
-  else if(fmt==='plain_miles'){r=parseFloat(c.replace(/\./g,''));}
-  else{
-    var ld=c.lastIndexOf('.');
-    if(ld!==-1&&c.substring(ld+1).length===3){r=parseFloat(c.replace(/\./g,''));}
-    else{r=parseFloat(c.replace(/,/g,''));}
-  }
-  if(isNaN(r))return 0;
-  return neg?-Math.abs(r):r;
-}
-
 // ── NORMALIZACIÓN INTERNACIONAL ──
 function normalizeInternationalItems(json){
   var moneda=(json.moneda||'CLP').toUpperCase().trim();
-  // Monedas SIN decimales (enteros puros) — factor=1 para no multiplicar
   var sinD={'CLP':1,'JPY':1,'KRW':1,'VND':1,'IDR':1,'TWD':1,'KHR':1,'MMK':1,'UGX':1,'RWF':1,'TZS':1,'XOF':1,'XAF':1,'GNF':1,'BIF':1,'MGA':1};
-  // Monedas CON decimales — factor=1 (el parser ya entrega el valor real, no centavos)
-  var factor=1;
-  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$'};
-
-  var rawItems=json.items||[];
-
-  // Extraer todos los precios como string para detectar formato de la boleta completa
-  var rawPrices=rawItems.map(function(it){
-    var v=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
-    return String(v||'0');
-  }).filter(function(p){return p&&p!=='0';});
-
-  // Detectar formato dominante de TODA la boleta de una sola vez
-  var fmt=_dcDetectFormat(rawPrices);
-
-  var items=rawItems.map(function(it,i){
+  var factor=sinD[moneda]!==undefined?sinD[moneda]:100;
+  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','GBP':'\u00a3'};
+  var items=(json.items||[]).map(function(it,i){
     var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
-    var p=_dcNormalizePrice(raw,fmt);
-    if(isNaN(p)||p===0)return null;
-    // Para monedas sin decimales, redondear al entero. Para el resto, mantener hasta 2 decimales.
-    var precio=sinD[moneda]!==undefined?Math.round(p):Math.round(p*100)/100;
-    return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:precio,cantidad:Math.max(1,parseInt(it.cantidad)||parseInt(it.quantity)||1)};
-  }).filter(function(it){return it&&it.precio_unitario!==0;});
-
+    if(typeof raw==='string'){var s=raw.trim();if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s)){raw=parseFloat(s.replace(/\./g,'').replace(',','.'));}else if(/^\d+,\d{1,2}$/.test(s)){raw=parseFloat(s.replace(',','.'));}else{raw=parseFloat(s.replace(',','.'));}}
+    var p=isNaN(raw)?0:raw;
+    return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:Math.round(p*factor),cantidad:Math.max(1,parseInt(it.cantidad)||1)};
+  }).filter(function(it){return it.precio_unitario!==0;});
   return{restaurante:json.restaurante||null,moneda:moneda,simbolo:sym[moneda]||moneda,items:items};
 }
 
