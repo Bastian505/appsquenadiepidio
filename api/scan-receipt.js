@@ -621,7 +621,9 @@ function buildResponse(res, rawJson, countryCode, detectionConfidence, modelUsed
     total_original: parsed.total ?? null,
     confianza_pais: detectionConfidence,
     confianza_extraccion: parsed.confianza ?? 0.8,
-    model_used: modelUsed,   // para debug/analytics
+    model_used: modelUsed,
+    raw_lines: (typeof rawLines !== 'undefined' ? rawLines : []),
+    layout_detectado: (rules.price_format && rules.price_format !== 'standard' ? rules.price_format : null),
     reconciliation: {
       ok: recon.ok,
       note: recon.note,
