@@ -1432,7 +1432,7 @@ function normalizeInternationalItems(json){
   // NO aplicar factor ×100 — los precios ya vienen en escala correcta desde el pipeline
   var sinD=['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA'];
   var esMonedaSinDecimal=sinD.indexOf(moneda)>-1;
-  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei'};
+  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','ILS':'\u20aa','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei'};
   var items=(json.items||[]).map(function(it,i){
     var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
     if(typeof raw==='string'){
@@ -1583,22 +1583,20 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
     window._currentSymbol = norm.simbolo;
     window._currentCurrency = norm.moneda;
 
-    // Mostrar advertencias del pipeline
-    if(data.warnings && data.warnings.length){
-      data.warnings.forEach(function(w){
-        if(w.type==='financial_discrepancy'){
-          setTimeout(function(){ showReconciliationWarning(data.reconciliation, data.total_original); }, 1500);
-        }
-      });
+    // ── FINANCIAL TRUTH ENGINE: interceptar discrepancia ANTES de mostrar ──────
+    var recon = data.reconciliation || {};
+    var hasBigDisc = recon && !recon.ok && recon.diff_ratio > 0.05;
+
+    if(hasBigDisc){
+      // No cargamos items todavía — pedimos al usuario que elija
+      window._pendingItems = norm;
+      window._pendingData  = data;
+      showDiscrepancyModal(recon, norm, data);
+      return;
     }
 
-    var pais = data.pais_nombre ? ' · '+data.pais_nombre : '';
-    var label = norm.moneda!=='CLP'
-      ? (norm.restaurante||'Establecimiento')+' ['+norm.moneda+']'
-      : (norm.restaurante||'Restaurante');
-
-    loadItems(label, norm.items);
-    toast('Boleta leída — '+norm.items.length+' items ('+norm.moneda+pais+')');
+    // Sin discrepancia → cargar directo
+    _finishLoad(norm, data);
 
   }catch(err){
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
@@ -1907,22 +1905,25 @@ function loadItems(rest,raw){
 // ── ITEMS ──
 function renderItems(){
   document.getElementById('items-list').innerHTML=items.map(function(it,i){
-    return '<div class="item-card '+(it.selected?'sel':'')+'" id="ic'+i+'">'+
-      '<div class="item-cb" onclick="toggleItem('+i+')">'+(it.selected?'✓':'')+'</div>'+
+    return '<div class="item-card '+(it.selected?'sel':'')+'" id="ic'+i+'">' +
+      '<div class="item-cb" onclick="toggleItem('+i+')">'+(it.selected?'✓':'')+' </div>'+
       '<div class="item-info">'+
-        '<input class="item-name-edit" value="'+escHtml(it.name)+'" onchange="items['+i+'].name=this.value" onclick="return false">'+
+        '<input class="item-name-edit" value="'+escHtml(it.name)+'" '+
+          'onchange="var ov=items['+i+'].name;items['+i+'].name=this.value;saveCorrection('+i+',\'nombre\',ov,this.value);" '+
+          'onclick="return false">'+
         '<div style="display:flex;align-items:center;gap:4px;">'+
           '<span style="font-size:10px;color:var(--text3);">'+currSym()+'</span>'+
-          '<input class="item-price-edit" type="number" value="'+it.price+'" onchange="items['+i+'].price=parseInt(this.value)||0;updateTotal()" onclick="return false">'+
+          '<input class="item-price-edit" type="number" value="'+it.price+'" '+
+            'onchange="var ov=items['+i+'].price;var nv=parseInt(this.value)||0;items['+i+'].price=nv;updateTotal();saveCorrection('+i+',\'precio\',ov,nv);" '+
+            'onclick="return false">'+
           (it.qty>1?'<span style="font-size:10px;color:var(--text3);"> · x'+it.qty+'</span>':'<span style="font-size:10px;color:var(--text3);"> · x1</span>')+
         '</div>'+
       '</div>'+
       '<div style="font-weight:800;font-size:13px;color:var(--pdd);margin-right:4px;">'+fmtP(it.total)+'</div>'+
-      '<button class="item-del" onclick="removeItem('+i+')">✕</button>'+
+      '<button class="item-del" onclick="saveCorrection('+i+',\'eliminado\',{nombre:items['+i+'].name,precio_unitario:items['+i+'].price,cantidad:items['+i+'].qty},null);removeItem('+i+')">✕</button>'+
     '</div>';
   }).join('');
 }
-
 function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function toggleItem(i){items[i].selected=!items[i].selected;renderItems();updateTotal();}
 function removeItem(i){
@@ -1935,6 +1936,7 @@ function addNewItem(){
   var price=parseInt(document.getElementById('new-item-price').value)||0;
   if(!name||!price){toast('Ingresa nombre y precio');return;}
   items.push({id:Date.now(),name:name,price:price,qty:1,get total(){return this.price*this.qty;},selected:true});
+  saveItemAdded(name, price, 1);
   document.getElementById('new-item-name').value='';document.getElementById('new-item-price').value='';
   renderItems();updateTotal();
 }
@@ -2508,6 +2510,224 @@ function reset(){
 loadSavedGroups();
 loadPendingDebts();
 checkOffline();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// COLLECTIVE LEARNING — Guardar correcciones en Supabase
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Contexto activo de la boleta (se setea cuando se carga)
+var _scanContext = {
+  pais: null, moneda: null, restaurante: null,
+  total_boleta: 0, model_used: null,
+  items_originales: [],
+  raw_lines: [],
+  layout_detectado: null,
+  confianza_extraccion: null,
+  scan_timestamp: null
+};
+
+function setScanContext(data, norm){
+  _scanContext = {
+    pais:                 data.pais              || null,
+    moneda:               norm.moneda            || 'CLP',
+    restaurante:          norm.restaurante       || data.restaurante || null,
+    total_boleta:         data.total_original    || data.total || 0,
+    model_used:           data.model_used        || null,
+    raw_lines:            data.raw_lines         || [],
+    layout_detectado:     data.layout_detectado  || null,
+    confianza_extraccion: data.confianza_extraccion || null,
+    scan_timestamp:       Date.now(),
+    items_originales: (norm.items||[]).map(function(it){
+      return {nombre:it.nombre, precio_unitario:it.precio_unitario, cantidad:it.cantidad};
+    })
+  };
+}
+
+async function saveCorrection(itemIdx, tipo, valorOriginal, valorNuevo){
+  if(!sb) return;
+  if(valorOriginal === valorNuevo) return; // sin cambio real
+  
+  var it = items[itemIdx];
+  if(!it) return;
+
+  var itemOrig = _scanContext.items_originales[itemIdx] || {
+    nombre: it.name, precio_unitario: it.price, cantidad: it.qty
+  };
+  
+  var itemCorr = {
+    nombre:          tipo==='nombre'   ? valorNuevo : it.name,
+    precio_unitario: tipo==='precio'   ? valorNuevo : it.price,
+    cantidad:        tipo==='cantidad' ? valorNuevo : it.qty
+  };
+
+  // Financial Truth Engine snapshot post-corrección
+  var sumaOrig = items.reduce(function(a,x){return a+x.price*x.qty;},0);
+  var sumaCorrItems = items.map(function(x,i){
+    if(i===itemIdx && tipo==='precio') return valorNuevo*(x.qty||1);
+    return x.price*x.qty;
+  }).reduce(function(a,b){return a+b;},0);
+
+  var segsHasta = _scanContext.scan_timestamp
+    ? Math.round((Date.now() - _scanContext.scan_timestamp) / 1000)
+    : null;
+  try {
+    await sb.from('dc_corrections').insert({
+      pais:                       _scanContext.pais,
+      moneda:                     _scanContext.moneda,
+      restaurante:                _scanContext.restaurante,
+      total_boleta:               _scanContext.total_boleta,
+      model_used:                 _scanContext.model_used,
+      raw_lines:                  (_scanContext.raw_lines||[]).length ? _scanContext.raw_lines : null,
+      layout_detectado:           _scanContext.layout_detectado || null,
+      confianza_extraccion:       _scanContext.confianza_extraccion || null,
+      item_original:              itemOrig,
+      item_corregido:             tipo==='eliminado' ? null : itemCorr,
+      tipo_correccion:            tipo,
+      suma_items_original:        sumaOrig,
+      suma_items_corregida:       sumaCorrItems,
+      diferencia_con_total:       Math.abs(sumaCorrItems - (_scanContext.total_boleta||0)),
+      segundos_hasta_correccion:  segsHasta
+    });
+  } catch(e){
+    console.warn('saveCorrection error (no crítico):', e);
+  }
+}
+
+async function saveItemAdded(nombre, precio, cantidad){
+  if(!sb) return;
+  try {
+    var sumaActual = items.reduce(function(a,x){return a+x.price*x.qty;},0);
+    var segsHastaAdd = _scanContext.scan_timestamp
+      ? Math.round((Date.now() - _scanContext.scan_timestamp) / 1000) : null;
+    await sb.from('dc_corrections').insert({
+      pais:                       _scanContext.pais,
+      moneda:                     _scanContext.moneda,
+      restaurante:                _scanContext.restaurante,
+      total_boleta:               _scanContext.total_boleta,
+      model_used:                 _scanContext.model_used,
+      raw_lines:                  (_scanContext.raw_lines||[]).length ? _scanContext.raw_lines : null,
+      layout_detectado:           _scanContext.layout_detectado || null,
+      confianza_extraccion:       _scanContext.confianza_extraccion || null,
+      item_original:              null,
+      item_corregido:             {nombre:nombre, precio_unitario:precio, cantidad:cantidad},
+      tipo_correccion:            'agregado',
+      suma_items_original:        sumaActual,
+      suma_items_corregida:       sumaActual + precio*cantidad,
+      diferencia_con_total:       Math.abs((sumaActual+precio*cantidad) - (_scanContext.total_boleta||0)),
+      segundos_hasta_correccion:  segsHastaAdd
+    });
+  } catch(e){
+    console.warn('saveItemAdded error (no crítico):', e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FINANCIAL TRUTH ENGINE — Modal de discrepancia
+// ══════════════════════════════════════════════════════════════════════════════
+
+function showDiscrepancyModal(recon, norm, data){
+  var sym = norm.simbolo || currSym();
+  var sumStr  = fmtP(recon.sum_items  || 0);
+  var totStr  = fmtP(recon.total_boleta || 0);
+  var diffPct = Math.round((recon.diff_ratio||0)*100);
+
+  var html = '<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin:12px 0;">'
+    + '<div style="font-size:15px;font-weight:700;margin-bottom:4px;">⚠️ El total no cuadra</div>'
+    + '<div style="font-size:13px;color:var(--text2);margin-bottom:12px;">'
+    +   (recon.note || 'La suma de items difiere del total de la boleta.')
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
+    +   '<div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">'
+    +     '<div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Suma de items</div>'
+    +     '<div style="font-size:18px;font-weight:700;">'+sumStr+'</div>'
+    +   '</div>'
+    +   '<div style="background:var(--surface2);border-radius:8px;padding:10px;text-align:center;">'
+    +     '<div style="font-size:11px;color:var(--text3);margin-bottom:2px;">Total en boleta</div>'
+    +     '<div style="font-size:18px;font-weight:700;color:var(--pdd);">'+totStr+'</div>'
+    +   '</div>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-bottom:12px;text-align:center;">Diferencia: '+diffPct+'%</div>'
+    + '<div style="display:flex;gap:8px;">'
+    +   '<button class="btn" style="flex:1;font-size:13px;" onclick="useItemsSum()">Usar suma de items</button>'
+    +   '<button class="btn" style="flex:1;font-size:13px;background:var(--pdd);color:#fff;" onclick="useBolletaTotal()">Usar total boleta</button>'
+    + '</div>'
+    + '<div style="margin-top:8px;text-align:center;">'
+    +   '<button class="btn" style="font-size:12px;color:var(--text3);" onclick="continueWithWarning()">Continuar y revisar manualmente</button>'
+    + '</div>'
+    + '</div>';
+
+  var errCard = document.getElementById('scan-error-card');
+  if(errCard){
+    errCard.innerHTML = html;
+    errCard.style.display = 'block';
+  }
+}
+
+function _finishLoad(norm, data){
+  window._currentSymbol   = norm.simbolo;
+  window._currentCurrency = norm.moneda;
+  setScanContext(data, norm);
+  var pais  = data.pais_nombre ? ' · '+data.pais_nombre : '';
+  var label = norm.moneda !== 'CLP'
+    ? (norm.restaurante||'Establecimiento')+' ['+norm.moneda+']'
+    : (norm.restaurante||'Restaurante');
+  loadItems(label, norm.items);
+  toast('Boleta leída — '+norm.items.length+' items ('+norm.moneda+pais+')');
+  window._pendingItems = null;
+  window._pendingData  = null;
+}
+
+function useItemsSum(){
+  var p = window._pendingItems, d = window._pendingData;
+  if(!p||!d) return;
+  var errCard = document.getElementById('scan-error-card');
+  if(errCard) errCard.style.display = 'none';
+  _finishLoad(p, d);
+}
+
+function useBolletaTotal(){
+  var p = window._pendingItems, d = window._pendingData;
+  if(!p||!d) return;
+  // Escalar precios proporcionalmente para que sumen el total
+  var recon = d.reconciliation || {};
+  var totalBoleta = recon.total_boleta || d.total_original || 0;
+  var sumaItems   = recon.sum_items || 1;
+  if(totalBoleta > 0 && sumaItems > 0){
+    var factor = totalBoleta / sumaItems;
+    p.items = p.items.map(function(it){
+      return {
+        nombre:          it.nombre,
+        precio_unitario: Math.round(it.precio_unitario * factor),
+        cantidad:        it.cantidad
+      };
+    });
+  }
+  var errCard = document.getElementById('scan-error-card');
+  if(errCard) errCard.style.display = 'none';
+  _finishLoad(p, d);
+}
+
+function continueWithWarning(){
+  var p = window._pendingItems, d = window._pendingData;
+  if(!p||!d) return;
+  var errCard = document.getElementById('scan-error-card');
+  if(errCard) errCard.style.display = 'none';
+  _finishLoad(p, d);
+  setTimeout(function(){toast('⚠️ Revisa los precios manualmente');}, 800);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SETTLEMENT ACCURACY — Validación al final (antes de cobrar)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function checkSettlementAccuracy(){
+  if(!_scanContext.total_boleta || _scanContext.total_boleta === 0) return true;
+  var sumaActual = items.filter(function(i){return i.selected;})
+    .reduce(function(a,x){return a+x.price*x.qty;},0);
+  var diff = Math.abs(sumaActual - _scanContext.total_boleta) / _scanContext.total_boleta;
+  return diff <= 0.05; // OK si diferencia ≤ 5%
+}
+
 </script>
 </body>
 </html>
