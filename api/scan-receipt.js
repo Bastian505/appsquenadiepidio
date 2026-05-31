@@ -262,6 +262,158 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     price_format:'standard', signals:['sar','ريال'],
     format:'SAR = riyales. VAT 15%.'
   },
+
+  // ── TURQUÍA ────────────────────────────────────────────────────────────────
+  TR: {
+    name:'Turquía', currency:'TRY', symbol:'₺', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['kdv','vergi','k.d.v'],
+    deposit_kw:[],
+    refund_kw:['iade'],
+    tip_behavior:'none',
+    tip_kw:[],
+    total_kw:['toplam','genel toplam','ödenecek tutar'],
+    price_format:'tr_adedi_tutar',
+    signals:['tl','try','kdv','toplam','fiş','fatura','yemek bedeli','icecek bedeli','garson','masa'],
+    format:`TRY = ₺ (lira turca). Decimal con coma: "8,00"=8.00.
+FORMATO TURCO: columnas son Cinsi(nombre) | Adedi(cantidad) | Tutar(precio_total_línea).
+- Tutar ES el precio total de la línea completa. precio_unitario = Tutar ÷ Adedi.
+- Ejemplo: "1/2 Deniz Borulcesi  2  18,00" → precio_unitario=9.00, cantidad=2
+- Kuver = cargo de cubierto por persona, INCLUIRLO como item positivo.
+- Yemek Bedeli = subtotal comidas → IGNORAR (es resumen, no producto).
+- Icecek Bedeli = subtotal bebidas → IGNORAR (es resumen, no producto).
+- KDV = IVA turco → IGNORAR.
+- Toplam = total final correcto.
+- Nombres de items en turco, mantenerlos como están.`
+  },
+
+  // ── GRECIA ────────────────────────────────────────────────────────────────
+  GR: {
+    name:'Grecia', currency:'EUR', symbol:'€', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['φπα','fpa','vat'],
+    deposit_kw:[],
+    refund_kw:[],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['σύνολο','synolo','total'],
+    price_format:'standard',
+    signals:['αφμ','φπα','ελλάδα','greece','eur'],
+    format:'EUR. ΦΠΑ = IVA griego, ignorar. Decimal con coma.'
+  },
+
+  // ── POLONIA ───────────────────────────────────────────────────────────────
+  PL: {
+    name:'Polonia', currency:'PLN', symbol:'zł', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['vat','podatek'],
+    deposit_kw:[],
+    refund_kw:['zwrot'],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['suma','razem','do zapłaty'],
+    price_format:'standard',
+    signals:['pln','zł','nip','paragon','vat'],
+    format:'PLN = złoty. Decimal con coma. VAT incluido.'
+  },
+
+  // ── REPÚBLICA CHECA ───────────────────────────────────────────────────────
+  CZ: {
+    name:'Rep. Checa', currency:'CZK', symbol:'Kč', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['dph','dan'],
+    deposit_kw:[],
+    refund_kw:[],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['celkem','k úhradě','celková'],
+    price_format:'standard',
+    signals:['czk','kč','dph','ico','dic'],
+    format:'CZK = coronas checas. DPH = IVA, ignorar.'
+  },
+
+  // ── HUNGRÍA ───────────────────────────────────────────────────────────────
+  HU: {
+    name:'Hungría', currency:'HUF', symbol:'Ft', has_decimals:false,
+    complexity:'simple',
+    tax_kw:['áfa','adó'],
+    deposit_kw:[],
+    refund_kw:[],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['összesen','fizetendő','végösszeg'],
+    price_format:'standard',
+    signals:['huf','ft','áfa','adószám'],
+    format:'HUF = forintos. Sin decimales. ÁFA = IVA, ignorar.'
+  },
+
+  // ── SUECIA / NORUEGA / DINAMARCA ─────────────────────────────────────────
+  SE: {
+    name:'Suecia', currency:'SEK', symbol:'kr', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['moms','skatt'],
+    deposit_kw:['pant'],
+    refund_kw:['retur'],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['totalt','att betala','summa'],
+    price_format:'standard',
+    signals:['sek','kr','moms','org.nr','kvitto','stockholm','göteborg','malmö'],
+    format:'SEK = coronas suecas. Moms = IVA, ignorar. Pant = depósito retornable.'
+  },
+
+  NO: {
+    name:'Noruega', currency:'NOK', symbol:'kr', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['mva','avgift'],
+    deposit_kw:[],
+    refund_kw:[],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['totalt','å betale','sum'],
+    price_format:'standard',
+    signals:['nok','mva','orgnr','oslo','bergen'],
+    format:'NOK = coronas noruegas. MVA = IVA, ignorar.'
+  },
+
+  DK: {
+    name:'Dinamarca', currency:'DKK', symbol:'kr', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['moms','afgift'],
+    deposit_kw:['pant'],
+    refund_kw:[],
+    tip_behavior:'rounding',
+    tip_kw:[],
+    total_kw:['i alt','total','betales'],
+    price_format:'standard',
+    signals:['dkk','moms','cvr','københavn','aarhus'],
+    format:'DKK = coronas danesas. Moms = IVA, ignorar.'
+  },
+
+  // ── MÉXICO / LATAM adicionales ────────────────────────────────────────────
+  UY: {
+    name:'Uruguay', currency:'UYU', symbol:'$', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['iva','impuesto'],
+    deposit_kw:[], refund_kw:[],
+    tip_behavior:'none', tip_kw:[],
+    total_kw:['total','a pagar'],
+    price_format:'standard',
+    signals:['rut','dgi','uruguay','montevideo','uyu'],
+    format:'UYU = pesos uruguayos. $ = UYU. IVA incluido.'
+  },
+
+  PY: {
+    name:'Paraguay', currency:'PYG', symbol:'₲', has_decimals:false,
+    complexity:'simple',
+    tax_kw:['iva','impuesto'],
+    deposit_kw:[], refund_kw:[],
+    tip_behavior:'none', tip_kw:[],
+    total_kw:['total','a pagar'],
+    price_format:'standard',
+    signals:['ruc','set','paraguay','asuncion','pyg','₲'],
+    format:'PYG = guaraníes. Sin decimales. IVA incluido.'
+  },
 };
 
 // ── Selección de modelo por complejidad ───────────────────────────────────────
@@ -326,6 +478,8 @@ function buildUnifiedPrompt(countryCode) {
       ? `- "PRECIO x CANTIDAD = TOTAL": precio_unitario=TOTAL, cantidad=1.`
     : r.price_format === 'us_qty_total'
       ? `- "N NOMBRE TOTAL": precio_unitario=TOTAL÷N, cantidad=N. Ignorar líneas sin precio.`
+    : r.price_format === 'tr_adedi_tutar'
+      ? `- Formato turco Cinsi|Adedi|Tutar: Tutar ES el precio total de la línea. precio_unitario = Tutar ÷ Adedi. Ej: "1/2 Deniz Borulcesi 2 18,00" → precio_unitario=9.00, cantidad=2.`
     : r.price_format === 'il_rtl'
       ? `- Texto hebreo RTL. מחיר=precio, כמות=cantidad, לתשלום=total línea.`
     : r.price_format === 'es_multi'
@@ -369,6 +523,7 @@ PASO 2 — EXTRAE los items con estas reglas universales:
 8. NON FISCALE/PRECONTO (Italia): precuenta válida, precios correctos.
 9. Propinas: incluir SOLO si aparecen en el total final pagado.
 10. Precios en JSON siempre con punto decimal.
+11. Boletas turcas (Cinsi|Adedi|Tutar): Tutar = precio TOTAL de la línea. precio_unitario = Tutar ÷ Adedi. Yemek Bedeli / Icecek Bedeli = subtotales, IGNORAR.
 
 RESPONDE SOLO JSON (sin markdown):
 {"restaurante":"nombre o null","moneda":"ISO_3","pais":"ISO_2_o_UNKNOWN","items":[{"nombre":"nombre original","precio_unitario":numero,"cantidad":numero}],"total":numero,"confianza":numero_0_a_1}
@@ -416,12 +571,90 @@ function parseJSON(raw) {
   return null;
 }
 
-// ── CAPA 5: Reconciliación financiera ─────────────────────────────────────────
+// ── CAPA 5: Reconciliación financiera con reparación proactiva ────────────────
 function reconcile(items, totalReported) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
-  if (!totalReported) return { ok:true, sum, total:sum, diff:0, ratio:0, note:null };
+  if (!totalReported) return { ok:true, sum, total:sum, diff:0, ratio:0, note:null, auto_fixed:false };
+
   const diff = totalReported - sum;
   const ratio = Math.abs(diff) / totalReported;
+
+  // ── Reparación proactiva: intentar resolver antes de mostrar modal ──────────
+  // Solo si el total es mayor que la suma (diff > 0) y es un patrón conocido
+  if (diff > 0 && ratio >= 0.06) {
+    const extraAmount = Math.round(diff * 100) / 100;
+
+    // Patrón 1: Service charge UK / Colombia / Asia (~10-13%)
+    if (ratio >= 0.08 && ratio <= 0.135) {
+      const repaired = [...items, {
+        nombre: 'Servicio',
+        precio_unitario: extraAmount,
+        cantidad: 1
+      }];
+      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
+      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
+        return {
+          ok: true,
+          sum: Math.round(newSum*100)/100,
+          total: totalReported,
+          diff: 0,
+          ratio: 0,
+          note: null,
+          auto_fixed: true,
+          auto_fix_type: 'service_charge',
+          auto_fix_item: { nombre:'Servicio', precio_unitario:extraAmount, cantidad:1 }
+        };
+      }
+    }
+
+    // Patrón 2: Propina sugerida (~15-22%)
+    if (ratio >= 0.14 && ratio <= 0.22) {
+      const repaired = [...items, {
+        nombre: 'Propina',
+        precio_unitario: extraAmount,
+        cantidad: 1
+      }];
+      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
+      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
+        return {
+          ok: true,
+          sum: Math.round(newSum*100)/100,
+          total: totalReported,
+          diff: 0,
+          ratio: 0,
+          note: null,
+          auto_fixed: true,
+          auto_fix_type: 'tip',
+          auto_fix_item: { nombre:'Propina', precio_unitario:extraAmount, cantidad:1 }
+        };
+      }
+    }
+
+    // Patrón 3: IVA no capturado (~7-10%)
+    if (ratio >= 0.06 && ratio <= 0.08) {
+      const repaired = [...items, {
+        nombre: 'Impuesto',
+        precio_unitario: extraAmount,
+        cantidad: 1
+      }];
+      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
+      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
+        return {
+          ok: true,
+          sum: Math.round(newSum*100)/100,
+          total: totalReported,
+          diff: 0,
+          ratio: 0,
+          note: null,
+          auto_fixed: true,
+          auto_fix_type: 'tax',
+          auto_fix_item: { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1 }
+        };
+      }
+    }
+  }
+
+  // Sin reparación posible → clasificar para el modal
   let note=null, ok=true;
   if      (ratio < 0.03)                       { ok=true; }
   else if (ratio < 0.06)                       { note='Pequeña diferencia por redondeo.'; ok=true; }
@@ -429,7 +662,7 @@ function reconcile(items, totalReported) {
   else if (diff>0&&ratio>=0.14&&ratio<=0.22)   { note=`El total incluye ~${Math.round(ratio*100)}% extra — posible impuesto no incluido.`; ok=false; }
   else if (diff<0)                              { note='La suma supera el total — posible descuento o devolución no capturada.'; ok=false; }
   else if (ratio>0.22)                          { note=`Discrepancia grande (${Math.round(ratio*100)}%) — algunos items pueden faltar.`; ok=false; }
-  return { ok, sum:Math.round(sum*100)/100, total:totalReported, diff:Math.round(diff*100)/100, ratio:parseFloat(ratio.toFixed(3)), note };
+  return { ok, sum:Math.round(sum*100)/100, total:totalReported, diff:Math.round(diff*100)/100, ratio:parseFloat(ratio.toFixed(3)), note, auto_fixed:false };
 }
 
 // ── CAPA 6: Normalización ─────────────────────────────────────────────────────
@@ -594,7 +827,13 @@ function buildResponse(res, rawJson, countryCode, detectionConfidence, modelUsed
 
   const finalCountry = parsed.pais || countryCode || 'CL';
   const recon = reconcile(parsed.items, parsed.total || 0);
-  const normalizedItems = normalizeItems(parsed.items, finalCountry);
+
+  // Aplicar auto-fix de reconciliación (agregar item faltante automáticamente)
+  let itemsToNormalize = parsed.items;
+  if (recon.auto_fixed && recon.auto_fix_item) {
+    itemsToNormalize = [...parsed.items, recon.auto_fix_item];
+  }
+  const normalizedItems = normalizeItems(itemsToNormalize, finalCountry);
   const normalizedTotal = normalizedItems.reduce((a,it) => a+it.precio_unitario*it.cantidad, 0);
 
   if (!normalizedItems.length) {
@@ -629,7 +868,9 @@ function buildResponse(res, rawJson, countryCode, detectionConfidence, modelUsed
       note: recon.note,
       sum_items: recon.sum,
       total_boleta: recon.total,
-      diff_ratio: recon.ratio
+      diff_ratio: recon.ratio,
+      auto_fixed: recon.auto_fixed || false,
+      auto_fix_type: recon.auto_fix_type || null
     },
     warnings
   });
