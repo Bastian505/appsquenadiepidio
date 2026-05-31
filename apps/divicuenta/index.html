@@ -461,6 +461,7 @@ input[type=text]::placeholder{color:var(--text3);}
       <div class="total-bar">
         <div><div class="total-tag">Total a dividir</div><div class="total-sub" id="sub-label">—</div></div>
         <div class="total-num" id="total-num">$0</div>
+        <div id="exchange-info" style="display:none;margin-top:2px;"></div>
       </div>
     </div>
   </div>
@@ -2672,7 +2673,18 @@ function _finishLoad(norm, data){
     ? (norm.restaurante||'Establecimiento')+' ['+norm.moneda+']'
     : (norm.restaurante||'Restaurante');
   loadItems(label, norm.items);
-  toast('Boleta leída — '+norm.items.length+' items ('+norm.moneda+pais+')');
+  var baseMsg = 'Boleta leída — '+norm.items.length+' items ('+norm.moneda+pais+')';
+
+  // Mostrar si la reconciliación aplicó auto-fix
+  var recon = data.reconciliation || {};
+  if(recon.auto_fixed && recon.auto_fix_type){
+    var typeLabel = {'service_charge':'+ Servicio agregado automáticamente',
+                     'tip':'+ Propina detectada automáticamente',
+                     'tax':'+ Impuesto agregado automáticamente'}[recon.auto_fix_type] || '';
+    if(typeLabel) setTimeout(function(){ toast('✓ '+typeLabel, 3000); }, 1200);
+  }
+
+  toast(baseMsg);
   window._pendingItems = null;
   window._pendingData  = null;
 }
@@ -2727,6 +2739,120 @@ function checkSettlementAccuracy(){
   var diff = Math.abs(sumaActual - _scanContext.total_boleta) / _scanContext.total_boleta;
   return diff <= 0.05; // OK si diferencia ≤ 5%
 }
+
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TIPO DE CAMBIO — Conversión referencial a moneda local
+// ══════════════════════════════════════════════════════════════════════════════
+
+var _exchangeRates = {};         // cache de tasas: {JPY:{CLP:6.52,USD:0.0068}, ...}
+var _exchangeTimestamp = null;   // cuándo se cachearon
+var _preferredCurrency = 'CLP';  // moneda preferida del usuario
+
+// Cargar moneda preferida guardada
+(function(){
+  try {
+    var saved = localStorage.getItem('dc_preferred_currency');
+    if(saved) _preferredCurrency = saved;
+  } catch(e){}
+})();
+
+function setPreferredCurrency(code){
+  _preferredCurrency = code;
+  try { localStorage.setItem('dc_preferred_currency', code); } catch(e){}
+}
+
+async function fetchExchangeRate(fromCurrency){
+  // No convertir si ya está en la moneda preferida
+  if(fromCurrency === _preferredCurrency) return null;
+
+  // Usar cache si tiene menos de 4 horas
+  var now = Date.now();
+  var cacheKey = fromCurrency + '_' + _preferredCurrency;
+  if(_exchangeRates[cacheKey] && _exchangeTimestamp &&
+     (now - _exchangeTimestamp) < 4 * 60 * 60 * 1000) {
+    return _exchangeRates[cacheKey];
+  }
+
+  try {
+    // Frankfurter API — gratis, sin registro, sin API key
+    var url = 'https://api.frankfurter.app/latest?from='+fromCurrency+'&to='+_preferredCurrency;
+    var res = await fetch(url);
+    if(!res.ok) return null;
+    var data = await res.json();
+    var rate = data.rates && data.rates[_preferredCurrency];
+    if(!rate) return null;
+
+    _exchangeRates[cacheKey] = {
+      rate: rate,
+      from: fromCurrency,
+      to: _preferredCurrency,
+      date: data.date
+    };
+    _exchangeTimestamp = now;
+    return _exchangeRates[cacheKey];
+  } catch(e){
+    console.warn('Exchange rate fetch failed (no crítico):', e);
+    return null;
+  }
+}
+
+// Mostrar conversión debajo del total
+async function showExchangeInfo(moneda){
+  var card = document.getElementById('exchange-info');
+  if(!card) return;
+
+  // No mostrar si la moneda ya es la preferida
+  if(!moneda || moneda === _preferredCurrency){
+    card.style.display = 'none';
+    return;
+  }
+
+  var rateInfo = await fetchExchangeRate(moneda);
+  if(!rateInfo) {
+    card.style.display = 'none';
+    return;
+  }
+
+  var totalDiv = document.getElementById('total-num');
+  var totalStr = totalDiv ? totalDiv.textContent : '';
+  var totalNum = parseFloat(totalStr.replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
+
+  if(totalNum <= 0){
+    card.style.display = 'none';
+    return;
+  }
+
+  var converted = totalNum * rateInfo.rate;
+  var symTo = {'CLP':'$','USD':'US$','EUR':'€','GBP':'£','ARS':'$','MXN':'$','BRL':'R$'}[_preferredCurrency] || _preferredCurrency;
+
+  card.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:4px 0;">'
+    + '≈ ' + symTo + Math.round(converted).toLocaleString('es-CL') + ' ' + _preferredCurrency
+    + ' · <span style="font-size:11px;opacity:.7;">Tipo de cambio referencial '+rateInfo.date+'</span>'
+    + '</div>';
+  card.style.display = 'block';
+}
+
+// Hook: llamar showExchangeInfo después de cargar items
+var _origFinishLoad = _finishLoad;
+_finishLoad = function(norm, data){
+  _origFinishLoad(norm, data);
+  setTimeout(function(){ showExchangeInfo(norm.moneda); }, 800);
+};
+
+// Hook: actualizar conversión cuando cambia el total
+var _origUpdateTotal = typeof updateTotal === 'function' ? updateTotal : null;
+if(_origUpdateTotal){
+  updateTotal = function(){
+    _origUpdateTotal();
+    if(window._currentCurrency && window._currentCurrency !== _preferredCurrency){
+      showExchangeInfo(window._currentCurrency);
+    }
+  };
+}
+
+// ── También mostrar toast cuando se aplica auto_fix de reconciliación ────────
+var _origBuildWarnings = null; // se aplica en scanWithClaude
 
 </script>
 </body>
