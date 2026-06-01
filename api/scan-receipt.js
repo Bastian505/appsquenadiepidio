@@ -162,12 +162,30 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
   },
   CA: {
     name:'Canadá', currency:'CAD', symbol:'$', has_decimals:true,
-    complexity:'simple',
+    complexity:'complex',  // modificadores indentados TouchBistro/Lightspeed + dual tax PST+GST
     tax_kw:['gst','hst','pst','qst'], deposit_kw:['deposit'], refund_kw:['refund'],
     tip_behavior:'mandatory_suggestion', tip_kw:['tip','gratuity'],
-    total_kw:['total','amount due'],
-    price_format:'standard', tip_is_payment:true, signals:['gst','hst','cad'],
-    format:'CAD. $ = CAD. GST/HST no incluidos. Tip incluirlo si en total pagado.'
+    total_kw:['total','amount due','sub total'],
+    price_format:'ca_modifiers', tip_is_payment:true,
+    signals:['gst','hst','pst','cad','touchbistro','lightspeed','prince george','bc','ontario','alberta','quebec','toronto','vancouver','calgary'],
+    format:`CAD. $ = CAD siempre. GST (5%) y PST (7%) son impuestos — IGNORAR, no incluir como ítems.
+MODIFICADORES INDENTADOS: líneas que empiezan con "+" o "Add" sin precio propio son modificadores del ítem anterior.
+  Regla: sumar el precio del modificador al precio del ítem padre. Crear UN solo ítem con precio total.
+  Ej:
+    "Classic Chicken BLT    $20.99"
+    "+ $4.00: Add Mushrooms"        → modificador, suma al padre
+    "+ $2.50: Add avacado"          → modificador, suma al padre
+    RESULTADO: {nombre:"Classic Chicken BLT", precio_unitario:27.49, cantidad:1}
+
+ÍTEMS SIN PRECIO INDIVIDUAL (grupo): si ves "3 x Pop" sin precio, buscar en subtotales de categoría
+  (Liquor Total, NA Beverages Total, Food Total) para inferir precio. Si no hay subtotal → usar precio
+  del renglón siguiente si coincide, o promediar el total de la categoría entre la cantidad.
+  Ej: "3 x Pop" + "NA Beverages Total $11.97" → precio_unitario = 11.97/3 = 3.99
+
+SUBTOTALES DE CATEGORÍA (Liquor Total, NA Beverages Total, Food Total): son líneas de subtotal — IGNORAR como ítems.
+TOTAL a usar: "Sub Total" (antes de impuestos). No usar total con GST/PST incluidos a menos que no haya Sub Total.
+TIP GUIDE: ignorar — son sugerencias, no cargos reales.
+Formato POS TouchBistro: "Printed from iPad using TouchBistro Pro" es señal de CA.`
   },
 
   // ── ISRAEL ────────────────────────────────────────────────────────────────
@@ -484,6 +502,11 @@ function buildUnifiedPrompt(countryCode) {
       ? `- Texto hebreo RTL. מחיר=precio, כמות=cantidad, לתשלום=total línea.`
     : r.price_format === 'es_multi'
       ? `- Detecta el formato (F1-F5) según instrucciones en CONTEXTO.`
+    : r.price_format === 'ca_modifiers'
+      ? `- MODIFICADORES: líneas "+ $X.XX: Add ..." pertenecen al ítem anterior. Sumar su monto al precio_unitario del ítem padre. NO crear ítem separado para modificadores.
+  Ej: "Classic Chicken BLT $20.99" seguido de "+ $4.00: Add Mushrooms" y "+ $2.50: Add avacado" → {nombre:"Classic Chicken BLT",precio_unitario:27.49,cantidad:1}
+  Ítems sin precio (ej: "3 x Pop"): buscar en subtotales de categoría para inferir precio individual.
+  IGNORAR líneas: "Liquor Total", "NA Beverages Total", "Food Total", "Sub Total", "GST", "PST", "HST", "Tip Guide".`
     : `- Decimal con punto en JSON. "1,80" → 1.80`;
 
   return `Eres experto en boletas de ${r.name}. Moneda: ${r.currency} (${r.symbol}).
@@ -524,6 +547,8 @@ PASO 2 — EXTRAE los items con estas reglas universales:
 9. Propinas: incluir SOLO si aparecen en el total final pagado.
 10. Precios en JSON siempre con punto decimal.
 11. Boletas turcas (Cinsi|Adedi|Tutar): Tutar = precio TOTAL de la línea. precio_unitario = Tutar ÷ Adedi. Yemek Bedeli / Icecek Bedeli = subtotales, IGNORAR.
+12. Boletas CA/Canadá con modificadores indentados (TouchBistro/Lightspeed): líneas "+ $X.XX: Add ..." son modificadores del ítem anterior — sumar su precio al ítem padre, NO crear ítem separado. Subtotales de categoría (Liquor Total, NA Beverages Total, Food Total): IGNORAR. Total a usar: "Sub Total" (antes de impuestos GST/PST).
+13. Ítems sin precio visible (ej: "3 x Pop" en boleta CA sin precio individual): inferir de subtotales de categoría dividiendo entre cantidad.
 
 RESPONDE SOLO JSON (sin markdown):
 {"restaurante":"nombre o null","moneda":"ISO_3","pais":"ISO_2_o_UNKNOWN","items":[{"nombre":"nombre original","precio_unitario":numero,"cantidad":numero}],"total":numero,"confianza":numero_0_a_1}
