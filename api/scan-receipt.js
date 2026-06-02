@@ -1,15 +1,11 @@
-// api/scan-receipt.js — DiviCuenta v4
-// Optimización de costos: 1 llamada por boleta + modelo inteligente por complejidad
-// Haiku 4.5 para boletas simples (~70%) | Sonnet 4.6 para boletas complejas (~30%)
-// Ahorro estimado: 61% vs versión anterior
+// api/scan-receipt.js — DiviCuenta v5
+// Arquitectura diseñada por Claude Opus 4.7 — spec: divicuenta_ocr_v5_spec.md
+// 1 sola llamada a Sonnet (siempre) — prompt universal R1-R15 + perfil de país inyectado
+// Confidence + evidence por ítem — auto-fix transparente — schema de eval en Supabase
 
-// ── MODELOS ───────────────────────────────────────────────────────────────────
-const MODEL_HAIKU   = 'claude-haiku-4-5-20251001';   // $1/$5 por MTok
-const MODEL_SONNET  = 'claude-sonnet-4-6';            // $3/$15 por MTok
-
-// complexity: 'simple' → Haiku | 'complex' → Sonnet
-// Criterio: países con formatos ambiguos, múltiples variantes, texto no latino,
-//           cargos especiales, o moneda con $ compartido de difícil distinción
+// ── MODELO ────────────────────────────────────────────────────────────────────
+const MODEL_SONNET  = 'claude-sonnet-4-6';
+const PROMPT_VERSION = process.env.PROMPT_VERSION || 'v5.0.0';
 
 // ── BASE DE CONOCIMIENTO: 26 países ──────────────────────────────────────────
 const COUNTRY_RULES = {
@@ -162,30 +158,12 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
   },
   CA: {
     name:'Canadá', currency:'CAD', symbol:'$', has_decimals:true,
-    complexity:'complex',  // modificadores indentados TouchBistro/Lightspeed + dual tax PST+GST
+    complexity:'simple',
     tax_kw:['gst','hst','pst','qst'], deposit_kw:['deposit'], refund_kw:['refund'],
     tip_behavior:'mandatory_suggestion', tip_kw:['tip','gratuity'],
-    total_kw:['total','amount due','sub total'],
-    price_format:'ca_modifiers', tip_is_payment:true,
-    signals:['gst','hst','pst','cad','touchbistro','lightspeed','prince george','bc','ontario','alberta','quebec','toronto','vancouver','calgary'],
-    format:`CAD. $ = CAD siempre. GST (5%) y PST (7%) son impuestos — IGNORAR, no incluir como ítems.
-MODIFICADORES INDENTADOS: líneas que empiezan con "+" o "Add" sin precio propio son modificadores del ítem anterior.
-  Regla: sumar el precio del modificador al precio del ítem padre. Crear UN solo ítem con precio total.
-  Ej:
-    "Classic Chicken BLT    $20.99"
-    "+ $4.00: Add Mushrooms"        → modificador, suma al padre
-    "+ $2.50: Add avacado"          → modificador, suma al padre
-    RESULTADO: {nombre:"Classic Chicken BLT", precio_unitario:27.49, cantidad:1}
-
-ÍTEMS SIN PRECIO INDIVIDUAL (grupo): si ves "3 x Pop" sin precio, buscar en subtotales de categoría
-  (Liquor Total, NA Beverages Total, Food Total) para inferir precio. Si no hay subtotal → usar precio
-  del renglón siguiente si coincide, o promediar el total de la categoría entre la cantidad.
-  Ej: "3 x Pop" + "NA Beverages Total $11.97" → precio_unitario = 11.97/3 = 3.99
-
-SUBTOTALES DE CATEGORÍA (Liquor Total, NA Beverages Total, Food Total): son líneas de subtotal — IGNORAR como ítems.
-TOTAL a usar: "Sub Total" (antes de impuestos). No usar total con GST/PST incluidos a menos que no haya Sub Total.
-TIP GUIDE: ignorar — son sugerencias, no cargos reales.
-Formato POS TouchBistro: "Printed from iPad using TouchBistro Pro" es señal de CA.`
+    total_kw:['total','amount due'],
+    price_format:'standard', tip_is_payment:true, signals:['gst','hst','cad'],
+    format:'CAD. $ = CAD. GST/HST no incluidos. Tip incluirlo si en total pagado.'
   },
 
   // ── ISRAEL ────────────────────────────────────────────────────────────────
@@ -434,11 +412,11 @@ FORMATO TURCO: columnas son Cinsi(nombre) | Adedi(cantidad) | Tutar(precio_total
   },
 };
 
-// ── Selección de modelo por complejidad ───────────────────────────────────────
-function selectModel(countryCode) {
-  const r = COUNTRY_RULES[countryCode];
-  if (!r) return MODEL_SONNET; // desconocido → Sonnet por seguridad
-  return r.complexity === 'complex' ? MODEL_SONNET : MODEL_HAIKU;
+// ── Selección de modelo — siempre Sonnet hasta tener corpus de eval validado ──
+// (Opus 4.7 spec: "Con 0 usuarios, el riesgo de marcar mal complexity:simple
+//  es mayor que el ahorro. Cuando tengas datos, mover países simples a Haiku.")
+function selectModel() {
+  return MODEL_SONNET;
 }
 
 // ── CAPA 2: Detección de país ─────────────────────────────────────────────────
@@ -468,117 +446,277 @@ function detectCountry(text) {
   };
 }
 
-// ── CAPA 3: Prompt unificado (OCR + Parser en 1 sola llamada) ─────────────────
-function buildUnifiedPrompt(countryCode) {
-  const r = COUNTRY_RULES[countryCode];
-  if (!r) return buildGenericPrompt();
+// ── CAPA 3: Prompt v5 universal (Opus 4.7 spec) ──────────────────────────────
+// Una sola función. Perfil del país inyectado como datos, no como prosa.
+// COUNTRY_RULES.format se usa como "hint opcional", no como espina dorsal.
+function buildV5Prompt(countryCode) {
+  const r = countryCode ? (COUNTRY_RULES[countryCode] || null) : null;
 
-  const depositLine = r.deposit_kw?.length
-    ? `- "${r.deposit_kw.join('", "')}" = depósito retornable → item precio POSITIVO.` : '';
-  const refundLine = r.refund_kw?.length
-    ? `- "${r.refund_kw.join('", "')}" = devolución → item precio NEGATIVO.` : '';
+  const countryBlock = r ? `
+País sugerido: ${countryCode} (${r.name})
+Moneda esperada: ${r.currency} (símbolo: ${r.symbol})
+Decimales en moneda: ${r.has_decimals ? 'sí' : 'no — redondear a entero'}
+Hints específicos del país: ${r.format || 'ninguno'}` :
+`País sugerido: UNKNOWN
+Moneda esperada: detectar de la imagen
+Decimales en moneda: detectar de la imagen
+Hints específicos del país: ninguno`;
 
-  const tipLine =
-    (r.tip_is_payment || r.tip_behavior === 'mandatory_suggestion')
-      ? `- Propina/tip: si aparece como línea con monto real en el recibo, incluirla como item "Propina".`
-    : r.tip_behavior === 'mandatory_service_charge'
-      ? `- Service charge: es OBLIGATORIO, incluirlo siempre como item "Servicio".`
-    : r.tip_behavior === 'optional_explicit'
-      ? `- Propina sugerida: si aparece como línea con monto, incluirla como item.`
-    : ['service_charge_10','included_service','optional_service_charge'].includes(r.tip_behavior)
-      ? `- Service charge: si aparece como línea, incluirla como item "Servicio".`
-    : r.tip_behavior === 'coperto_charge'
-      ? `- COPERTO: cargo real por cubierto/persona. Incluirlo siempre como item.`
-    : `- Sin propina obligatoria. Ignorar sugerencias de propina.`;
+  return `Eres un experto mundial en lectura de boletas de pago de cualquier país. Tu objetivo
+es extraer los ítems facturados con precisión, marcando tu nivel de confianza por
+cada ítem. NUNCA inventas datos: cuando algo es ilegible o ambiguo, lo marcas con
+confianza baja o rehúsas la boleta completa según los criterios definidos abajo.
 
-  const priceLine =
-    r.price_format === 'unit_x_qty_equals_total'
-      ? `- "PRECIO x CANTIDAD = TOTAL": precio_unitario=TOTAL, cantidad=1.`
-    : r.price_format === 'us_qty_total'
-      ? `- "N NOMBRE TOTAL": precio_unitario=TOTAL÷N, cantidad=N. Ignorar líneas sin precio.`
-    : r.price_format === 'tr_adedi_tutar'
-      ? `- Formato turco Cinsi|Adedi|Tutar: Tutar ES el precio total de la línea. precio_unitario = Tutar ÷ Adedi. Ej: "1/2 Deniz Borulcesi 2 18,00" → precio_unitario=9.00, cantidad=2.`
-    : r.price_format === 'il_rtl'
-      ? `- Texto hebreo RTL. מחיר=precio, כמות=cantidad, לתשלום=total línea.`
-    : r.price_format === 'es_multi'
-      ? `- Detecta el formato (F1-F5) según instrucciones en CONTEXTO.`
-    : r.price_format === 'ca_modifiers'
-      ? `- MODIFICADORES: líneas "+ $X.XX: Add ..." pertenecen al ítem anterior. Sumar su monto al precio_unitario del ítem padre. NO crear ítem separado para modificadores.
-  Ej: "Classic Chicken BLT $20.99" seguido de "+ $4.00: Add Mushrooms" y "+ $2.50: Add avacado" → {nombre:"Classic Chicken BLT",precio_unitario:27.49,cantidad:1}
-  Ítems sin precio (ej: "3 x Pop"): buscar en subtotales de categoría para inferir precio individual.
-  IGNORAR líneas: "Liquor Total", "NA Beverages Total", "Food Total", "Sub Total", "GST", "PST", "HST", "Tip Guide".`
-    : `- Decimal con punto en JSON. "1,80" → 1.80`;
+═══════════════════════════════════════════════════════════════════════════════
+CONTEXTO INYECTADO POR EL SISTEMA
+═══════════════════════════════════════════════════════════════════════════════
+${countryBlock}
 
-  return `Eres experto en boletas de ${r.name}. Moneda: ${r.currency} (${r.symbol}).
+Si este contexto llega vacío o con país UNKNOWN, debes detectar tú mismo todo.
+Si lo que ves en la imagen contradice el contexto (ej: contexto dice CL pero la
+boleta es claramente de Brasil), TU LECTURA DE LA IMAGEN MANDA — corrige el
+campo pais y moneda en el output.
 
-CONTEXTO: ${r.format}
+═══════════════════════════════════════════════════════════════════════════════
+PROCESO MENTAL
+═══════════════════════════════════════════════════════════════════════════════
+1. Identifica la moneda (símbolo + código ISO + keywords fiscales).
+2. Identifica el sistema POS si es reconocible (TouchBistro, Toast, Square, etc.).
+3. Identifica el layout de las filas de ítems (típico, qty×unit=total,
+   qty-antes-de-nombre, modificadores indentados, columnas RTL).
+4. Extrae cada ítem con su precio_unitario, cantidad, confianza y evidencia.
+5. Verifica que la suma de tus ítems sea coherente con el total declarado;
+   si hay diferencia, refleja eso en confianza_global pero NO inventes ítems
+   para cuadrar (el sistema externo se encarga de la reconciliación).
 
-REGLAS:
-- IGNORAR: ${r.tax_kw.join(', ')} (impuestos), subtotales, publicidad, fechas, RUT/NIF/RFC/CNPJ/NIT.
-- NO incluir items precio=0.
-${depositLine}
-${refundLine}
-${tipLine}
-${priceLine}
-- Total correcto: "${(r.total_kw || []).slice(0,3).join('" o "')}".
-- Nombres en idioma original. precio_unitario siempre número con punto decimal.
+═══════════════════════════════════════════════════════════════════════════════
+REGLAS UNIVERSALES (R1-R15)
+═══════════════════════════════════════════════════════════════════════════════
 
-RESPONDE SOLO JSON válido (sin markdown):
-{"restaurante":"nombre o null","moneda":"${r.currency}","pais":"${countryCode}","items":[{"nombre":"nombre","precio_unitario":numero,"cantidad":numero}],"total":numero,"confianza":numero_0_a_1}
+R1. INCLUIR solo productos/servicios con precio real visible o derivable.
+    Excluir cualquier ítem cuyo precio_unitario sea 0.
 
-Si no puedes leer: {"restaurante":null,"moneda":"${r.currency}","pais":"${countryCode}","items":[],"total":0,"confianza":0}`;
+R2. IGNORAR siempre:
+    · Impuestos: IVA, VAT, GST, MWST, BTW, ICMS, IPI, SGST, CGST, IPC, ΦΠΑ,
+      ÁFA, KDV, TVA, Moms, MVA, DPH, 消費税, 부가세, מע"מ, ضريبة.
+    · Subtotales (Sub Total, Subtotal, Subtotale, Sous-total).
+    · Subtotales de categoría (Liquor Total, Food Total, NA Beverages Total).
+    · Publicidad, fechas, hora, número de mesa, número de orden, número de cuenta.
+    · Identificadores fiscales: RUT, CUIT, RFC, NIT, CNPJ, NIF, CIF, SIRET,
+      VAT no., GSTIN, ABN, UEN, TRN, etc.
+    · "Tip Guide" o "Suggested tip 15%/18%/20%" cuando son sugerencias visuales
+      no cobradas.
+
+R3. INCLUIR como ítem con precio POSITIVO:
+    · Productos y servicios facturados.
+    · Cargo por servicio obligatorio: UK service charge, coperto italiano,
+      propina ya cobrada en el total final.
+    · Depósitos retornables: Pfand (DE), Leergut (DE), CRV (US), Statiegeld (NL),
+      Pant (SE/DK/NO), Consigne (FR), Depósito (LATAM).
+
+R4. INCLUIR como ítem con precio NEGATIVO:
+    · Devoluciones: Pfandrückgabe (DE), Devolución, Refund, Void, Retour,
+      Rimborso, Devolução, Anulación.
+    · Descuentos explícitos aplicados a un ítem específico.
+
+R5. MODIFICADORES (regla universal, NO por POS):
+    Si una línea comienza con "+ <monto>", "- <monto>", o aparece visualmente
+    indentada bajo un ítem con precio: es un MODIFICADOR del ítem anterior.
+    SUMAR (o restar) su monto al precio_unitario del ítem padre.
+    NO crear ítem separado.
+    Esta regla cubre TouchBistro, Lightspeed, Square, Toast, y cualquier POS
+    futuro que use convención visual similar. Ejemplos:
+    · "Classic Chicken BLT  $20.99"
+      "+ $4.00: Add Mushrooms"
+      "+ $2.50: Add Avocado"
+      → {nombre: "Classic Chicken BLT", precio_unitario: 27.49, cantidad: 1}
+    · "Combo Burger  $8.00"
+      "- $1.00: Sin papas"
+      → {nombre: "Combo Burger", precio_unitario: 7.00, cantidad: 1}
+
+R6. MODIFICADORES SIN MONTO: Líneas como "Over Easy", "Sin sal", "Bien hecho",
+    "Brown Bread", "Any Style", "Poached Medium" sin monto asociado: IGNORAR.
+
+R7. INFERENCIA DE PRECIO UNITARIO (regla maestra universal):
+    El campo precio_unitario en tu JSON es SIEMPRE por unidad individual.
+    Patrones reconocibles:
+    · "N <nombre> <total>" con N pequeño (1-20) y total alto
+      → precio_unitario = total ÷ N, cantidad = N
+      Ej: "3 Coffee $12.00" → unit=4.00, qty=3
+      Ej: "3 MENU 210,00€"  → unit=70.00, qty=3
+      Ej: "2 Singha Beer 11,00" → unit=5.50, qty=2
+    · "<nombre> <cantidad> <total_línea>" (típico Turquía)
+      → precio_unitario = total ÷ cantidad
+      Ej: "Borulcesi 2 18,00" → unit=9.00, qty=2
+    · "<unit> × <qty> = <total>" o "<unit> x <qty> <total>" (Alemania, Suiza)
+      → precio_unitario = unit, cantidad = qty (NO dividir, ya está)
+      Ej: "0,29 × 6 = 1,74" → unit=0.29, qty=6
+    · "<cantidad>x <unit> <descripción> <total>" (España F2)
+      Ej: "2x 2.15 A/SIN 4.30" → unit=2.15, qty=2
+    · "<unidades_pegado><nombre> <unit> <total>" (España F4)
+      Ej: "6,00PAN MENTIDERO 1,00 6,00€" → unit=1.00, qty=6, nombre="PAN MENTIDERO"
+    · "<nombre> <precio>" sin cantidad explícita → unit=precio, cantidad=1
+    · "N..<nombre> <total>" o "N · <nombre> <total>" (puntos/bullets visuales)
+      → precio_unitario = total ÷ N, cantidad = N
+
+R8. NOMBRES EN DOS LÍNEAS: Si un nombre de producto está partido en dos líneas
+    (sin precio entre ellas), es UN solo ítem con nombre concatenado.
+
+R9. PROPINAS — incluir SOLO en estos casos:
+    · Aparece como línea EN LA BOLETA con un MONTO específico y forma parte
+      del total final cobrado → incluir como ítem "Propina".
+    · Si solo aparece como sugerencia ("Suggested tip 15%: $X") y el total
+      final NO la incluye → IGNORAR.
+    · Si el restaurante tiene servicio obligatorio (UK service charge, coperto
+      italiano) → siempre incluir como "Servicio".
+
+R10. MONEDA AMBIGUA — $ y ¥:
+     · $ puede ser CLP, ARS, MXN, USD, CAD, COP, UYU.
+     · Para desambiguar busca marcadores fiscales en la imagen:
+       RUT/SII → CL | CUIT/AFIP → AR | RFC/SAT/CFDI → MX
+       NIT/DIAN/CUFE → CO | Sales Tax → US | GST/HST/PST+provincia → CA
+       DGI Uruguay → UY
+     · Si hay marcador claro → usa esa moneda.
+     · Si NO hay marcador fiscal Y el contexto no especifica país
+       → moneda: "AMBIGUOUS_DOLLAR" con monedas_candidatas.
+     · ¥: 円/消費税 → JPY; 元/发票/人民币 → CNY. Sin marcador → AMBIGUOUS_YEN.
+
+R11. FORMATO DE NÚMERO EN EL OUTPUT:
+     · Siempre punto decimal en el JSON: "1,80€" → 1.80
+     · Punto como miles (Colombia, Alemania): "$6.700" colombiano → 6700
+     · Monedas sin decimales (CLP, JPY, KRW, COP, PYG, HUF, VND, IDR, TWD):
+       redondear al entero.
+     · Con decimales: máximo dos.
+
+R12. NOMBRES EN IDIOMA ORIGINAL: No traducir. "Gambas al Ajillo" queda en
+     español; "ラーメン" en japonés; "מנה עיקרית" en hebreo.
+
+R13. CONFIANZA POR ÍTEM (0.0 a 1.0):
+     · 0.95-1.00: completamente legible, sin ambigüedad.
+     · 0.80-0.94: legible con ambigüedad leve.
+     · 0.60-0.79: inferido por regla (precio derivado, modificador sumado).
+     · 0.30-0.59: muy dudoso, parte del texto parcialmente ilegible.
+     · <0.30: prácticamente adivinado — incluir en items_dudosos.
+
+R14. EVIDENCIA POR ÍTEM: En el campo evidencia, copia LITERAL la línea de la
+     boleta donde leíste el ítem. Es la cita textual cruda.
+
+R15. PRECUENTAS Y BOLETAS NO FISCALES SON VÁLIDAS: "NON FISCALE", "PRECONTO",
+     "CUENTA", "PRECUENTA", "Bill", "Check" son boletas válidas.
+
+═══════════════════════════════════════════════════════════════════════════════
+CRITERIOS DE REHUSAR
+═══════════════════════════════════════════════════════════════════════════════
+
+REFUSAR 1 — Imagen ilegible: sección de ítems mayoritariamente ilegible.
+  → {"ok":false,"reason":"illegible_image","message":"La imagen está demasiado borrosa o dañada para leer los ítems. Intenta una foto con mejor luz y enfoque."}
+
+REFUSAR 2 — No es boleta: el documento es menú, tarjeta, ticket aparcamiento, etc.
+  → {"ok":false,"reason":"not_a_receipt","message":"Esto no parece una boleta de compra. Fotografía el comprobante final."}
+
+REFUSAR 3 — Moneda imposible de determinar: sin símbolo, sin código, sin keyword fiscal.
+  → {"ok":false,"reason":"unknown_currency","message":"No puedo identificar la moneda. ¿Puedes indicar el país?","candidates":[]}
+
+NUNCA usar refusal por: país desconocido → devolver pais:UNKNOWN best-effort.
+
+═══════════════════════════════════════════════════════════════════════════════
+OUTPUT JSON
+═══════════════════════════════════════════════════════════════════════════════
+
+Responde SOLO con JSON válido. Sin markdown, sin backticks, sin texto extra.
+
+Caso éxito:
+{"ok":true,"restaurante":"nombre o null","pos_detected":"touchbistro|toast|square|clover|lightspeed|tpv_es|nfe_br|sii_cl|generic|unknown","pais":"ISO_2_o_UNKNOWN","moneda":"ISO_3_o_AMBIGUOUS_DOLLAR_o_AMBIGUOUS_YEN","monedas_candidatas":[],"items":[{"nombre":"ítem","precio_unitario":4.00,"cantidad":3,"confianza":0.95,"evidencia":"3 Coffee $12.00"}],"items_dudosos":[],"total_referencia":12.00,"razonamiento":"1-2 líneas sobre layout y decisiones clave","confianza_global":0.92}
+
+Caso refusal:
+{"ok":false,"reason":"illegible_image|not_a_receipt|unknown_currency","message":"Mensaje al usuario","candidates":[]}`;
 }
 
-// Prompt para PASO 1 cuando el país es desconocido (detección + extracción en 1)
-function buildAutoDetectPrompt() {
-  return `Eres experto en boletas de cualquier país del mundo.
-
-PASO 1 — DETECTA el país analizando: idioma, símbolo de moneda, keywords fiscales (IVA, VAT, GST, MWST, BTW, etc.), formato de números, nombre del lugar.
-
-PASO 2 — EXTRAE los items con estas reglas universales:
-1. Solo productos/items con precio real. NO incluir precio=0.
-2. IGNORAR: impuestos (IVA,VAT,GST,MWST,BTW,Tax,ICMS,SGST,CGST,IPC,מע"מ), subtotales, publicidad, fechas.
-3. Depósitos retornables (Pfand, CRV, Statiegeld): incluir precio POSITIVO.
-4. Devoluciones: incluir precio NEGATIVO.
-5. Coperto italiano / Service charge UK: incluir como item (son cargos reales).
-6. "N NOMBRE TOTAL" (EE.UU.): precio_unitario=TOTAL÷N.
-7. Modificadores de preparación ("Over Easy", "Brown Bread"): IGNORAR.
-8. NON FISCALE/PRECONTO (Italia): precuenta válida, precios correctos.
-9. Propinas: incluir SOLO si aparecen en el total final pagado.
-10. Precios en JSON siempre con punto decimal.
-11. Boletas turcas (Cinsi|Adedi|Tutar): Tutar = precio TOTAL de la línea. precio_unitario = Tutar ÷ Adedi. Yemek Bedeli / Icecek Bedeli = subtotales, IGNORAR.
-12. Boletas CA/Canadá con modificadores indentados (TouchBistro/Lightspeed): líneas "+ $X.XX: Add ..." son modificadores del ítem anterior — sumar su precio al ítem padre, NO crear ítem separado. Subtotales de categoría (Liquor Total, NA Beverages Total, Food Total): IGNORAR. Total a usar: "Sub Total" (antes de impuestos GST/PST).
-13. Ítems sin precio visible (ej: "3 x Pop" en boleta CA sin precio individual): inferir de subtotales de categoría dividiendo entre cantidad.
-
-RESPONDE SOLO JSON (sin markdown):
-{"restaurante":"nombre o null","moneda":"ISO_3","pais":"ISO_2_o_UNKNOWN","items":[{"nombre":"nombre original","precio_unitario":numero,"cantidad":numero}],"total":numero,"confianza":numero_0_a_1}
-
-Si no puedes leer: {"restaurante":null,"moneda":"CLP","pais":"UNKNOWN","items":[],"total":0,"confianza":0}`;
-}
+// Alias para compatibilidad con código existente que llama buildAutoDetectPrompt
+function buildAutoDetectPrompt() { return buildV5Prompt(null); }
+function buildUnifiedPrompt(cc)   { return buildV5Prompt(cc); }
+function buildGenericPrompt()     { return buildV5Prompt(null); }
 
 // ── CAPA 4: Llamada a Claude ──────────────────────────────────────────────────
+// Timeout 8s (Vercel hard limit = 10s; dejamos margen para parse + log Supabase)
+// Retry: 1 solo en errores transitorios 5xx. NUNCA en timeout.
 async function callClaude(apiKey, imageBase64, mediaType, system, userText, model) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1200,
-      system,
-      messages: [{ role:'user', content:[
-        { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
-        { type:'text', text:userText }
-      ]}]
-    })
-  });
+  const controller = new AbortController();
+  const timeoutId  = setTimeout(() => controller.abort(), 8000);
+
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:  'POST',
+      signal:  controller.signal,
+      headers: {
+        'Content-Type':       'application/json',
+        'x-api-key':          apiKey,
+        'anthropic-version':  '2023-06-01',
+        'anthropic-beta':     'prompt-caching-2024-07-31'
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1500,
+        system,
+        messages: [{ role:'user', content:[
+          { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
+          { type:'text', text:userText }
+        ]}]
+      })
+    });
+  } catch(e) {
+    clearTimeout(timeoutId);
+    if(e.name === 'AbortError') {
+      throw new Error('TIMEOUT: La llamada a Claude tardó más de 8 segundos');
+    }
+    // Retry una vez en errores de red transitorios
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model, max_tokens: 1500, system,
+        messages: [{ role:'user', content:[
+          { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
+          { type:'text', text:userText }
+        ]}]
+      })
+    });
+  }
+
+  clearTimeout(timeoutId);
+
   if (!res.ok) {
+    // Retry 1 vez en 5xx transitorio
+    if(res.status >= 500) {
+      await new Promise(r => setTimeout(r, 500));
+      const res2 = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
+        body: JSON.stringify({ model, max_tokens:1500, system,
+          messages:[{ role:'user', content:[
+            { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
+            { type:'text', text:userText }
+          ]}]
+        })
+      });
+      if(!res2.ok) {
+        const e2 = await res2.json().catch(()=>({}));
+        throw new Error(e2?.error?.message || `HTTP ${res2.status}`);
+      }
+      const d2 = await res2.json();
+      const block2 = d2.content?.find(b => b.type === 'text');
+      if(!block2?.text) throw new Error('Sin respuesta de Claude en retry');
+      return block2.text;
+    }
     const e = await res.json().catch(()=>({}));
     throw new Error(e?.error?.message || `HTTP ${res.status}`);
   }
+
   const d = await res.json();
   const block = d.content?.find(b => b.type === 'text');
   if (!block?.text) throw new Error('Sin respuesta de Claude');
@@ -596,98 +734,104 @@ function parseJSON(raw) {
   return null;
 }
 
-// ── CAPA 5: Reconciliación financiera con reparación proactiva ────────────────
-function reconcile(items, totalReported) {
+// ── CAPA 5: Reconciliación — reglas seguras (Opus 4.7 spec Output 3) ────────────
+// Principio: NUNCA crear ítems silenciosos. Auto-fix SIEMPRE visible + tap requerido.
+// Condicional por país (matriz servicio/propina/impuesto).
+
+const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
+const TIP_COUNTRIES             = new Set(['US','CA','MX']);
+const TAX_COUNTRIES             = new Set(['US','CA']);
+
+function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
-  if (!totalReported) return { ok:true, sum, total:sum, diff:0, ratio:0, note:null, auto_fixed:false };
-
-  const diff = totalReported - sum;
-  const ratio = Math.abs(diff) / totalReported;
-
-  // ── Reparación proactiva: intentar resolver antes de mostrar modal ──────────
-  // Solo si el total es mayor que la suma (diff > 0) y es un patrón conocido
-  if (diff > 0 && ratio >= 0.06) {
-    const extraAmount = Math.round(diff * 100) / 100;
-
-    // Patrón 1: Service charge UK / Colombia / Asia (~10-13%)
-    if (ratio >= 0.08 && ratio <= 0.135) {
-      const repaired = [...items, {
-        nombre: 'Servicio',
-        precio_unitario: extraAmount,
-        cantidad: 1
-      }];
-      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
-      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
-        return {
-          ok: true,
-          sum: Math.round(newSum*100)/100,
-          total: totalReported,
-          diff: 0,
-          ratio: 0,
-          note: null,
-          auto_fixed: true,
-          auto_fix_type: 'service_charge',
-          auto_fix_item: { nombre:'Servicio', precio_unitario:extraAmount, cantidad:1 }
-        };
-      }
-    }
-
-    // Patrón 2: Propina sugerida (~15-22%)
-    if (ratio >= 0.14 && ratio <= 0.22) {
-      const repaired = [...items, {
-        nombre: 'Propina',
-        precio_unitario: extraAmount,
-        cantidad: 1
-      }];
-      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
-      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
-        return {
-          ok: true,
-          sum: Math.round(newSum*100)/100,
-          total: totalReported,
-          diff: 0,
-          ratio: 0,
-          note: null,
-          auto_fixed: true,
-          auto_fix_type: 'tip',
-          auto_fix_item: { nombre:'Propina', precio_unitario:extraAmount, cantidad:1 }
-        };
-      }
-    }
-
-    // Patrón 3: IVA no capturado (~7-10%)
-    if (ratio >= 0.06 && ratio <= 0.08) {
-      const repaired = [...items, {
-        nombre: 'Impuesto',
-        precio_unitario: extraAmount,
-        cantidad: 1
-      }];
-      const newSum = repaired.reduce((a,it) => a+(it.precio_unitario*it.cantidad), 0);
-      if (Math.abs(newSum - totalReported) / totalReported < 0.02) {
-        return {
-          ok: true,
-          sum: Math.round(newSum*100)/100,
-          total: totalReported,
-          diff: 0,
-          ratio: 0,
-          note: null,
-          auto_fixed: true,
-          auto_fix_type: 'tax',
-          auto_fix_item: { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1 }
-        };
-      }
-    }
+  if (!totalReported || totalReported <= 0) {
+    return { ok:true, sum, total:sum, diff:0, ratio:0, note:null, auto_fixed:false };
   }
 
-  // Sin reparación posible → clasificar para el modal
-  let note=null, ok=true;
-  if      (ratio < 0.03)                       { ok=true; }
-  else if (ratio < 0.06)                       { note='Pequeña diferencia por redondeo.'; ok=true; }
-  else if (diff>0&&ratio>=0.08&&ratio<=0.14)   { note=`El total incluye ~${Math.round(ratio*100)}% extra — posible service charge o propina.`; ok=false; }
-  else if (diff>0&&ratio>=0.14&&ratio<=0.22)   { note=`El total incluye ~${Math.round(ratio*100)}% extra — posible impuesto no incluido.`; ok=false; }
-  else if (diff<0)                              { note='La suma supera el total — posible descuento o devolución no capturada.'; ok=false; }
-  else if (ratio>0.22)                          { note=`Discrepancia grande (${Math.round(ratio*100)}%) — algunos items pueden faltar.`; ok=false; }
-  return { ok, sum:Math.round(sum*100)/100, total:totalReported, diff:Math.round(diff*100)/100, ratio:parseFloat(ratio.toFixed(3)), note, auto_fixed:false };
+  const diff  = totalReported - sum;
+  const ratio = Math.abs(diff) / totalReported;
+
+  // 0-3%: diferencia silenciosa de redondeo
+  if (ratio < 0.03) {
+    return { ok:true, sum, total:totalReported, diff, ratio, note:null, auto_fixed:false };
+  }
+
+  // 3-6%: warning leve, no crear ítem
+  if (ratio < 0.06) {
+    return { ok:true, sum, total:totalReported, diff, ratio,
+      note:'Pequeña diferencia (redondeo o ítem menor no capturado).', auto_fixed:false };
+  }
+
+  // diff < 0 (suma > total): NUNCA auto-fix
+  if (diff < 0) {
+    return { ok:false, sum, total:totalReported, diff, ratio,
+      note:'La suma supera el total — posible descuento no capturado. Revisa los precios.',
+      auto_fixed:false };
+  }
+
+  // diff > 22%: demasiado grande para auto-fix
+  if (ratio > 0.22) {
+    return { ok:false, sum, total:totalReported, diff, ratio,
+      note:`Diferencia grande (${Math.round(ratio*100)}%) — puede faltar más de un ítem. Revisa la foto.`,
+      auto_fixed:false };
+  }
+
+  const extraAmount = Math.round(diff * 100) / 100;
+
+  // Guardia: ya existe un ítem de Servicio/Propina/Impuesto → no duplicar
+  const hasServicio = items.some(it => /servicio|service charge|propina|tip|impuesto/i.test(it.nombre||''));
+
+  // confianza_global baja → no auto-fix (lectura dudosa)
+  const globalConf = items.length > 0
+    ? items.reduce((s,it) => s+(it.confianza||0.8), 0) / items.length : 0;
+  if (globalConf < 0.70) {
+    return { ok:false, sum, total:totalReported, diff, ratio,
+      note:'Lectura con baja confianza — diferencia no resuelta. Revisa los ítems.', auto_fixed:false };
+  }
+
+  // 6-8%: impuesto (US/CA solo)
+  if (ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode) && !hasServicio) {
+    const fixed = [...items, { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1,
+      auto_created:true, auto_fix_type:'tax', auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — tax no incluido en precios`, confianza:0.50 }];
+    const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
+    if (Math.abs(newSum-totalReported)/totalReported < 0.02)
+      return { ok:true, sum:Math.round(newSum*100)/100, total:totalReported,
+        diff:0, ratio:0, note:null, auto_fixed:true, auto_fix_type:'tax',
+        auto_fix_item:fixed[fixed.length-1], user_action_required:true,
+        user_message:`Detecté un impuesto del ${Math.round(ratio*100)}% (~${extraAmount}). Revísalo antes de dividir.` };
+  }
+
+  // 8-14%: servicio (países habilitados)
+  if (ratio >= 0.08 && ratio <= 0.14 && SERVICE_CHARGE_COUNTRIES.has(countryCode) && !hasServicio) {
+    const fixed = [...items, { nombre:'Servicio', precio_unitario:extraAmount, cantidad:1,
+      auto_created:true, auto_fix_type:'service_charge',
+      auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — posible cargo de servicio`, confianza:0.50 }];
+    const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
+    if (Math.abs(newSum-totalReported)/totalReported < 0.02)
+      return { ok:true, sum:Math.round(newSum*100)/100, total:totalReported,
+        diff:0, ratio:0, note:null, auto_fixed:true, auto_fix_type:'service_charge',
+        auto_fix_item:fixed[fixed.length-1], user_action_required:true,
+        user_message:`Detecté un cargo de servicio del ${Math.round(ratio*100)}% (~${extraAmount}). Revísalo antes de dividir.` };
+  }
+
+  // 14-22%: propina (países habilitados)
+  if (ratio >= 0.14 && ratio <= 0.22 && TIP_COUNTRIES.has(countryCode) && !hasServicio) {
+    const fixed = [...items, { nombre:'Propina', precio_unitario:extraAmount, cantidad:1,
+      auto_created:true, auto_fix_type:'tip',
+      auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — posible propina no capturada`, confianza:0.50 }];
+    const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
+    if (Math.abs(newSum-totalReported)/totalReported < 0.02)
+      return { ok:true, sum:Math.round(newSum*100)/100, total:totalReported,
+        diff:0, ratio:0, note:null, auto_fixed:true, auto_fix_type:'tip',
+        auto_fix_item:fixed[fixed.length-1], user_action_required:true,
+        user_message:`Detecté una propina del ${Math.round(ratio*100)}% (~${extraAmount}). Revísala antes de dividir.` };
+  }
+
+  // Sin auto-fix posible → informar
+  const note = ratio <= 0.14
+    ? `El total incluye ~${Math.round(ratio*100)}% extra — posible cargo no identificado.`
+    : `El total incluye ~${Math.round(ratio*100)}% extra — posible propina o impuesto no capturado.`;
+  return { ok:false, sum, total:totalReported, diff, ratio, note, auto_fixed:false };
 }
 
 // ── CAPA 6: Normalización ─────────────────────────────────────────────────────
@@ -715,8 +859,10 @@ function normalizeItems(items, countryCode) {
   }).filter(it => it.precio_unitario !== 0);
 }
 
-// ── PIPELINE PRINCIPAL ────────────────────────────────────────────────────────
+// ── PIPELINE PRINCIPAL v5 ────────────────────────────────────────────────────
 export default async function handler(req, res) {
+  const startMs = Date.now();
+
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -732,106 +878,153 @@ export default async function handler(req, res) {
   } = req.body || {};
 
   if (!image_base64) return res.status(400).json({ error:'image_base64 requerido' });
-  if (image_base64.length > 4_000_000) return res.status(413).json({ error:'Imagen muy grande. Máximo ~3MB.', code:'IMAGE_TOO_LARGE' });
+  if (image_base64.length > 4_000_000) return res.status(413).json({
+    error:'Imagen muy grande. Máximo ~3MB.', code:'IMAGE_TOO_LARGE' });
 
   try {
-
-    // ── RUTA A: País ya conocido (hint o confirmación) ─────────────────────
-    // 1 sola llamada: imagen + prompt especializado → JSON directo
-    if (country_hint) {
-      const model = selectModel(country_hint);
-      const system = buildUnifiedPrompt(country_hint);
-      let raw;
-      try {
-        raw = await callClaude(apiKey, image_base64, media_type, system,
-          'Extrae todos los items con sus precios de esta boleta.', model);
-      } catch(e) {
-        return res.status(502).json({ error:`Parsing falló: ${e.message}`, code:'PARSE_ERROR' });
-      }
-      return buildResponse(res, raw, country_hint, 1.0, model);
-    }
-
-    // ── RUTA B: País desconocido ───────────────────────────────────────────
-    // Intentamos 1 sola llamada con prompt auto-detect (Haiku primero)
-    // Si detecta país con confianza suficiente → listo
-    // Si no → pedimos confirmación al usuario (sin segunda llamada a Claude)
-
+    // Una sola llamada. Siempre Sonnet. Prompt v5 con perfil del país inyectado.
+    const model  = selectModel();
+    const system = buildV5Prompt(country_hint || null);
     let raw;
+
     try {
-      raw = await callClaude(apiKey, image_base64, media_type,
-        buildAutoDetectPrompt(),
-        'Detecta el país y extrae todos los items con sus precios.', MODEL_HAIKU);
+      raw = await callClaude(apiKey, image_base64, media_type, system,
+        'Extrae todos los ítems con sus precios de esta boleta.', model);
     } catch(e) {
+      // Timeout explícito → respuesta específica al usuario
+      if(e.message?.startsWith('TIMEOUT')) {
+        return res.status(504).json({
+          error:'El procesamiento tardó más de lo esperado. Intenta de nuevo o usa una foto más pequeña.',
+          code:'TIMEOUT_OCR'
+        });
+      }
       return res.status(502).json({ error:`OCR falló: ${e.message}`, code:'OCR_ERROR' });
     }
 
     const parsed = parseJSON(raw);
-    if (!parsed) {
-      return res.status(422).json({ error:'No se pudo leer la boleta', code:'PARSE_ERROR' });
+
+    // Refusal explícito del modelo
+    if (parsed && parsed.ok === false && parsed.reason) {
+      return res.status(200).json({
+        ok: false,
+        needs_confirmation: false,
+        reason:  parsed.reason,
+        message: parsed.message || 'No se pudo procesar la boleta.',
+        candidates: parsed.candidates || []
+      });
     }
 
-    const detectedCountry = parsed.pais !== 'UNKNOWN' ? parsed.pais : null;
-    const heuristic = detectCountry(
-      (parsed.items||[]).map(it=>it.nombre).join(' ') + ' ' + (parsed.restaurante||'')
-    );
-
-    // Combinar confianza: lo que reportó Claude + heurísticas
-    let detectionConfidence = parsed.confianza || 0.5;
-    if (detectedCountry && heuristic.country === detectedCountry) {
-      detectionConfidence = Math.min(detectionConfidence + 0.20, 0.95);
+    if (!parsed?.items) {
+      return res.status(422).json({ error:'No se pudo leer la boleta', code:'PARSE_ERROR',
+        raw: raw?.substring(0, 300) });
     }
 
-    const candidates = heuristic.candidates;
-    const dollarAmbiguous = ['CL','AR','MX','US','CA','CO'];
-    const needsConfirm = !is_confirmation && (
-      !detectedCountry ||
-      detectionConfidence < 0.60 ||
-      (dollarAmbiguous.includes(detectedCountry) && detectionConfidence < 0.72)
-    );
+    const finalCountry = parsed.pais !== 'UNKNOWN' ? (parsed.pais || country_hint || 'UNKNOWN') : 'UNKNOWN';
+    const currency     = parsed.moneda || COUNTRY_RULES[finalCountry]?.currency || 'CLP';
 
-    if (needsConfirm) {
-      // No hacemos segunda llamada — devolvemos lo que ya tenemos + pedimos confirmación
-      // Si el usuario confirma → RUTA A con 1 llamada Sonnet/Haiku especializada
+    // Moneda ambigua → pedir confirmación al usuario
+    if ((currency === 'AMBIGUOUS_DOLLAR' || currency === 'AMBIGUOUS_YEN') && !is_confirmation) {
       return res.status(200).json({
         ok: false,
         needs_confirmation: true,
-        detected_country: detectedCountry,
-        detected_country_name: COUNTRY_RULES[detectedCountry]?.name || null,
-        confidence: detectionConfidence,
-        candidates,
-        // Incluir items preliminares para que el usuario los vea mientras confirma
-        items_preview: parsed.items?.slice(0,3) || [],
-        message: detectedCountry
-          ? `Parece ser una boleta de ${COUNTRY_RULES[detectedCountry]?.name || detectedCountry} (${Math.round(detectionConfidence*100)}% certeza). ¿Es correcto?`
-          : '¿De qué país es esta boleta?',
+        ambiguous_currency: true,
+        detected_country:  finalCountry !== 'UNKNOWN' ? finalCountry : null,
+        candidates:        parsed.monedas_candidatas || [],
+        items_preview:     (parsed.items || []).slice(0, 3),
+        message: '¿Cuál es la moneda de esta boleta?',
         available_countries: Object.entries(COUNTRY_RULES).map(([code,r]) => ({
           code, name:r.name, currency:r.currency, symbol:r.symbol
         }))
       });
     }
 
-    // País detectado con suficiente confianza
-    // ¿Necesita re-parseo con Sonnet? Solo si el país es complejo
-    const finalCountry = detectedCountry || 'CL';
-    const needsSonnet = COUNTRY_RULES[finalCountry]?.complexity === 'complex';
+    // Normalizar ítems (incluye auto-created si reconcile los agrega)
+    const normalizedBase = normalizeItems(parsed.items || [], currency);
+    const recon          = reconcile(normalizedBase, parsed.total_referencia || 0, finalCountry);
 
-    if (needsSonnet) {
-      // Re-parsear con Sonnet + prompt especializado para máxima precisión
-      let sonnetRaw;
-      try {
-        sonnetRaw = await callClaude(apiKey, image_base64, media_type,
-          buildUnifiedPrompt(finalCountry),
-          'Extrae todos los items con sus precios de esta boleta.', MODEL_SONNET);
-      } catch(e) {
-        // Si Sonnet falla, usar lo que ya tenemos de Haiku
-        console.warn('Sonnet falló, usando resultado de Haiku:', e.message);
-        return buildResponse(res, raw, finalCountry, detectionConfidence, MODEL_HAIKU);
-      }
-      return buildResponse(res, sonnetRaw, finalCountry, detectionConfidence, MODEL_SONNET);
+    // Aplicar auto-fix (siempre marcado, nunca silencioso)
+    let finalItems = normalizedBase;
+    if (recon.auto_fixed && recon.auto_fix_item) {
+      const fix = recon.auto_fix_item;
+      finalItems = [...normalizedBase, normalizeAutoFix(fix, currency)];
     }
 
-    // País simple → usar resultado de Haiku directamente (0 llamadas extra)
-    return buildResponse(res, raw, finalCountry, detectionConfidence, MODEL_HAIKU);
+    if (!finalItems.length) {
+      return res.status(422).json({ error:'No se encontraron ítems válidos', code:'NO_ITEMS' });
+    }
+
+    const totalFinal     = finalItems.reduce((a,it) => a+it.precio_unitario*it.cantidad, 0);
+    const itemsDudosos   = finalItems.filter(it => (it.confianza||1) < 0.60);
+    const confianzaGlobal = parsed.confianza_global || (
+      finalItems.reduce((s,it) => s+(it.confianza||0.8), 0) / finalItems.length
+    );
+
+    // Warnings
+    const warnings = [];
+    if (!recon.ok && recon.note) {
+      warnings.push({ type:'financial_discrepancy', message:recon.note,
+        severity: recon.ratio > 0.20 ? 'high' : 'medium' });
+    }
+    if (recon.auto_fixed) {
+      warnings.push({ type:'auto_fix_pending_review', severity:'medium',
+        message: recon.user_message || 'Se agregó un ítem automáticamente. Confírmalo o elimínalo.' });
+    }
+    if (itemsDudosos.length > 0) {
+      warnings.push({ type:'low_confidence_items', severity:'low',
+        message:`${itemsDudosos.length} ítem(s) con confianza baja — revisar antes de dividir` });
+    }
+    if (confianzaGlobal < 0.50) {
+      warnings.push({ type:'very_low_confidence', severity:'high',
+        message:'La lectura general tiene baja confianza — considera re-tomar la foto.' });
+    } else if (confianzaGlobal < 0.80) {
+      warnings.push({ type:'low_confidence', severity:'medium',
+        message:'Algunos ítems pueden tener errores de lectura. Revisa antes de continuar.' });
+    }
+
+    // Log asíncrono a Supabase (no bloquea el response)
+    logToSupabase({
+      country_hint, country_final: finalCountry,
+      pos_detected: parsed.pos_detected || 'unknown',
+      moneda: currency, model_used: model,
+      prompt_version: PROMPT_VERSION,
+      total_reported: parsed.total_referencia || 0,
+      total_computed: Math.round(totalFinal * 100) / 100,
+      reconciliation: recon,
+      status: 'ok',
+      latency_ms: Date.now() - startMs,
+      confianza_global: Math.round(confianzaGlobal * 100) / 100,
+      raw_response: parsed
+    }, finalItems).catch(e => console.warn('Supabase log failed:', e.message));
+
+    const rules = COUNTRY_RULES[finalCountry] || {};
+    return res.status(200).json({
+      ok:                  true,
+      restaurante:         parsed.restaurante ?? null,
+      moneda:              currency,
+      pais:                finalCountry,
+      pais_nombre:         rules.name ?? finalCountry,
+      pos_detected:        parsed.pos_detected || 'unknown',
+      razonamiento:        parsed.razonamiento || null,
+      items:               finalItems,
+      items_dudosos:       itemsDudosos,
+      total:               Math.round(totalFinal * 100) / 100,
+      total_referencia:    parsed.total_referencia ?? null,
+      confianza_global:    Math.round(confianzaGlobal * 100) / 100,
+      model_used:          model,
+      prompt_version:      PROMPT_VERSION,
+      reconciliation: {
+        ok:                recon.ok,
+        note:              recon.note,
+        sum_items:         Math.round((recon.sum||0) * 100) / 100,
+        total_boleta:      recon.total,
+        diff_ratio:        recon.ratio,
+        auto_fixed:        recon.auto_fixed || false,
+        auto_fix_type:     recon.auto_fix_type || null,
+        user_action_required: recon.user_action_required || false,
+        user_message:      recon.user_message || null
+      },
+      warnings
+    });
 
   } catch(err) {
     console.error('Pipeline error:', err);
@@ -839,64 +1032,95 @@ export default async function handler(req, res) {
   }
 }
 
-// ── Helper: construir respuesta final ─────────────────────────────────────────
-function buildResponse(res, rawJson, countryCode, detectionConfidence, modelUsed) {
-  const parsed = parseJSON(rawJson);
-  if (!parsed?.items) {
-    return res.status(422).json({
-      error:'No se pudieron extraer items',
-      code:'PARSE_ERROR',
-      raw: rawJson?.substring(0,200)
+// ── Helper: normalizar ítem auto-creado ──────────────────────────────────────
+function normalizeAutoFix(fix, currency) {
+  return {
+    nombre:           fix.nombre,
+    precio_unitario:  normalizePrice(fix.precio_unitario, currency),
+    cantidad:         1,
+    confianza:        0.50,
+    evidencia:        fix.auto_fix_evidence || 'auto-calculado por reconciliación',
+    auto_created:     true,
+    auto_fix_type:    fix.auto_fix_type || null
+  };
+}
+
+// ── Helper: log asíncrono a Supabase ─────────────────────────────────────────
+async function logToSupabase(runData, items) {
+  // Supabase URL/KEY desde env vars
+  const SB_URL = process.env.SUPABASE_URL;
+  const SB_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY;
+  if (!SB_URL || !SB_KEY) return; // Sin Supabase configurado → skip silencioso
+
+  try {
+    // Insert ocr_runs
+    const runRes = await fetch(`${SB_URL}/rest/v1/ocr_runs`, {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'apikey':         SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Prefer':        'return=representation'
+      },
+      body: JSON.stringify(runData)
     });
-  }
+    if (!runRes.ok) return; // Log failed silently
 
-  const finalCountry = parsed.pais || countryCode || 'CL';
-  const recon = reconcile(parsed.items, parsed.total || 0);
+    const [run] = await runRes.json();
+    if (!run?.id || !items?.length) return;
 
-  // Aplicar auto-fix de reconciliación (agregar item faltante automáticamente)
-  let itemsToNormalize = parsed.items;
-  if (recon.auto_fixed && recon.auto_fix_item) {
-    itemsToNormalize = [...parsed.items, recon.auto_fix_item];
-  }
-  const normalizedItems = normalizeItems(itemsToNormalize, finalCountry);
-  const normalizedTotal = normalizedItems.reduce((a,it) => a+it.precio_unitario*it.cantidad, 0);
+    // Insert ocr_items
+    const itemRows = items.map((it, i) => ({
+      run_id:          run.id,
+      position:        i,
+      nombre:          it.nombre,
+      precio_unitario: it.precio_unitario,
+      cantidad:        it.cantidad,
+      confianza:       it.confianza || null,
+      evidencia:       it.evidencia || null,
+      auto_created:    it.auto_created || false,
+      auto_fix_type:   it.auto_fix_type || null
+    }));
 
-  if (!normalizedItems.length) {
-    return res.status(422).json({ error:'No se encontraron items válidos', code:'NO_ITEMS' });
-  }
+    await fetch(`${SB_URL}/rest/v1/ocr_items`, {
+      method:  'POST',
+      headers: { 'Content-Type':'application/json', 'apikey':SB_KEY, 'Authorization':`Bearer ${SB_KEY}` },
+      body: JSON.stringify(itemRows)
+    });
 
-  const rules = COUNTRY_RULES[finalCountry] || {};
-  const warnings = [];
-  if (!recon.ok && recon.note) {
-    warnings.push({ type:'financial_discrepancy', message:recon.note, severity:recon.ratio>0.20?'high':'medium' });
+    // Upsert merchant_observations
+    if (runData.raw_response?.restaurante) {
+      await fetch(`${SB_URL}/rest/v1/merchant_observations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type':'application/json', 'apikey':SB_KEY,
+          'Authorization':`Bearer ${SB_KEY}`, 'Prefer':'resolution=merge-duplicates'
+        },
+        body: JSON.stringify({
+          restaurant_name: runData.raw_response.restaurante,
+          country:         runData.country_final,
+          pos_system:      runData.pos_detected,
+          last_seen:       new Date().toISOString()
+        })
+      });
+    }
+  } catch(e) {
+    console.warn('logToSupabase error:', e.message);
   }
-  if (detectionConfidence < 0.80) {
-    warnings.push({ type:'country_uncertain', message:`País detectado con ${Math.round(detectionConfidence*100)}% de certeza`, severity:'low' });
-  }
+}
 
-  return res.status(200).json({
-    ok: true,
-    restaurante: parsed.restaurante ?? null,
-    moneda: parsed.moneda ?? rules.currency ?? 'CLP',
-    pais: finalCountry,
-    pais_nombre: rules.name ?? finalCountry,
-    items: normalizedItems,
-    total: normalizedTotal,
-    total_original: parsed.total ?? null,
-    confianza_pais: detectionConfidence,
-    confianza_extraccion: parsed.confianza ?? 0.8,
-    model_used: modelUsed,
-    raw_lines: (typeof rawLines !== 'undefined' ? rawLines : []),
-    layout_detectado: (rules.price_format && rules.price_format !== 'standard' ? rules.price_format : null),
-    reconciliation: {
-      ok: recon.ok,
-      note: recon.note,
-      sum_items: recon.sum,
-      total_boleta: recon.total,
-      diff_ratio: recon.ratio,
-      auto_fixed: recon.auto_fixed || false,
-      auto_fix_type: recon.auto_fix_type || null
-    },
-    warnings
-  });
+// ── Helper: normalizar precio ─────────────────────────────────────────────────
+function normalizePrice(raw, currency) {
+  let val = raw;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))      val = parseFloat(s.replace(/\./g,'').replace(',','.'));
+    else if (/^\d+,\d{1,2}$/.test(s))                val = parseFloat(s.replace(',','.'));
+    else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s))  val = parseFloat(s.replace(/,/g,''));
+    else                                               val = parseFloat(s.replace(',','.'));
+  }
+  if (isNaN(val) || val < 0) return 0;
+  const NO_DEC = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
+    'UGX','RWF','TZS','XOF','XAF','COP','ISK','HUF','IRR','IQD','LBP','SYP','PYG']);
+  return NO_DEC.has(currency) ? Math.round(val) : Math.round(val * 100) / 100;
 }
