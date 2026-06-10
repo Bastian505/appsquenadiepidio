@@ -835,10 +835,12 @@ function reconcile(items, totalReported, countryCode) {
 }
 
 // ── CAPA 6: Normalización ─────────────────────────────────────────────────────
-function normalizeItems(items, countryCode) {
-  const r = COUNTRY_RULES[countryCode] || {};
-  const noDecimal = ['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','COP'];
-  const isNoDecimal = noDecimal.includes(r.currency || '');
+// Fix: recibe currency ISO directamente (no countryCode).
+// Antes: countryCode='UNKNOWN' resolvía a {} y nunca aplicaba isNoDecimal → redondeo incorrecto.
+function normalizeItems(items, currency) {
+  const NO_DECIMAL = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
+    'UGX','RWF','TZS','XOF','XAF','COP','PYG','HUF','ISK']);
+  const isNoDecimal = NO_DECIMAL.has((currency||'').toUpperCase());
 
   return items.map((it,i) => {
     let raw = it.precio_unitario ?? it.precio ?? 0;
@@ -846,15 +848,17 @@ function normalizeItems(items, countryCode) {
       const s = raw.trim();
       if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))      raw = parseFloat(s.replace(/\./g,'').replace(',','.'));
       else if (/^\d+,\d{1,2}$/.test(s))                raw = parseFloat(s.replace(',','.'));
-      else if (/^\d{1,3}(,\d{3})+(\.\d+)?$/.test(s))  raw = parseFloat(s.replace(/,/g,''));
+      else if (/^\d{1,3}(,\d{3})+(\d+)?$/.test(s))  raw = parseFloat(s.replace(/,/g,''));
       else                                               raw = parseFloat(s.replace(',','.'));
     }
-    if (isNaN(raw)) raw = 0;
-    const precioFinal = isNoDecimal ? Math.round(raw) : Math.round(raw*100)/100;
+    if (isNaN(raw) || raw < 0) raw = 0;
+    const precioFinal = isNoDecimal ? Math.round(raw) : Math.round(raw * 100) / 100;
     return {
-      nombre: it.nombre || it.name || `Item ${i+1}`,
+      nombre:          it.nombre || it.name || ("Item " + (i+1)),
       precio_unitario: precioFinal,
-      cantidad: Math.max(1, parseInt(it.cantidad)||1)
+      cantidad:        Math.max(1, parseInt(it.cantidad)||1),
+      confianza:       it.confianza || null,
+      evidencia:       it.evidencia || null
     };
   }).filter(it => it.precio_unitario !== 0);
 }
@@ -920,7 +924,8 @@ export default async function handler(req, res) {
     }
 
     const finalCountry = parsed.pais !== 'UNKNOWN' ? (parsed.pais || country_hint || 'UNKNOWN') : 'UNKNOWN';
-    const currency     = parsed.moneda || COUNTRY_RULES[finalCountry]?.currency || 'CLP';
+    // Fix: nunca asumir CLP como fallback — si Claude no detectó moneda, pedir confirmación
+    const currency = parsed.moneda || COUNTRY_RULES[finalCountry]?.currency || 'AMBIGUOUS_DOLLAR';
 
     // Moneda ambigua → pedir confirmación al usuario
     if ((currency === 'AMBIGUOUS_DOLLAR' || currency === 'AMBIGUOUS_YEN') && !is_confirmation) {
