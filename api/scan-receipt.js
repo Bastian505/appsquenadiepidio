@@ -642,7 +642,7 @@ function buildGenericPrompt()     { return buildV5Prompt(null); }
 // Retry: 1 solo en errores transitorios 5xx. NUNCA en timeout.
 async function callClaude(apiKey, imageBase64, mediaType, system, userText, model) {
   const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 8000);
+  const timeoutId  = setTimeout(() => controller.abort(), 25000);
 
   let res;
   try {
@@ -668,7 +668,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
   } catch(e) {
     clearTimeout(timeoutId);
     if(e.name === 'AbortError') {
-      throw new Error('TIMEOUT: La llamada a Claude tardó más de 8 segundos');
+      throw new Error('TIMEOUT: La llamada a Claude tardó más de 25 segundos');
     }
     // Retry una vez en errores de red transitorios
     res = await fetch('https://api.anthropic.com/v1/messages', {
