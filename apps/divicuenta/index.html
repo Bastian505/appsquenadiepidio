@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>DiviCuenta — Divide sin drama</title>
 <meta name="theme-color" content="#0ea5e9">
-<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="DiviCuenta">
@@ -26,7 +25,7 @@
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{background:var(--bg);min-height:100%;}
-body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;display:flex;flex-direction:column;}
+body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse at 15% 15%,rgba(14,165,233,0.12) 0%,transparent 50%),radial-gradient(ellipse at 85% 80%,rgba(2,132,199,0.08) 0%,transparent 50%);pointer-events:none;z-index:0;}
 
 /* TOPBAR */
@@ -353,59 +352,6 @@ input[type=text]::placeholder{color:var(--text3);}
 
 /* BANKS MODAL OVERLAY */
 .banks-modal{position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9998;align-items:flex-end;justify-content:center;padding:0;}
-
-/* ── LAYER 2: ONBOARDING ── */
-.onboarding-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.72);z-index:9999;display:flex;align-items:flex-end;justify-content:center;}
-.onboarding-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:420px;box-shadow:0 -8px 40px rgba(14,165,233,0.18);}
-.onboarding-emoji{font-size:48px;text-align:center;margin-bottom:10px;}
-.onboarding-title{font-size:22px;font-weight:800;text-align:center;color:var(--text);margin-bottom:4px;letter-spacing:-0.5px;}
-.onboarding-sub{font-size:13px;color:var(--text2);text-align:center;font-family:"Lora",serif;font-style:italic;margin-bottom:22px;line-height:1.6;}
-.onboarding-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.onboarding-label{font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;}
-.onboarding-input{background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;padding:12px 14px;font-family:"Nunito",sans-serif;font-size:15px;color:var(--text);outline:none;transition:border-color 0.2s;}
-.onboarding-input:focus{border-color:var(--primary);}
-.onboarding-btn{width:100%;background:linear-gradient(135deg,var(--primary),var(--pd));color:#fff;border:none;border-radius:14px;padding:15px;font-family:"Nunito",sans-serif;font-size:16px;font-weight:800;cursor:pointer;margin-top:8px;box-shadow:0 4px 18px var(--shadowm);}
-.onboarding-skip{display:block;text-align:center;color:var(--text3);font-size:12px;margin-top:12px;cursor:pointer;font-weight:700;}
-
-/* ── LAYER 2: LEDGER WIDGET ── */
-.ledger-widget{width:100%;max-width:320px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 2px 12px var(--shadow);}
-.ledger-header{background:linear-gradient(135deg,var(--primary),var(--pd));padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
-.ledger-header-title{font-size:12px;font-weight:800;color:#fff;letter-spacing:0.06em;text-transform:uppercase;}
-.ledger-header-sub{font-size:10px;color:rgba(255,255,255,0.75);font-weight:600;}
-.ledger-empty{padding:16px;text-align:center;font-size:13px;color:var(--text3);font-family:"Lora",serif;font-style:italic;}
-.ledger-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:0.5px solid var(--border);cursor:pointer;transition:background 0.15s;}
-.ledger-row:last-child{border-bottom:none;}
-.ledger-row:active{background:var(--ps);}
-.ledger-person{font-size:13px;font-weight:700;color:var(--text);}
-.ledger-detail{font-size:11px;color:var(--text3);font-weight:600;}
-.ledger-balance{font-size:13px;font-weight:800;}
-.ledger-balance.owe{color:var(--danger);}
-.ledger-balance.owed{color:var(--green);}
-.ledger-balance.zero{color:var(--text3);}
-.ledger-footer{padding:8px 14px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
-.ledger-footer-txt{font-size:11px;color:var(--text3);font-weight:600;}
-.ledger-new-session-btn{font-size:11px;font-weight:800;color:var(--primary);cursor:pointer;background:none;border:none;font-family:"Nunito",sans-serif;padding:0;}
-
-/* ── LAYER 2: DEBT BOTTOM SHEET ── */
-.debt-sheet-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.6);z-index:9998;display:none;align-items:flex-end;justify-content:center;}
-.debt-sheet-overlay.open{display:flex;}
-.debt-sheet{background:var(--surface);border-radius:24px 24px 0 0;padding:24px 20px 40px;width:100%;max-width:420px;box-shadow:0 -8px 40px rgba(14,165,233,0.18);}
-.debt-sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px;}
-.debt-sheet-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:2px;}
-.debt-sheet-sub{font-size:12px;color:var(--text2);font-family:"Lora",serif;font-style:italic;margin-bottom:18px;}
-.debt-breakdown{background:var(--surface2);border:1.5px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:16px;}
-.debt-breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:0.5px solid var(--border);font-size:12px;}
-.debt-breakdown-row:last-child{border:none;}
-.debt-breakdown-label{color:var(--text2);font-weight:600;}
-.debt-breakdown-amount{font-weight:800;color:var(--text);}
-.debt-breakdown-total{font-size:14px;font-weight:800;color:var(--danger);}
-.debt-sheet-actions{display:flex;flex-direction:column;gap:9px;}
-.dsa-btn{width:100%;border:none;border-radius:13px;padding:13px 16px;font-family:"Nunito",sans-serif;font-size:14px;font-weight:800;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;}
-.dsa-btn:active{opacity:0.8;}
-.dsa-wa{background:#25d366;color:#fff;}
-.dsa-paid{background:var(--gg);color:#065f46;border:1.5px solid rgba(16,185,129,0.3);}
-.dsa-confirm{background:var(--ps);color:var(--pdd);border:1.5px solid var(--border);}
-.dsa-close{background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);}
 </style>
 </head>
 <body>
@@ -422,41 +368,6 @@ input[type=text]::placeholder{color:var(--text3);}
   </div>
 </div>
 
-
-<!-- ── LAYER 2: ONBOARDING OVERLAY ── -->
-<div class="onboarding-overlay" id="onboarding-overlay" style="display:none;">
-  <div class="onboarding-sheet">
-    <div class="onboarding-emoji">👋</div>
-    <div class="onboarding-title">¡Hola! ¿Cómo te llamas?</div>
-    <div class="onboarding-sub">Para recordar tus deudas y quién te debe, necesitamos saber quién eres.</div>
-    <div class="onboarding-field">
-      <div class="onboarding-label">Tu nombre</div>
-      <input class="onboarding-input" id="ob-name" type="text" placeholder="Ej: Bastian" maxlength="30" autocomplete="given-name">
-    </div>
-    <div class="onboarding-field">
-      <div class="onboarding-label">Tu WhatsApp (opcional — para recordatorios)</div>
-      <input class="onboarding-input" id="ob-phone" type="tel" placeholder="+56 9 1234 5678" autocomplete="tel">
-    </div>
-    <button class="onboarding-btn" onclick="saveOnboarding()">Guardar y empezar →</button>
-    <span class="onboarding-skip" onclick="skipOnboarding()">Ahora no, seguir sin cuenta</span>
-  </div>
-</div>
-
-<!-- ── LAYER 2: DEBT BOTTOM SHEET ── -->
-<div class="debt-sheet-overlay" id="debt-sheet-overlay" onclick="closeDebtSheet(event)">
-  <div class="debt-sheet" onclick="event.stopPropagation()">
-    <div class="debt-sheet-handle"></div>
-    <div class="debt-sheet-title" id="dss-title">Deuda</div>
-    <div class="debt-sheet-sub" id="dss-sub">Sesiones sin saldar</div>
-    <div class="debt-breakdown" id="dss-breakdown"></div>
-    <div class="debt-sheet-actions">
-      <button class="dsa-btn dsa-wa" id="dss-wa-btn" onclick="sendWhatsAppReminder()">💬 Recordar por WhatsApp</button>
-      <button class="dsa-btn dsa-paid" onclick="markDebtPaid()">✅ Marcar como pagado</button>
-      <button class="dsa-btn dsa-close" onclick="closeDebtSheet()">Cerrar</button>
-    </div>
-  </div>
-</div>
-
 <!-- S0: BIENVENIDA -->
 <div class="screen visible" id="s0">
   <div class="welcome-wrap">
@@ -464,8 +375,7 @@ input[type=text]::placeholder{color:var(--text3);}
     <div class="welcome-title">Divi<em>Cuenta</em></div>
     <p class="welcome-tag">Divide la cuenta sin drama, sin confusiones y sin que nadie quede debiendo.</p>
     <div class="welcome-divider"></div>
-    <div id="pending-debts-wrap" style="display:none;width:100%;max-width:320px;"></div>
-    <div id="ledger-widget-wrap" style="display:none;width:100%;max-width:320px;"></div>
+    <div id="pending-debts-wrap" style="display:none;width:100%;max-width:300px;"></div>
     <div class="welcome-feats">
       <div class="feat-row"><span class="feat-icon">📷</span><span class="feat-text">IA lee la boleta automáticamente</span></div>
       <div class="feat-row"><span class="feat-icon">⚡</span><span class="feat-text">Modo express — divide en 30 segundos</span></div>
@@ -1912,12 +1822,14 @@ async function scanWithProxy(b64,mime,proxyUrl){
   var ov=document.getElementById('scanOv'),msg=document.getElementById('scan-msg');
   ov.classList.add('on');
   msg.textContent='ENVIANDO A CLAUDE...';
-  var ticker=setInterval(function(){msg.textContent='LEYENDO BOLETA...';},1500);
+  var msgs=['DETECTANDO PAÍS...','LEYENDO BOLETA...','EXTRAYENDO ITEMS...','VALIDANDO TOTALES...'];
+  var mi=0;
+  var ticker=setInterval(function(){mi=(mi+1)%msgs.length;msg.textContent=msgs[mi];},1500);
   clearTimeout(scanTimeout);
   scanTimeout=setTimeout(function(){
     clearInterval(ticker);ov.classList.remove('on');
-    showScanError('Sin respuesta en 20s. Revisa tu conexión.');
-  },20000);
+    showScanError('Sin respuesta en 30s. Revisa tu conexión.');
+  },30000);
   try{
     var res=await fetch(proxyUrl,{
       method:'POST',
@@ -1926,17 +1838,41 @@ async function scanWithProxy(b64,mime,proxyUrl){
     });
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
     if(!res.ok){
-      var e=await res.json().catch(function(){return{};});
-      showScanError('Error '+(e.code||res.status)+': '+(e.error||'intenta de nuevo'));
+      var etxt=await res.text().catch(function(){return'';});
+      try{
+        var ej=JSON.parse(etxt);
+        if(ej.code==='TIMEOUT_OCR'){
+          showScanError('El procesamiento tardó más de lo esperado. Intenta con una foto más pequeña o mejor iluminada.');
+          return;
+        }
+        showScanError('Error '+(ej.code||res.status)+': '+(ej.error||'intenta de nuevo'));
+      }catch(pe){
+        showScanError('HTTP '+res.status+': intenta de nuevo');
+      }
       return;
     }
     var data=await res.json();
+    if(data.ok===false && data.reason){
+      showScanError(data.message||'No se pudo procesar la boleta.');
+      return;
+    }
+    if(data.needs_confirmation){
+      showCountryConfirmation(data, b64, mime);
+      return;
+    }
     if(!data.ok||!data.items||!data.items.length){
       showScanError(data.error||'No se detectaron ítems. Asegúrate que la foto muestre la boleta completa con buena luz.');
       return;
     }
-    loadItems(data.restaurante||'Restaurante',data.items);
-    toast('Boleta leída — '+data.items.length+' ítems');
+    var norm=normalizeInternationalItems({
+      restaurante:data.restaurante,
+      moneda:data.moneda||'CLP',
+      items:data.items,
+      total:data.total
+    });
+    window._currentSymbol=norm.simbolo;
+    window._currentCurrency=norm.moneda;
+    _finishLoad(norm,data);
   }catch(err){
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
     showScanError('Error de conexión: '+err.message);
@@ -2864,49 +2800,25 @@ async function fetchExchangeRate(fromCurrency){
     return _exchangeRates[cacheKey];
   }
 
-  // Tablas de tasas fijas de respaldo (actualizadas periódicamente)
-  // Se usan si la API falla — mejor que no mostrar nada
-  var FALLBACK_TO_USD = {
-    CLP:0.00106,ARS:0.00091,MXN:0.050,COP:0.000244,PEN:0.267,BRL:0.179,
-    EUR:1.08,GBP:1.27,CHF:1.12,JPY:0.0065,AUD:0.645,CAD:0.735,
-    TRY:0.029,KRW:0.00074,INR:0.012,THB:0.028,VND:0.000040
-  };
-
   try {
-    // open.er-api.com — gratuito, sin API key, permite CORS desde browser
-    var base = fromCurrency === 'USD' ? 'USD' : fromCurrency;
-    var url = 'https://open.er-api.com/v6/latest/' + base;
-    var res = await fetch(url, {mode:'cors'});
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    // Frankfurter API — gratis, sin registro, sin API key
+    var url = 'https://api.frankfurter.app/latest?from='+fromCurrency+'&to='+_preferredCurrency;
+    var res = await fetch(url);
+    if(!res.ok) return null;
     var data = await res.json();
-    if(data.result !== 'success') throw new Error('API error');
     var rate = data.rates && data.rates[_preferredCurrency];
-    if(!rate) throw new Error('No rate for '+_preferredCurrency);
+    if(!rate) return null;
 
     _exchangeRates[cacheKey] = {
       rate: rate,
       from: fromCurrency,
       to: _preferredCurrency,
-      date: data.time_last_update_utc ? data.time_last_update_utc.slice(0,10) : 'hoy'
+      date: data.date
     };
     _exchangeTimestamp = now;
     return _exchangeRates[cacheKey];
   } catch(e){
-    console.warn('Exchange rate API falló, usando fallback:', e.message);
-    // Fallback: calcular via USD
-    var fromUSD = FALLBACK_TO_USD[fromCurrency];
-    var toUSD   = FALLBACK_TO_USD[_preferredCurrency] || (_preferredCurrency === 'USD' ? 1 : null);
-    if(fromUSD && toUSD){
-      var fallbackRate = toUSD / fromUSD;
-      _exchangeRates[cacheKey] = {
-        rate: fallbackRate,
-        from: fromCurrency,
-        to: _preferredCurrency,
-        date: 'referencial'
-      };
-      _exchangeTimestamp = now;
-      return _exchangeRates[cacheKey];
-    }
+    console.warn('Exchange rate fetch failed (no crítico):', e);
     return null;
   }
 }
@@ -2967,353 +2879,6 @@ if(_origUpdateTotal){
 
 // ── También mostrar toast cuando se aplica auto_fix de reconciliación ────────
 var _origBuildWarnings = null; // se aplica en scanWithClaude
-
-
-// ════════════════════════════════════════════════════════════
-// LAYER 2 — IDENTIDAD PERSISTENTE + LEDGER DE DEUDAS
-// ════════════════════════════════════════════════════════════
-
-// ── ESTADO GLOBAL L2 ─────────────────────────────────────────
-var L2 = {
-  user: null,        // {id, name, phone} del usuario local
-  ledger: [],        // [{from, to, amount, sessions:[]}] deudas neteadas
-  activeDebt: null,  // deuda abierta en el bottom sheet
-  initialized: false
-};
-
-// ── INIT: corre al cargar la app ────────────────────────────
-async function initLayer2(){
-  if(L2.initialized) return;
-  L2.initialized = true;
-
-  // 1. Leer identidad guardada en localStorage
-  try {
-    var saved = localStorage.getItem('dc_l2_user');
-    if(saved) L2.user = JSON.parse(saved);
-  } catch(e){}
-
-  // 2. Si no hay usuario → mostrar onboarding (con delay para no bloquear splash)
-  if(!L2.user){
-    setTimeout(function(){
-      var ob = document.getElementById('onboarding-overlay');
-      if(ob) ob.style.display = 'flex';
-    }, 1200);
-  } else {
-    // 3. Si hay usuario → cargar ledger y mostrarlo
-    await loadLedger();
-    renderLedgerWidget();
-  }
-}
-
-// ── ONBOARDING ───────────────────────────────────────────────
-function saveOnboarding(){
-  var name = (document.getElementById('ob-name').value || '').trim();
-  var phone = (document.getElementById('ob-phone').value || '').trim();
-  if(!name){ toast('Escribe tu nombre para continuar'); return; }
-
-  var user = {
-    id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    name: name,
-    phone: phone,
-    createdAt: new Date().toISOString()
-  };
-  L2.user = user;
-
-  try { localStorage.setItem('dc_l2_user', JSON.stringify(user)); } catch(e){}
-
-  // Guardar en Supabase si está disponible
-  if(sb){
-    sb.from('dc_users').upsert({
-      id: user.id, name: user.name, phone: user.phone || null,
-      created_at: user.createdAt
-    }).then(function(){}).catch(function(){});
-  }
-
-  document.getElementById('onboarding-overlay').style.display = 'none';
-  toast('¡Hola, ' + name + '! 👋 Tu historial se guardará automáticamente.');
-  loadLedger().then(renderLedgerWidget);
-}
-
-function skipOnboarding(){
-  document.getElementById('onboarding-overlay').style.display = 'none';
-}
-
-// ── GUARDAR DEUDAS AL TERMINAR SESIÓN ───────────────────────
-// Llamar desde showResults() cuando hay un pagador seleccionado
-function persistDebts(debts, restaurante, total){
-  if(!L2.user) return;
-  if(!debts || !debts.length) return;
-
-  var session = {
-    id: 's_' + Date.now(),
-    restaurante: restaurante || 'Restaurante',
-    total: total || 0,
-    date: new Date().toISOString(),
-    debts: debts  // [{from, to, amount}]
-  };
-
-  // Guardar en localStorage (historial de sesiones)
-  var sessions = [];
-  try { sessions = JSON.parse(localStorage.getItem('dc_l2_sessions') || '[]'); } catch(e){}
-  sessions.unshift(session);
-  if(sessions.length > 50) sessions = sessions.slice(0, 50);
-  try { localStorage.setItem('dc_l2_sessions', JSON.stringify(sessions)); } catch(e){}
-
-  // Guardar en Supabase si está disponible
-  if(sb){
-    var rows = debts.map(function(d){
-      return {
-        session_id: session.id,
-        from_name: d.from,
-        to_name: d.to,
-        amount: d.amount,
-        restaurante: session.restaurante,
-        created_at: session.date,
-        paid: false
-      };
-    });
-    sb.from('dc_debts').insert(rows).then(function(){}).catch(function(){});
-  }
-
-  // Recargar ledger
-  loadLedger().then(renderLedgerWidget);
-}
-
-// ── CARGAR LEDGER (leer deudas y nettear) ───────────────────
-async function loadLedger(){
-  if(!L2.user) return;
-
-  // Leer todas las sesiones del localStorage
-  var sessions = [];
-  try { sessions = JSON.parse(localStorage.getItem('dc_l2_sessions') || '[]'); } catch(e){}
-
-  // Intentar también Supabase si está disponible
-  if(sb){
-    try {
-      var myName = L2.user.name.toLowerCase();
-      var res = await sb.from('dc_debts')
-        .select('*')
-        .eq('paid', false)
-        .or('from_name.ilike.' + myName + ',to_name.ilike.' + myName);
-      if(res.data && res.data.length){
-        // Mezclar con datos locales — usar Supabase como fuente de verdad
-        sessions = res.data.map(function(r){
-          return {
-            id: r.session_id,
-            restaurante: r.restaurante,
-            date: r.created_at,
-            debts: [{ from: r.from_name, to: r.to_name, amount: r.amount }]
-          };
-        });
-      }
-    } catch(e){}
-  }
-
-  // Construir ledger: nettear deudas entre pares
-  var pairs = {};
-  var myName = L2.user.name.toLowerCase();
-
-  sessions.forEach(function(session){
-    if(!session.debts) return;
-    session.debts.forEach(function(d){
-      var fLow = d.from.toLowerCase();
-      var tLow = d.to.toLowerCase();
-      // Solo mostrar deudas que me involucran
-      if(fLow !== myName && tLow !== myName) return;
-
-      // Normalizar par: siempre key = A|B ordenado alfabéticamente
-      var pairKey = [fLow, tLow].sort().join('|');
-      if(!pairs[pairKey]){
-        pairs[pairKey] = { nameA: d.from, nameB: d.to, net: 0, sessions: [] };
-      }
-      pairs[pairKey].sessions.push({ restaurante: session.restaurante, date: session.date, amount: d.amount, from: d.from, to: d.to });
-      // Net: positivo = nameA le debe a nameB
-      if(fLow === pairs[pairKey].nameA.toLowerCase()){
-        pairs[pairKey].net += d.amount;
-      } else {
-        pairs[pairKey].net -= d.amount;
-      }
-    });
-  });
-
-  // Construir array de ledger desde mi perspectiva
-  L2.ledger = Object.values(pairs).map(function(p){
-    var myLow = myName;
-    var otherName, iOwe, netAmt;
-    if(p.nameA.toLowerCase() === myLow){
-      otherName = p.nameB;
-      netAmt = p.net;    // positivo = yo debo; negativo = me deben
-    } else {
-      otherName = p.nameA;
-      netAmt = -p.net;   // invertir perspectiva
-    }
-    return {
-      other: otherName,
-      iOwe: netAmt > 0,   // true = yo le debo; false = me debe
-      amount: Math.abs(netAmt),
-      sessions: p.sessions
-    };
-  }).filter(function(e){ return e.amount > 50; }); // ignorar < $50 (residuo)
-
-  L2.ledger.sort(function(a,b){ return b.amount - a.amount; });
-}
-
-// ── RENDERIZAR WIDGET EN PANTALLA DE BIENVENIDA ──────────────
-function renderLedgerWidget(){
-  var wrap = document.getElementById('ledger-widget-wrap');
-  if(!wrap) return;
-
-  if(!L2.user || L2.ledger.length === 0){
-    wrap.style.display = 'none';
-    return;
-  }
-
-  var totalOwe = L2.ledger.filter(function(e){ return e.iOwe; }).reduce(function(s,e){ return s+e.amount; }, 0);
-  var totalOwed = L2.ledger.filter(function(e){ return !e.iOwe; }).reduce(function(s,e){ return s+e.amount; }, 0);
-
-  var headerSub = '';
-  if(totalOwe > 0 && totalOwed > 0) headerSub = 'Debes ' + fmtP(Math.round(totalOwe)) + ' · Te deben ' + fmtP(Math.round(totalOwed));
-  else if(totalOwe > 0) headerSub = 'Debes un total de ' + fmtP(Math.round(totalOwe));
-  else headerSub = 'Te deben un total de ' + fmtP(Math.round(totalOwed));
-
-  var rows = L2.ledger.map(function(e, idx){
-    var label = e.iOwe ? 'Le debes a <b>' + e.other + '</b>' : '<b>' + e.other + '</b> te debe';
-    var cls = e.iOwe ? 'owe' : 'owed';
-    var sign = e.iOwe ? '' : '+';
-    var sesCount = e.sessions ? e.sessions.length : 1;
-    return '<div class="ledger-row" onclick="openDebtSheet(' + idx + ')">'
-      + '<div><div class="ledger-person">' + label + '</div><div class="ledger-detail">' + sesCount + ' sesión' + (sesCount!==1?'es':'') + ' sin saldar</div></div>'
-      + '<div class="ledger-balance ' + cls + '">' + sign + fmtP(Math.round(e.amount)) + '</div>'
-      + '</div>';
-  }).join('');
-
-  wrap.innerHTML = '<div class="ledger-widget">'
-    + '<div class="ledger-header"><div class="ledger-header-title">💸 Cuentas pendientes</div><div class="ledger-header-sub">' + headerSub + '</div></div>'
-    + rows
-    + '<div class="ledger-footer"><span class="ledger-footer-txt">Toca una fila para ver detalles</span>'
-    + '<button class="ledger-new-session-btn" onclick="startApp()">+ Nueva cuenta</button></div>'
-    + '</div>';
-  wrap.style.display = 'block';
-}
-
-// ── BOTTOM SHEET: DETALLE DE DEUDA ───────────────────────────
-function openDebtSheet(idx){
-  var entry = L2.ledger[idx];
-  if(!entry) return;
-  L2.activeDebt = entry;
-
-  document.getElementById('dss-title').textContent = entry.iOwe
-    ? 'Le debes a ' + entry.other
-    : entry.other + ' te debe';
-  document.getElementById('dss-sub').textContent = (entry.sessions ? entry.sessions.length : 1)
-    + ' sesión(es) pendiente(s)';
-
-  // Desglose por sesión
-  var bRows = '';
-  if(entry.sessions && entry.sessions.length){
-    entry.sessions.slice(0,6).forEach(function(s){
-      var date = s.date ? new Date(s.date).toLocaleDateString('es-CL',{day:'2-digit',month:'short'}) : '';
-      bRows += '<div class="debt-breakdown-row">'
-        + '<span class="debt-breakdown-label">' + (s.restaurante || 'Sesión') + (date?' · '+date:'') + '</span>'
-        + '<span class="debt-breakdown-amount">' + fmtP(Math.round(s.amount)) + '</span>'
-        + '</div>';
-    });
-  }
-  bRows += '<div class="debt-breakdown-row" style="margin-top:4px;">'
-    + '<span class="debt-breakdown-label debt-breakdown-total">Total neto</span>'
-    + '<span class="debt-breakdown-amount debt-breakdown-total">' + fmtP(Math.round(entry.amount)) + '</span>'
-    + '</div>';
-  document.getElementById('dss-breakdown').innerHTML = bRows;
-
-  // Configurar botón WhatsApp
-  var waBtn = document.getElementById('dss-wa-btn');
-  if(entry.iOwe){
-    waBtn.style.display = 'none'; // No recordarle a alguien que les debes
-  } else {
-    waBtn.style.display = 'flex';
-  }
-
-  document.getElementById('debt-sheet-overlay').classList.add('open');
-}
-
-function closeDebtSheet(e){
-  if(e && e.target !== document.getElementById('debt-sheet-overlay')) return;
-  document.getElementById('debt-sheet-overlay').classList.remove('open');
-  L2.activeDebt = null;
-}
-
-function sendWhatsAppReminder(){
-  var e = L2.activeDebt;
-  if(!e || e.iOwe) return;
-  var myName = L2.user ? L2.user.name : 'yo';
-  var msg = '¡Hola ' + e.other + '! 👋 DiviCuenta me recuerda que me debes ' + fmtP(Math.round(e.amount)) + ' de nuestras últimas salidas. Cuando puedas me avisas 😊';
-  var waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(msg);
-  window.open(waUrl, '_blank');
-}
-
-function markDebtPaid(){
-  var e = L2.activeDebt;
-  if(!e) return;
-
-  // Eliminar del localStorage
-  var sessions = [];
-  try { sessions = JSON.parse(localStorage.getItem('dc_l2_sessions') || '[]'); } catch(e2){}
-  var myName = (L2.user ? L2.user.name : '').toLowerCase();
-  var otherLow = e.other.toLowerCase();
-  sessions = sessions.filter(function(s){
-    if(!s.debts) return true;
-    s.debts = s.debts.filter(function(d){
-      var pair = [d.from.toLowerCase(), d.to.toLowerCase()];
-      return !(pair.includes(myName) && pair.includes(otherLow));
-    });
-    return s.debts.length > 0;
-  });
-  try { localStorage.setItem('dc_l2_sessions', JSON.stringify(sessions)); } catch(e2){}
-
-  // Marcar en Supabase si aplica
-  if(sb){
-    var myN = L2.user ? L2.user.name : '';
-    sb.from('dc_debts').update({ paid: true })
-      .or('and(from_name.ilike.' + otherLow + ',to_name.ilike.' + myName + '),and(from_name.ilike.' + myName + ',to_name.ilike.' + otherLow + ')')
-      .then(function(){}).catch(function(){});
-  }
-
-  closeDebtSheet();
-  toast('✅ Deuda con ' + e.other + ' saldada');
-  loadLedger().then(renderLedgerWidget);
-}
-
-// ── HOOK: PERSISTIR DEUDAS AL FINALIZAR SESIÓN ──────────────
-// Envolver showResults para capturar deudas automáticamente
-(function(){
-  var _orig = typeof showResults === 'function' ? showResults : null;
-  if(!_orig) return;
-  showResults = function(){
-    _orig.apply(this, arguments);
-    setTimeout(function(){
-      try {
-        var debts = calcDebts(totals);
-        if(debts && debts.length && L2.user){
-          persistDebts(debts, restaurante, grandTotal);
-        }
-      } catch(e){}
-    }, 500);
-  };
-})();
-
-// ── ARRANCAR LAYER 2 cuando la app cargue ───────────────────
-document.addEventListener('DOMContentLoaded', function(){
-  // Esperar a que Supabase esté listo
-  var tries = 0;
-  var waitSb = setInterval(function(){
-    if(typeof supabase !== 'undefined' || tries > 30){
-      clearInterval(waitSb);
-      initSupabase();
-      initLayer2();
-    }
-    tries++;
-  }, 100);
-});
 
 </script>
 </body>
