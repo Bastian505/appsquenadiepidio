@@ -42,7 +42,7 @@ const COUNTRY_RULES = {
     tip_behavior:'optional_explicit', tip_kw:['propina','servicio voluntario'],
     total_kw:['total','subtotal','valor total','a pagar'],
     price_format:'standard', signals:['nit','dian','cufe','ipc','colombia','bogota','cali','medellin'],
-    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IPC/IVA/impoconsumo = impuestos, ignorar. Propina sugerida 10% incluirla si aparece como línea. Usar SUBTOTAL sin propina como base.'
+    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IPC/IVA/impoconsumo = impuestos, IGNORAR siempre. Cargos de vajilla/cristalería = incluir como ítem real. TOTAL_REFERENCIA: usar el campo "Valor" o "Subtotal antes de IPC" — NUNCA el subtotal que ya incluye IPC ni el total con propina. Propina: incluir SOLO si el cliente la acepta (está en el total final cobrado) — si dice "sugerida" o "ADVERTENCIA PROPINA" es opcional, NO incluir.'
   },
   PE: {
     name:'Perú', currency:'PEN', symbol:'S/', has_decimals:true,
