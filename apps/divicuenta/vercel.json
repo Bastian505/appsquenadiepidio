@@ -1,7 +1,0 @@
-{
-  "functions": {
-    "api/scan-receipt.js": {
-      "maxDuration": 30
-    }
-  }
-}
