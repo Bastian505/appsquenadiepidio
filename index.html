@@ -1735,7 +1735,10 @@ var APP_BASE_URL = (function(){
 })();
 
 function generateSessionId(){
-  return 'dc-' + Math.random().toString(36).substring(2,9) + '-' + Date.now().toString(36);
+  // El session id es el único control de acceso al link/QR compartido de la
+  // mesa — debe ser difícil de adivinar. crypto.randomUUID() da 122 bits de
+  // entropía real vs. los ~46 bits (y predecibles, por Math.random) de antes.
+  return 'dc-' + crypto.randomUUID();
 }
 
 function showSessionQR(){
@@ -3034,7 +3037,7 @@ function saveOnboarding(){
   if(!name){ toast('Escribe tu nombre para continuar'); return; }
 
   var user = {
-    id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    id: 'u_' + crypto.randomUUID(),
     name: name,
     phone: phone,
     createdAt: new Date().toISOString()
