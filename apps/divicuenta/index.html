@@ -612,6 +612,13 @@ input[type=text]::placeholder{color:var(--text3);}
 var items=[],people=[],assigns={},tipPct=0,step=0,restaurante=null,invitedBy={},pagadorIdx=-1,roundingExtra=0;
 var PROXY_URL='/api/scan-receipt';
 var COLORS=['#0ea5e9','#f472b6','#34d399','#f59e0b','#818cf8','#fb923c','#60a5fa','#4ade80'];
+// Debe ser igual a la env var APP_SHARED_SECRET configurada en Vercel para
+// api/scan-receipt.js. Sí, vive en el bundle público — no es un secreto real
+// frente a alguien que lea el código fuente, pero bloquea scanners genéricos
+// y (junto al allow-list de CORS del servidor) que otro sitio web llame este
+// endpoint desde el navegador de una víctima. Cambiar este valor por uno
+// propio al configurar la env var.
+var APP_SHARED_SECRET='CHANGE_ME_TO_MATCH_VERCEL_ENV_VAR';
 
 // ── SUPABASE CONFIG ──
 var SUPABASE_URL = 'https://kozakmufitkepgpxctxu.supabase.co';
@@ -1537,12 +1544,12 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
     var res;
     var bodyStr=JSON.stringify(payload);
     try{
-      res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+      res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},body:bodyStr});
     }catch(netErr){
       msg.textContent='REINTENTANDO...';
       await new Promise(function(r){setTimeout(r,2000);});
       try{
-        res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+        res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},body:bodyStr});
       }catch(netErr2){
         clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
         showScanError('Sin conexión al servidor. Verifica tu internet e intenta de nuevo.');return;

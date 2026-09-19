@@ -7,6 +7,41 @@
 const MODEL_SONNET  = 'claude-sonnet-4-6';
 const PROMPT_VERSION = process.env.PROMPT_VERSION || 'v5.0.0';
 
+// ── SEGURIDAD DEL ENDPOINT ────────────────────────────────────────────────────
+// Este endpoint hace una llamada a la API de Anthropic pagada por el dueño de la
+// app — sin ningún control, cualquiera que lo encuentre puede usarlo como proxy
+// gratis y vaciar la cuenta. Estas tres capas lo mitigan (ninguna es perfecta
+// por sí sola porque es una app pública sin login, pero juntas suben el costo
+// de abuso considerablemente):
+//   1. Origin allow-list para CORS: bloquea que OTRO sitio web ejecute este
+//      fetch silenciosamente en el navegador de una víctima.
+//   2. Un secreto compartido (APP_SHARED_SECRET) que el cliente debe mandar en
+//      el header X-App-Secret. Como es una SPA sin backend de auth, este
+//      secreto vive en el bundle público de todas formas — no detiene a quien
+//      lea el código fuente, pero sí a scanners automáticos y bots genéricos
+//      que no inspeccionan el JS de cada sitio que encuentran.
+//   3. Rate limiting best-effort en memoria por IP. Las funciones serverless
+//      de Vercel no comparten memoria entre instancias/regiones, así que esto
+//      NO es un límite global confiable — solo frena ráfagas dentro de una
+//      misma instancia "tibia". Para un límite real usar Vercel KV o Upstash
+//      Redis (recomendado como siguiente paso).
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://yporqueno.vercel.app')
+  .split(',').map(function(s){ return s.trim(); }).filter(Boolean);
+
+const APP_SHARED_SECRET = process.env.APP_SHARED_SECRET || null;
+
+const RATE_LIMIT_MAX = 8;           // requests
+const RATE_LIMIT_WINDOW_MS = 60_000; // por minuto, por IP
+const _rateLimitHits = new Map(); // ip -> [timestamps] — vive solo mientras la instancia esté tibia
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const hits = (_rateLimitHits.get(ip) || []).filter(function(t){ return now - t < RATE_LIMIT_WINDOW_MS; });
+  hits.push(now);
+  _rateLimitHits.set(ip, hits);
+  return hits.length > RATE_LIMIT_MAX;
+}
+
 // ── BASE DE CONOCIMIENTO: 26 países ──────────────────────────────────────────
 const COUNTRY_RULES = {
 
@@ -867,14 +902,39 @@ function normalizeItems(items, currency) {
 export default async function handler(req, res) {
   const startMs = Date.now();
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.indexOf(origin) > -1) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Secret');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error:'Method not allowed' });
 
+  // Secreto propio de la app — ver comentario junto a APP_SHARED_SECRET arriba.
+  if (APP_SHARED_SECRET && req.headers['x-app-secret'] !== APP_SHARED_SECRET) {
+    return res.status(401).json({ error:'No autorizado', code:'UNAUTHORIZED' });
+  }
+
+  // Rate limit best-effort por IP (ver limitaciones en el comentario de arriba).
+  const clientIp = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || req.socket?.remoteAddress || 'unknown';
+  if (isRateLimited(clientIp)) {
+    return res.status(429).json({ error:'Demasiadas solicitudes. Intenta de nuevo en un minuto.', code:'RATE_LIMITED' });
+  }
+
+  // El cliente permite "traer tu propia key" (BYOK) — por eso el fallback a
+  // req.body.api_key no se elimina del todo, sería un cambio de producto, no
+  // un fix de seguridad. Lo que sí se agrega es: (a) validar el formato acá
+  // en el server, ya que la validación del cliente es trivial de saltarse, y
+  // (b) las capas de arriba (origin allow-list, secreto compartido, rate
+  // limit) para que esto no sea un relay anónimo abierto hacia la API de
+  // Anthropic para cualquiera en internet, use la key que use.
   const apiKey = process.env.ANTHROPIC_API_KEY || req.body?.api_key;
   if (!apiKey) return res.status(500).json({ error:'API key no configurada', code:'NO_KEY' });
+  if (typeof apiKey !== 'string' || !apiKey.startsWith('sk-ant-')) {
+    return res.status(400).json({ error:'Formato de API key inválido', code:'BAD_KEY_FORMAT' });
+  }
 
   const {
     image_base64, media_type='image/jpeg',
@@ -902,7 +962,8 @@ export default async function handler(req, res) {
           code:'TIMEOUT_OCR'
         });
       }
-      return res.status(502).json({ error:`OCR falló: ${e.message}`, code:'OCR_ERROR' });
+      console.error('OCR call failed:', e);
+      return res.status(502).json({ error:'No se pudo procesar la boleta con el servicio de OCR.', code:'OCR_ERROR' });
     }
 
     const parsed = parseJSON(raw);
@@ -1033,7 +1094,7 @@ export default async function handler(req, res) {
 
   } catch(err) {
     console.error('Pipeline error:', err);
-    return res.status(500).json({ error:'Error interno', code:'INTERNAL', detail:err.message });
+    return res.status(500).json({ error:'Error interno', code:'INTERNAL' });
   }
 }
 
