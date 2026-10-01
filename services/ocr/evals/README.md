@@ -20,11 +20,27 @@ reales de distintos países, sin tener que confiar a ojo.
 
 ## Cobertura actual
 
-16 de los 36 países de `COUNTRY_RULES`: CL, DE, ES, MX, AR, US, NL, CH, CO,
-IL, JP, KR, GB, CA, IT, TR. Países `complexity:'complex'` cubiertos: DE, ES,
-CO, IL (de los 7 marcados así en el código). Faltan: PE, BR, FR, PT, CN, IN,
-TH, SG, AU, AE, SA, GR, PL, CZ, HU, SE, NO, DK, UY, PY — si alguien saca
-fotos de boletas de esos países, agregarlas acá es el próximo paso obvio.
+58 fixtures, 17 de los 37 países de `COUNTRY_RULES` (36 + Albania, agregada
+a partir de este mismo lote de boletas — ver commit que la agrega):
+CL, DE, ES, MX, AR, US, NL, CH, CO, IL, JP, KR, GB, CA, IT, TR, AL.
+Países `complexity:'complex'` cubiertos: DE, ES, CO, IL, AL (de los 8
+marcados así en el código). Faltan: PE, BR, FR, PT, CN, IN, TH, SG, AU, AE,
+SA, GR, PL, CZ, HU, SE, NO, DK, UY, PY — si alguien saca fotos de boletas
+de esos países, agregarlas acá es el próximo paso obvio.
+
+Algunos fixtures traen `confianza_transcripcion` mencionada en sus `notas`
+cuando la foto original no permite leer todos los ítems con certeza total
+(cortes de encuadre, mala luz). En esos casos el total/país/moneda sigue
+siendo confiable, pero el detalle de ítems es mejor esfuerzo — no penalizar
+de más un resultado del modelo que difiera ahí sin antes revisar la foto
+original.
+
+Nota sobre reconciliación: en varios países (US, CA, CO) el total impreso
+en la boleta incluye un impuesto que las reglas del prompt dicen ignorar
+como ítem (sales tax, GST/HST, TPS/TVQ, IPC) — que `sum(items) != total`
+en esos casos es el comportamiento ESPERADO, no un error de transcripción.
+Es exactamente lo que la capa de reconciliación de `scan-receipt.js` ya
+maneja en producción.
 
 ## Cómo correrlo
 

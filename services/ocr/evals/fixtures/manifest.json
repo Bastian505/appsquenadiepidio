@@ -204,10 +204,11 @@
     { "id": "AR/farmacia-nacion-salta", "pais": "AR", "moneda": "ARS", "restaurante": "Farmacia Nacion",
       "items": [
         {"nombre": "Barbijo Quirurg con Elastico", "precio_unitario": 100.00, "cantidad": 6},
-        {"nombre": "Hketorolac 20 MG X 1", "precio_unitario": 125.00, "cantidad": 10}
+        {"nombre": "Hketorolac 20 MG X 1", "precio_unitario": 125.00, "cantidad": 10},
+        {"nombre": "Gentileza", "precio_unitario": -375.00, "cantidad": 1}
       ],
       "total_referencia": 1475.00,
-      "notas": "NO es un restaurante, es una farmacia -> buen caso para probar que el pipeline no rechaza boletas de comercio general. 'Gentileza -375.00' es un descuento (R4, negativo) ya reflejado en 'Importe Neto'."
+      "notas": "NO es un restaurante, es una farmacia -> buen caso para probar que el pipeline no rechaza boletas de comercio general. 'Gentileza -375.00' es un descuento real (R4, negativo) que hay que incluir como item para que la suma cuadre con 'Importe Neto' (1850 - 375 = 1475)."
     },
 
     { "id": "US/pho-ca-dao-sandiego", "pais": "US", "moneda": "USD", "restaurante": "Pho Ca Dao",
@@ -286,8 +287,8 @@
         {"nombre": "Infusion de F", "precio_unitario": 4000, "cantidad": 1},
         {"nombre": "Servicio Voluntario", "precio_unitario": 10602, "cantidad": 1}
       ],
-      "total_referencia": 114602,
-      "notas": "CASO CLAVE Colombia: 'Servicio Voluntario 10%' esta sumado dentro del 'Total: 8.481' que en realidad lee raro en la boleta (hay un error de imprenta visible) -> usar el renglon 'DISCRIMINACION DE IMPUESTOS / Servicio Voluntario 10% / 10.602' como la propina ya incluida. Base 106.019 + Servicio 10.602 no cuadra exacto con el OCR por mala calidad de impresion, es intencional (boleta real, no perfecta)."
+      "total_referencia": 125102,
+      "notas": "CASO CLAVE Colombia: 'Servicio Voluntario 10%' (10.602) esta incluido en el total final. El 'Total' impreso en la boleta tiene un error de imprenta real (se lee '8.481', que es en realidad el campo IMPC de la tabla de impuestos, no el total) -> total_referencia aca es el calculado (suma de items, que sí es internamente consistente: 114.500 en comida/bebida + 10.602 de servicio = 125.102), no el numero mal impreso."
     },
 
     { "id": "CO/hardeleva", "pais": "CO", "moneda": "COP", "restaurante": "Mardeleva Restaurante Bar",
@@ -419,6 +420,7 @@
 
     { "id": "IT/non-fiscale-coperto", "pais": "IT", "moneda": "EUR", "restaurante": null,
       "items": [
+        {"nombre": "Ristorante", "precio_unitario": 6.00, "cantidad": 1},
         {"nombre": "Insalata Polpo", "precio_unitario": 10.00, "cantidad": 1},
         {"nombre": "Margherita", "precio_unitario": 6.00, "cantidad": 1},
         {"nombre": "Romana", "precio_unitario": 8.00, "cantidad": 1},
@@ -427,18 +429,18 @@
         {"nombre": "Coperto", "precio_unitario": 1.50, "cantidad": 1}
       ],
       "total_referencia": 35.00,
-      "notas": "CASO DE LIBRO (post de Reddit preguntando justamente por este cargo): DOS lineas de 'Coperto' por separado (una por comensal) -> R3 dice incluir coperto como item real positivo; aqui son DOS items distintos, no fusionar en 'Coperto x2'. Dice 'NON FISCALE' / 'PRECONTO' -> precuenta valida (R15). El titulo 'RISTORANTE 6,00' es el nombre de categoria del menu, no un item -> no confundir con un cargo de restaurante."
+      "notas": "CASO DE LIBRO (post de Reddit preguntando justamente por este cargo): DOS lineas de 'Coperto' por separado (una por comensal) -> R3 dice incluir coperto como item real positivo; aqui son DOS items distintos, no fusionar en 'Coperto x2'. Dice 'NON FISCALE' / 'PRECONTO' -> precuenta valida (R15). 'Ristorante 6,00' SI es un item real con precio (verificado por la suma, que solo cuadra incluyendolo) -- no es un encabezado de categoria como parecia a primera vista, probablemente un cargo de mesa/local."
     },
 
     { "id": "TR/lahmacun-masa5", "pais": "TR", "moneda": "TRY", "restaurante": null,
       "items": [
         {"nombre": "Acili Lahmacun", "precio_unitario": 100.00, "cantidad": 2},
-        {"nombre": "Acisiz Lahmacun", "precio_unitario": 240.00, "cantidad": 1},
-        {"nombre": "Beyti Kebap", "precio_unitario": 25.00, "cantidad": 2},
-        {"nombre": "Tombul Ayran", "precio_unitario": 50.00, "cantidad": 1}
+        {"nombre": "Acisiz Lahmacun", "precio_unitario": 100.00, "cantidad": 2},
+        {"nombre": "Beyti Kebap", "precio_unitario": 240.00, "cantidad": 1},
+        {"nombre": "Tombul Ayran", "precio_unitario": 25.00, "cantidad": 2}
       ],
       "total_referencia": 690.00,
-      "notas": "'2 ACILI LAHMACUN 200,00TL' -> unit=100.00, qty=2 (total de linea / cantidad). TL es lira turca (TRY)."
+      "notas": "La columna 'Tutar' es el TOTAL de la linea, no el precio unitario -> precio_unitario = Tutar / Ad(cantidad). Suma verificada exacta: 200+200+240+50=690."
     },
 
     { "id": "TR/abdurrahman-masa12", "pais": "TR", "moneda": "TRY", "restaurante": "Abdurrahman Kucuk",
@@ -479,6 +481,280 @@
       ],
       "total_referencia": 194.00,
       "notas": "'Kuver' es el coperto turco (cargo por cubierto) -> R3, incluir como item real igual que el coperto italiano."
+    },
+
+    { "id": "AL/krasniqja", "pais": "AL", "moneda": "ALL", "restaurante": "Krasniqja Bar Restaurant",
+      "items": [
+        {"nombre": "Buk Misri", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "kafe ekspreso", "precio_unitario": 50, "cantidad": 2},
+        {"nombre": "Mish Qingjli", "precio_unitario": 900, "cantidad": 1},
+        {"nombre": "Mish Vici", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Patate madhe", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Sallate shope madhe", "precio_unitario": 300, "cantidad": 1},
+        {"nombre": "Tirana e madhe", "precio_unitario": 240, "cantidad": 1}
+      ],
+      "total_referencia": 2740,
+      "notas": "Suma verificada exacta contra el total impreso (2.740 Lek). 'TVSH' desglosado al pie se ignora (R2)."
+    },
+
+    { "id": "AL/shqiponja", "pais": "AL", "moneda": "ALL", "restaurante": "Bar-Restorant SHQIPONJA",
+      "items": [
+        {"nombre": "Pepsi", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Jje tonik", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Jje i gazuar i vogel", "precio_unitario": 100, "cantidad": 2},
+        {"nombre": "Biftek Skenderbeg", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Eskallop Pule Pane k", "precio_unitario": 650, "cantidad": 1},
+        {"nombre": "Mini Fica Kapricoze", "precio_unitario": 350, "cantidad": 2}
+      ],
+      "total_referencia": 2650,
+      "notas": "Trae equivalente en EUR (20.38) y USD (24.09) al pie -> son solo referencia, la moneda real cobrada es ALL (Leke)."
+    },
+
+    { "id": "AL/runway35", "pais": "AL", "moneda": "ALL", "restaurante": "Runway 35",
+      "items": [
+        {"nombre": "Espresso", "precio_unitario": 220, "cantidad": 1},
+        {"nombre": "Coca Cola 0.33l", "precio_unitario": 440, "cantidad": 1}
+      ],
+      "total_referencia": 660,
+      "notas": "Formato 'FATURE TATIMORE SHITJE' con columnas TVSH% | Sasia | Çmim | Pa TVSH | Total — usar la columna 'Çmim' (con IVA) como precio_unitario, no 'Pa TVSH'."
+    },
+
+    { "id": "AL/conarch", "pais": "AL", "moneda": "ALL", "restaurante": "Conarch shpk",
+      "items": [
+        {"nombre": "Leng Portokall", "precio_unitario": 300, "cantidad": 1},
+        {"nombre": "Eggs Benedict", "precio_unitario": 770, "cantidad": 1}
+      ],
+      "total_referencia": 1070,
+      "notas": "Mismo formato 'Fature Tatimore Shitje' que Runway 35."
+    },
+
+    { "id": "AL/te-fabio-vlore", "pais": "AL", "moneda": "ALL", "restaurante": "Te Fabio",
+      "items": [
+        {"nombre": "Bravo", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Oran Soda", "precio_unitario": 130, "cantidad": 1},
+        {"nombre": "Koka Kola", "precio_unitario": 130, "cantidad": 1},
+        {"nombre": "Vere e Hapur", "precio_unitario": 700, "cantidad": 2.5},
+        {"nombre": "Perime te Ziera", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Djath i Bardhe", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Pasta me Kima", "precio_unitario": 400, "cantidad": 1},
+        {"nombre": "Rizoto me Perime", "precio_unitario": 250, "cantidad": 1},
+        {"nombre": "Zoq Fshati me Vidhe", "precio_unitario": 1200, "cantidad": 1},
+        {"nombre": "Koce 300gr", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Ullinj+Limon", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Pasta me Perime", "precio_unitario": 300, "cantidad": 1}
+      ],
+      "total_referencia": 5610,
+      "notas": "CASO CLAVE: 'Vere e Hapur' (vino de la casa) se vende por copa de una botella -> '2.5 X 700,00 = 1.750,00', cantidad FRACCIONARIA real (2.5 copas). Es el caso que describe la regla de Albania en COUNTRY_RULES. Suma verificada exacta."
+    },
+
+    { "id": "AL/vela-e-bardhe", "pais": "AL", "moneda": "ALL", "restaurante": "Vela e Bardhe",
+      "items": [
+        {"nombre": "Uje 0.75", "precio_unitario": 250, "cantidad": 1},
+        {"nombre": "Oktapod Zgare", "precio_unitario": 1300, "cantidad": 1},
+        {"nombre": "Peshk Levrek Zgare", "precio_unitario": 1000, "cantidad": 1},
+        {"nombre": "Fileto Salmoni", "precio_unitario": 1400, "cantidad": 1}
+      ],
+      "total_referencia": 3950,
+      "notas": "Suma verificada exacta. Trae equivalente en EUR al pie (39.50) -> solo referencia."
+    },
+
+    { "id": "AL/tirana-asdulla", "pais": "AL", "moneda": "ALL", "restaurante": null,
+      "items": [
+        {"nombre": "Bruskete e vogel", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Coca Cola", "precio_unitario": 170, "cantidad": 2},
+        {"nombre": "Uje mineral natyral 0.75l", "precio_unitario": 250, "cantidad": 1},
+        {"nombre": "Patate furre", "precio_unitario": 250, "cantidad": 1},
+        {"nombre": "Sallate perme zgare", "precio_unitario": 500, "cantidad": 1},
+        {"nombre": "Bunrale Vici", "precio_unitario": 1500, "cantidad": 2}
+      ],
+      "total_referencia": 4490,
+      "notas": "CASO CLAVE punto=miles: '2 cope X 1.500,00 = 3.000,00' -> precio_unitario=1500, no 1.5. Suma verificada exacta."
+    },
+
+    { "id": "AL/soma-albania", "pais": "AL", "moneda": "ALL", "restaurante": "Soma Albania",
+      "items": [
+        {"nombre": "Amaretto Sour", "precio_unitario": 700, "cantidad": 1},
+        {"nombre": "Hattori Hanzo", "precio_unitario": 900, "cantidad": 1},
+        {"nombre": "Lije Natyral", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Ebi Tempura Roll", "precio_unitario": 1250, "cantidad": 1},
+        {"nombre": "Green Mizuna Salad", "precio_unitario": 1300, "cantidad": 1},
+        {"nombre": "Black Angus Beef Bao Buns", "precio_unitario": 950, "cantidad": 1},
+        {"nombre": "Seabass tartar roll 8 pcs", "precio_unitario": 1300, "cantidad": 1},
+        {"nombre": "Pecan pie", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Crispy Yuca", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Chicken Yakitori", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Grilled Padron Peppers", "precio_unitario": 1300, "cantidad": 1}
+      ],
+      "total_referencia": 10300,
+      "notas": "confianza_transcripcion: media — el precio de 'Grilled Padron Peppers' se infirio por descarte matematico (el resto de items suma exacto 9.000, falta 1.300 para llegar a 10.300) porque la foto no permite leerlo con total nitidez; verificar contra el original si se usa para medir con precision."
+    },
+
+    { "id": "AL/astrit-oruci-kg-pricing", "pais": "AL", "moneda": "ALL", "restaurante": "Astrit Oruci",
+      "items": [
+        {"nombre": "Uje ne Qelq (0.75l)", "precio_unitario": 380, "cantidad": 1},
+        {"nombre": "Uje me gaz ne Qelq (0.75l)", "precio_unitario": 380, "cantidad": 1},
+        {"nombre": "Gote vere e bardhe", "precio_unitario": 450, "cantidad": 1},
+        {"nombre": "Sallate Abiori", "precio_unitario": 450, "cantidad": 1},
+        {"nombre": "Spicy Shrimp Tempura", "precio_unitario": 1200, "cantidad": 1},
+        {"nombre": "Karkalec Viola (me kg)", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Karkalec Tiger (me kg)", "precio_unitario": 552, "cantidad": 1},
+        {"nombre": "Skampi i dyte (me kg)", "precio_unitario": 1350, "cantidad": 1},
+        {"nombre": "Karpaco Oktapod (me kg)", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Karpaco Levreku (me kg)", "precio_unitario": 600, "cantidad": 1},
+        {"nombre": "Ostrike (Çope)", "precio_unitario": 500, "cantidad": 2},
+        {"nombre": "Fokace", "precio_unitario": 400, "cantidad": 1},
+        {"nombre": "Akullore Abiori 1 Kupe", "precio_unitario": 200, "cantidad": 2}
+      ],
+      "total_referencia": 8762,
+      "notas": "CASO MAS DURO de Albania — ventas 'ME KG' (por peso): la boleta muestra 'Sasia' en kg (0.08, 0.5, etc) y un 'Çmim' que parece precio por kg, pero NO reconcilian limpio como cantidad x precio unitario tradicional. Ground truth usa cantidad=1 y precio_unitario=el TOTAL de linea realmente cobrado (columna derecha), porque es la unica forma de que la suma cuadre exacto con el TOTAL impreso (8.762, verificado) y porque la app no tiene forma util de dividir '0.08 kg' entre personas de todas formas. Si el modelo intenta calcular un precio 'por kg' en vez de usar el total de linea, va a fallar este fixture — eso es exactamente lo que se quiere detectar."
+    },
+
+    { "id": "AL/restaurant-fature", "pais": "AL", "moneda": "ALL", "restaurante": "Restaurant Fature",
+      "items": [
+        {"nombre": "Sallate Greke (2 person)", "precio_unitario": 470, "cantidad": 1},
+        {"nombre": "Suxhuk placi me sne bal", "precio_unitario": 420, "cantidad": 1},
+        {"nombre": "Aiçi dhe veshka tigani", "precio_unitario": 630, "cantidad": 1},
+        {"nombre": "Perime te pjekura ne zg", "precio_unitario": 450, "cantidad": 1},
+        {"nombre": "Patate te ferguara", "precio_unitario": 350, "cantidad": 1},
+        {"nombre": "Lang Frutash i Freske", "precio_unitario": 320, "cantidad": 1},
+        {"nombre": "Pianta Exotic Shishe", "precio_unitario": 930, "cantidad": 1},
+        {"nombre": "Eskallop pule zgare", "precio_unitario": 700, "cantidad": 1},
+        {"nombre": "Ljoks pule zgare 280 gr", "precio_unitario": 990, "cantidad": 1},
+        {"nombre": "Fish i njome me barisht", "precio_unitario": 640, "cantidad": 1},
+        {"nombre": "Pianta Exotic Shishe", "precio_unitario": 160, "cantidad": 1},
+        {"nombre": "Coca Cola Light Shishe", "precio_unitario": 60, "cantidad": 1},
+        {"nombre": "Kulloire Vanilj", "precio_unitario": 360, "cantidad": 1},
+        {"nombre": "Torta Capreze me parfe", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Simb Krem Karamel", "precio_unitario": 220, "cantidad": 1},
+        {"nombre": "Simb Sullastin shtepie", "precio_unitario": 220, "cantidad": 1},
+        {"nombre": "Simb Sullastin shtepie", "precio_unitario": 660, "cantidad": 1},
+        {"nombre": "Servicio (6%)", "precio_unitario": 483, "cantidad": 1}
+      ],
+      "total_referencia": 8528,
+      "notas": "confianza_transcripcion: baja — los nombres de varios items estan cortados en el margen izquierdo de la foto (ilegibles las primeras 1-2 letras de varias lineas), transcritos con mejor esfuerzo. Lo que SI es confiable: 'Shuma Lek' (subtotal) 8.045, '+6%' 483 (servicio sugerido, explicitamente SI sumado al 'Totale Lek' final de 8.528 segun la nota impresa 'Vlera 6% considerohet si shperblim per stafin e kamarereve... per mos pagu dicka te perimetur ju lakon vetem ju' = es voluntario pero aqui esta incluido en el total), y el total final 8.528. Usar este fixture para probar deteccion de pais/moneda/total; no confiar 100% en el listado de items sin verificar contra el original."
+    },
+
+    { "id": "AL/shitje-bar", "pais": "AL", "moneda": "ALL", "restaurante": null,
+      "items": [
+        {"nombre": "Uje Tepelena", "precio_unitario": 70, "cantidad": 1},
+        {"nombre": "Kallamare ai mbushur", "precio_unitario": 1000, "cantidad": 1},
+        {"nombre": "Oktapod Zgare", "precio_unitario": 1000, "cantidad": 1},
+        {"nombre": "Pene Karkalec Kungul", "precio_unitario": 600, "cantidad": 1},
+        {"nombre": "Rizoto Perime", "precio_unitario": 450, "cantidad": 1},
+        {"nombre": "Tirana", "precio_unitario": 150, "cantidad": 2},
+        {"nombre": "Vera", "precio_unitario": 200, "cantidad": 1}
+      ],
+      "total_referencia": 3620,
+      "notas": "Titulo 'SHITJE' = 'Venta', nombre de fantasia generico del ticket, no es el nombre del restaurante. Suma verificada exacta."
+    },
+
+    { "id": "AL/bar-restorant-two-tables", "pais": "AL", "moneda": "ALL", "restaurante": null,
+      "items": [
+        {"nombre": "Bravo", "precio_unitario": 150, "cantidad": 1},
+        {"nombre": "Gote Vere", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Mix Peshku (2 PE)", "precio_unitario": 1500, "cantidad": 1},
+        {"nombre": "Perime Zgare", "precio_unitario": 300, "cantidad": 1},
+        {"nombre": "Sallat Jeshile", "precio_unitario": 200, "cantidad": 1},
+        {"nombre": "Eskallop Pana K", "precio_unitario": 800, "cantidad": 1},
+        {"nombre": "Elbar 0.5L", "precio_unitario": 200, "cantidad": 1}
+      ],
+      "total_referencia": 3350,
+      "notas": "CASO RARO: la boleta trae DOS bloques numerados por separado ('25' y '26') -> probablemente dos rondas/pedidos de la misma mesa en momentos distintos, pero es UN solo 'Totali' final (3.350) que los suma a todos -> tratar como una sola lista de items, ignorar los numeros de bloque '25'/'26' (no son cantidad ni precio). Suma verificada exacta."
+    },
+
+    { "id": "CA/aux-anciens-canadiens-quebec", "pais": "CA", "moneda": "CAD", "restaurante": "Aux Anciens Canadiens",
+      "items": [
+        {"nombre": "Pate a la viande", "precio_unitario": 22.95, "cantidad": 1}
+      ],
+      "total_referencia": 26.39,
+      "notas": "CASO CLAVE Quebec: impuesto DOBLE separado 'Tx CAN 5%' (TPS federal) + 'Tx QC 9.975%' (TVQ provincial), a diferencia de Ontario/BC que traen un solo GST/HST/PST. 'Soupe du Jour', 'Blonde' (cerveza) y 'Dessert Jour' aparecen a $0.00 -> excluir por R1 (probablemente incluidos en un menu fijo no detallado); el item con precio real es el plato principal."
+    },
+
+    { "id": "CA/berts-bar-ottawa", "pais": "CA", "moneda": "CAD", "restaurante": "Bert's Bar",
+      "items": [
+        {"nombre": "Mush-Swiss Burger", "precio_unitario": 16.49, "cantidad": 1},
+        {"nombre": "Soft Drink", "precio_unitario": 2.99, "cantidad": 1}
+      ],
+      "total_referencia": 27.65,
+      "notas": "confianza_transcripcion: media — el 'Subtotal' impreso (24.47) no cuadra con la suma de los 2 items legibles (19.48); probablemente hay un item mas fuera del encuadre de la foto. Util igual para probar el caso de impuesto UNICO 'HST' (Ontario, a diferencia del TPS+TVQ doble de Quebec) aunque el desglose de items no sea 100% completo."
+    },
+
+    { "id": "CA/chateau-frontenac-quebec", "pais": "CA", "moneda": "CAD", "restaurante": "Fairmont Le Chateau Frontenac",
+      "items": [
+        {"nombre": "Gin O'Clock", "precio_unitario": 47.00, "cantidad": 1},
+        {"nombre": "Casserolle", "precio_unitario": 48.00, "cantidad": 2},
+        {"nombre": "Carre de Porc", "precio_unitario": 48.00, "cantidad": 1},
+        {"nombre": "Roz Sanpierre Raffatlin", "precio_unitario": 18.00, "cantidad": 1},
+        {"nombre": "Ktr Mousseria", "precio_unitario": 25.00, "cantidad": 1},
+        {"nombre": "Spritz - SAM", "precio_unitario": 28.00, "cantidad": 1},
+        {"nombre": "Huitres (6x)", "precio_unitario": 23.00, "cantidad": 1},
+        {"nombre": "Combo Reviver #2 - SAM", "precio_unitario": 52.00, "cantidad": 1},
+        {"nombre": "Soz Sanpierre Raffatlin", "precio_unitario": 12.00, "cantidad": 2},
+        {"nombre": "Creme Brule", "precio_unitario": 12.00, "cantidad": 1},
+        {"nombre": "Sticky Toffee Pudding", "precio_unitario": 12.00, "cantidad": 1}
+      ],
+      "total_referencia": 476.00,
+      "notas": "confianza_transcripcion: baja — foto borrosa/con poca luz (bar de hotel), el listado de items es mejor esfuerzo y probablemente tiene errores de nombre/cantidad. Lo confiable: Sous-Total 414.00 + TVQ 41.30 + TPS 20.70 = Total 476.00 (cuadra exacto) -> usar para probar total/pais/moneda en condiciones de imagen mala, no confiar en el detalle de items sin revisar el original."
+    },
+
+    { "id": "CA/keung-kee-montreal", "pais": "CA", "moneda": "CAD", "restaurante": "Restaurant Keung Kee",
+      "items": [
+        {"nombre": "Soupe aux estomac de porc", "precio_unitario": 10.95, "cantidad": 1},
+        {"nombre": "Filet de Boeuf en Cube Frit", "precio_unitario": 12.95, "cantidad": 1},
+        {"nombre": "Tofu Avec Porc Hache Epice", "precio_unitario": 10.95, "cantidad": 1},
+        {"nombre": "Bass vert a la Vapeur", "precio_unitario": 36.95, "cantidad": 1},
+        {"nombre": "Riz a la Vapeur (M)", "precio_unitario": 4.50, "cantidad": 1}
+      ],
+      "total_referencia": 87.73,
+      "notas": "Cada item trae un codigo de menu antes del nombre ('18.', '130.', '176.', '39.', '262.') -> es un numero de plato del menu, no cantidad ni precio, descartarlo del nombre. Suma verificada exacta: 76.30 + TPS 3.82 + TVQ 7.61 = 87.73."
+    },
+
+    { "id": "CA/vip-montreal", "pais": "CA", "moneda": "CAD", "restaurante": "Restaurant V.I.P.",
+      "items": [
+        {"nombre": "L10. Boeuf avec tofu", "precio_unitario": 5.50, "cantidad": 1},
+        {"nombre": "L5. Poulet d'acajou epice", "precio_unitario": 5.50, "cantidad": 1},
+        {"nombre": "L23. Chow fun avec boeuf", "precio_unitario": 5.50, "cantidad": 1},
+        {"nombre": "L23. Chow fun avec boeuf", "precio_unitario": 5.50, "cantidad": 1}
+      ],
+      "total_referencia": 25.29,
+      "notas": "CASO TRAMPA: 'L23. Chow fun avec boeuf' aparece en DOS lineas separadas (1x cada una), no es un solo item con cantidad=2 -> no fusionar. Suma verificada exacta: 22.00 + TPS 1.10 + TVQ 2.19 = 25.29."
+    },
+
+    { "id": "ES/san-lazaro-santiago-compostela", "pais": "ES", "moneda": "EUR", "restaurante": "Bodeguilla de San Lazaro",
+      "items": [
+        {"nombre": "Cabreiroa 1L", "precio_unitario": 2.50, "cantidad": 1},
+        {"nombre": "Croquetas Caseiras", "precio_unitario": 8.00, "cantidad": 1},
+        {"nombre": "Ensalada de Queixo", "precio_unitario": 9.50, "cantidad": 1},
+        {"nombre": "Solombinos o Queixo", "precio_unitario": 9.50, "cantidad": 1},
+        {"nombre": "1/2 Solombinos o Queixo", "precio_unitario": 5.70, "cantidad": 1},
+        {"nombre": "Pan", "precio_unitario": 0.80, "cantidad": 2},
+        {"nombre": "Flan de Laranxa", "precio_unitario": 2.25, "cantidad": 2},
+        {"nombre": "Cafe con Leite", "precio_unitario": 1.10, "cantidad": 2}
+      ],
+      "total_referencia": 43.50,
+      "notas": "CASO TRAMPA: hay DOS lineas de 'Solombinos o Queixo' distintas, una entera (9.50) y una 'media racion' (1/2, 5.70) -> son items separados, no fusionar ni descartar la mitad. Gallego ('Queixo', 'Laranxa'). Suma verificada exacta."
+    },
+
+    { "id": "ES/egeo-suvlakeria-madrid", "pais": "ES", "moneda": "EUR", "restaurante": "Egeo Suvlakeria",
+      "items": [
+        {"nombre": "Suvlaki Revithekefte", "precio_unitario": 3.90, "cantidad": 1},
+        {"nombre": "Mixta Cerdo Pollo Pa", "precio_unitario": 8.00, "cantidad": 1},
+        {"nombre": "Ensalada Griega", "precio_unitario": 7.20, "cantidad": 1},
+        {"nombre": "Coca Cola Zero", "precio_unitario": 2.50, "cantidad": 2}
+      ],
+      "total_referencia": 24.10,
+      "notas": "CASO TRAMPA: restaurante griego ('Egeo' = Egeo/Aegean) pero el pais es España (NIF, IVA 10%, Madrid) -> no confundir con GR. Suma verificada exacta."
+    },
+
+    { "id": "ES/bar5-gipuzkoa", "pais": "ES", "moneda": "EUR", "restaurante": null,
+      "items": [
+        {"nombre": "Txupito Licor", "precio_unitario": 2.50, "cantidad": 1},
+        {"nombre": "Tosta de Foie", "precio_unitario": 4.00, "cantidad": 1},
+        {"nombre": "Menu berezi", "precio_unitario": 29.00, "cantidad": 1},
+        {"nombre": "Torrija", "precio_unitario": 5.50, "cantidad": 1}
+      ],
+      "total_referencia": 41.00,
+      "notas": "Pais Vasco ('Menu berezi' = 'menu especial' en euskera) -> sigue siendo ES/EUR, no un pais aparte. Suma verificada exacta."
     }
   ]
 }
