@@ -903,7 +903,7 @@ function reconcile(items, totalReported, countryCode) {
 // Antes: countryCode='UNKNOWN' resolvía a {} y nunca aplicaba isNoDecimal → redondeo incorrecto.
 function normalizeItems(items, currency) {
   const NO_DECIMAL = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
-    'UGX','RWF','TZS','XOF','XAF','COP','PYG','HUF','ISK']);
+    'UGX','RWF','TZS','XOF','XAF','COP','PYG','HUF','ISK','ALL']);
   const isNoDecimal = NO_DECIMAL.has((currency||'').toUpperCase());
 
   return items.map((it,i) => {
