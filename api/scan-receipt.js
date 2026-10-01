@@ -333,6 +333,35 @@ FORMATO TURCO: columnas son Cinsi(nombre) | Adedi(cantidad) | Tutar(precio_total
     format:'EUR. ΦΠΑ = IVA griego, ignorar. Decimal con coma.'
   },
 
+  // ── ALBANIA ───────────────────────────────────────────────────────────────
+  AL: {
+    name:'Albania', currency:'ALL', symbol:'Lek', has_decimals:false,
+    complexity:'complex',  // punto=miles no decimal, cantidades fraccionarias, ventas por kg
+    tax_kw:['tvsh'], deposit_kw:[], refund_kw:[],
+    tip_behavior:'optional_explicit', tip_kw:['sherbim','shperblim per stafin','bakshish'],
+    total_kw:['total','totali','total lek','vlera me tvsh','paguar','para ne dore'],
+    price_format:'standard',
+    signals:['nipt','fature tatimore','fature tatimore shitje','kupon tatimor','lek','lekë','tirane','tirana','shqiperia','albania','vlore'],
+    format:`ALL = Lekë (lek albanés). SIN decimales reales: el punto es separador
+de MILES, no decimal — "1.300" = 1300 Lek, "8.333,33" es la excepción rara
+(precio por fracción de kg, ver abajo), no una regla general.
+TVSH = IVA albanés (típicamente 20%), IGNORAR siempre.
+"Fature Tatimore" / "Fature Tatimore Shitje" / "Kupon Tatimor" son todos
+nombres válidos de boleta fiscal (misma función, distintos negocios).
+Columnas típicas: Emërtimi/Përshkrimi/Artikulli (nombre) | Sasia (cantidad) |
+Çmimi (precio unitario) | Vlera/Totali/Total (total de línea).
+Cantidad a veces es fraccionaria: "2.5 X 700,00" = 2.5 unidades (ej. copas
+de vino servidas de una botella) — no redondear a 2 o 3.
+Ventas por peso ("ME KG" = por kg): la fila trae peso en kg como "cantidad"
+(ej. "0,08") y el precio ya corresponde a esa fracción — si la aritmética
+no cierra limpio, preferir el precio_unitario que sí reconcilie con el
+total de línea antes que inventar un recálculo; marcar confianza baja si
+no es claro, no rehusar la boleta por esto.
+Servicio/propina ("shperblim per stafin e kamarereve", típicamente ~6%)
+es sugerido en algunas boletas — igual que cualquier propina sugerida,
+incluir SOLO si quedó sumada al total final cobrado (ver R9).`
+  },
+
   // ── POLONIA ───────────────────────────────────────────────────────────────
   PL: {
     name:'Polonia', currency:'PLN', symbol:'zł', has_decimals:true,

@@ -1,0 +1,237 @@
+#!/usr/bin/env node
+// ── Harness de evals del motor de OCR de DiviCuenta ──────────────────────────
+//
+// Corre cada fixture de fixtures/manifest.json contra la API de Claude usando
+// el mismo prompt que usa api/scan-receipt.js en produccion, y compara el
+// resultado contra el ground truth escrito a mano.
+//
+// NO se puede correr desde el sandbox donde se armo este harness (sin acceso
+// de red a api.anthropic.com). Correr donde haya ANTHROPIC_API_KEY y salida
+// a internet:
+//
+//   ANTHROPIC_API_KEY=sk-ant-... node services/ocr/evals/run.mjs
+//   ANTHROPIC_API_KEY=sk-ant-... node services/ocr/evals/run.mjs --country=DE
+//   ANTHROPIC_API_KEY=sk-ant-... node services/ocr/evals/run.mjs --model=claude-haiku-4-6
+//
+// Que mide:
+//   - % de items donde nombre+precio_unitario+cantidad calzan con el ground truth
+//     (match de nombre es difuso: normaliza mayusculas/acentos/espacios)
+//   - diferencia entre total_referencia extraido y el real
+//   - acierto de pais/moneda
+// Al final imprime una tabla por pais y un resumen general — eso es lo que
+// se necesita para decidir con datos, no a ciegas, si un pais 'simple' puede
+// bajar a Haiku sin perder precision (ver selectModel() en scan-receipt.js).
+
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = path.resolve(__dirname, '../../..');
+
+const args = Object.fromEntries(
+  process.argv.slice(2).map(a => {
+    const [k, v] = a.replace(/^--/, '').split('=');
+    return [k, v ?? true];
+  })
+);
+
+const MODEL = args.model || 'claude-sonnet-4-6';
+const COUNTRY_FILTER = args.country || null;
+
+const manifest = JSON.parse(
+  fs.readFileSync(path.join(__dirname, 'fixtures/manifest.json'), 'utf8')
+);
+
+// Reusa el prompt real de produccion en vez de duplicarlo — si scan-receipt.js
+// cambia el prompt, este harness automaticamente prueba la version nueva.
+const scanReceiptSrc = fs.readFileSync(path.join(REPO_ROOT, 'api/scan-receipt.js'), 'utf8');
+
+function extractFn(src, name) {
+  // Extrae una funcion top-level del archivo de produccion por nombre, sin
+  // ejecutar el resto del archivo (que tiene un handler de Vercel al final).
+  const marker = `function ${name}(`;
+  const start = src.indexOf(marker);
+  if (start === -1) throw new Error(`No se encontro ${name}() en scan-receipt.js`);
+  let depth = 0, i = src.indexOf('{', start), end = i;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    if (src[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+  }
+  return src.slice(start, end);
+}
+
+// COUNTRY_RULES es un const al tope del archivo — lo extraemos igual que las funciones.
+function extractConst(src, name) {
+  const marker = `const ${name} = {`;
+  const start = src.indexOf(marker);
+  if (start === -1) throw new Error(`No se encontro ${name} en scan-receipt.js`);
+  let depth = 0, i = src.indexOf('{', start), end = i;
+  for (; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    if (src[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+  }
+  return src.slice(start, end);
+}
+
+const countryRulesSrc = extractConst(scanReceiptSrc, 'COUNTRY_RULES');
+const buildV5PromptSrc = extractFn(scanReceiptSrc, 'buildV5Prompt');
+
+// eslint-disable-next-line no-new-func
+const { COUNTRY_RULES, buildV5Prompt } = new Function(`
+  ${countryRulesSrc}
+  ${buildV5PromptSrc}
+  return { COUNTRY_RULES, buildV5Prompt };
+`)();
+
+function normName(s) {
+  return String(s || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // saca acentos
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+}
+
+function scoreItems(expected, actual) {
+  const actualPool = [...actual];
+  let matched = 0;
+  const details = [];
+  for (const exp of expected) {
+    const expNorm = normName(exp.nombre);
+    let bestIdx = -1, bestScore = 0;
+    actualPool.forEach((act, idx) => {
+      const actNorm = normName(act.nombre);
+      // overlap simple de tokens — suficiente para un eval, no hace falta mas.
+      const expTokens = new Set(expNorm.split(' '));
+      const actTokens = new Set(actNorm.split(' '));
+      const inter = [...expTokens].filter(t => actTokens.has(t)).length;
+      const nameScore = inter / Math.max(expTokens.size, 1);
+      if (nameScore > bestScore) { bestScore = nameScore; bestIdx = idx; }
+    });
+    if (bestIdx > -1 && bestScore >= 0.5) {
+      const act = actualPool[bestIdx];
+      const priceOk = Math.abs((act.precio_unitario ?? NaN) - exp.precio_unitario) < 0.02 * Math.max(1, Math.abs(exp.precio_unitario));
+      const qtyOk = (act.cantidad ?? null) === exp.cantidad;
+      if (priceOk && qtyOk) matched++;
+      details.push({ nombre: exp.nombre, encontrado: true, priceOk, qtyOk, got: act });
+      actualPool.splice(bestIdx, 1);
+    } else {
+      details.push({ nombre: exp.nombre, encontrado: false });
+    }
+  }
+  return { matched, total: expected.length, extra: actualPool.length, details };
+}
+
+async function callClaude(apiKey, imagePath, system) {
+  const imageBase64 = fs.readFileSync(imagePath).toString('base64');
+  const mediaType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1500,
+      system,
+      messages: [{ role: 'user', content: [
+        { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
+        { type: 'text', text: 'Extrae todos los items con sus precios de esta boleta.' }
+      ]}]
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `HTTP ${res.status}`);
+  }
+  const d = await res.json();
+  const block = d.content?.find(b => b.type === 'text');
+  if (!block?.text) throw new Error('Sin respuesta de Claude');
+  return block.text;
+}
+
+function parseJSON(raw) {
+  try { return JSON.parse(raw.trim()); } catch (_) {}
+  try { return JSON.parse(raw.replace(/```json|```/gi, '').trim()); } catch (_) {}
+  const s = raw.indexOf('{'), e = raw.lastIndexOf('}');
+  if (s > -1 && e > s) { try { return JSON.parse(raw.substring(s, e + 1)); } catch (_) {} }
+  return null;
+}
+
+async function main() {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error('Falta ANTHROPIC_API_KEY en el entorno.');
+    process.exit(1);
+  }
+
+  let fixtures = manifest.fixtures;
+  if (COUNTRY_FILTER) fixtures = fixtures.filter(f => f.pais === COUNTRY_FILTER);
+
+  const results = [];
+  for (const fx of fixtures) {
+    const imgPath = path.join(__dirname, 'fixtures', `${fx.id}.jpg`);
+    const system = buildV5Prompt(fx.pais);
+    process.stdout.write(`${fx.id} ... `);
+    try {
+      const raw = await callClaude(apiKey, imgPath, system);
+      const parsed = parseJSON(raw);
+      if (!parsed || parsed.ok === false) {
+        console.log(`REHUSADA (${parsed?.reason || 'parse_error'})`);
+        results.push({ fixture: fx, ok: false, reason: parsed?.reason || 'parse_error' });
+        continue;
+      }
+      const itemScore = scoreItems(fx.items, parsed.items || []);
+      const totalDiff = Math.abs((parsed.total_referencia ?? 0) - fx.total_referencia);
+      const totalOk = totalDiff <= Math.max(1, fx.total_referencia * 0.02);
+      const countryOk = parsed.pais === fx.pais;
+      const currencyOk = parsed.moneda === fx.moneda;
+      console.log(
+        `items ${itemScore.matched}/${itemScore.total}` +
+        `${itemScore.extra ? ` (+${itemScore.extra} de mas)` : ''}` +
+        ` · total ${totalOk ? 'OK' : `MAL (${parsed.total_referencia} vs ${fx.total_referencia})`}` +
+        ` · pais ${countryOk ? 'OK' : `MAL (${parsed.pais})`}` +
+        ` · moneda ${currencyOk ? 'OK' : `MAL (${parsed.moneda})`}`
+      );
+      results.push({ fixture: fx, ok: true, itemScore, totalOk, countryOk, currencyOk, raw: parsed });
+    } catch (e) {
+      console.log(`ERROR: ${e.message}`);
+      results.push({ fixture: fx, ok: false, reason: 'api_error', error: e.message });
+    }
+  }
+
+  // ── Resumen por pais ──
+  const byCountry = {};
+  for (const r of results) {
+    const c = r.fixture.pais;
+    byCountry[c] ??= { n: 0, itemsMatched: 0, itemsTotal: 0, totalOk: 0, countryOk: 0, currencyOk: 0, failed: 0 };
+    const b = byCountry[c];
+    b.n++;
+    if (!r.ok) { b.failed++; continue; }
+    b.itemsMatched += r.itemScore.matched;
+    b.itemsTotal += r.itemScore.total;
+    if (r.totalOk) b.totalOk++;
+    if (r.countryOk) b.countryOk++;
+    if (r.currencyOk) b.currencyOk++;
+  }
+
+  console.log('\n── Resumen por pais ──');
+  console.log('pais  n  items     total  pais  moneda');
+  for (const [c, b] of Object.entries(byCountry).sort()) {
+    const itemsPct = b.itemsTotal ? Math.round(100 * b.itemsMatched / b.itemsTotal) : 0;
+    console.log(
+      `${c.padEnd(5)} ${String(b.n).padEnd(2)} ${String(itemsPct + '%').padEnd(9)} ` +
+      `${String(b.totalOk + '/' + b.n).padEnd(5)} ${String(b.countryOk + '/' + b.n).padEnd(5)} ${b.currencyOk + '/' + b.n}` +
+      (b.failed ? `  (${b.failed} fallidas)` : '')
+    );
+  }
+
+  fs.writeFileSync(
+    path.join(__dirname, `results.${MODEL}.${Date.now()}.json`),
+    JSON.stringify(results, null, 2)
+  );
+}
+
+main();
