@@ -702,6 +702,13 @@ input[type=text]::placeholder{color:var(--text3);}
 var items=[],people=[],assigns={},tipPct=0,step=0,restaurante=null,invitedBy={},pagadorIdx=-1,roundingExtra=0;
 var PROXY_URL='/api/scan-receipt';
 var COLORS=['#0ea5e9','#f472b6','#34d399','#f59e0b','#818cf8','#fb923c','#60a5fa','#4ade80'];
+// Debe ser igual a la env var APP_SHARED_SECRET configurada en Vercel para
+// api/scan-receipt.js. Sí, vive en el bundle público — no es un secreto real
+// frente a alguien que lea el código fuente, pero bloquea scanners genéricos
+// y (junto al allow-list de CORS del servidor) que otro sitio web llame este
+// endpoint desde el navegador de una víctima. Cambiar este valor por uno
+// propio al configurar la env var.
+var APP_SHARED_SECRET='CHANGE_ME_TO_MATCH_VERCEL_ENV_VAR';
 
 // ── SUPABASE CONFIG ──
 var SUPABASE_URL = 'https://kozakmufitkepgpxctxu.supabase.co';
@@ -767,7 +774,7 @@ async function checkJoinMode(){
       var listEl = document.getElementById('jip-list');
       var total = session.items.reduce(function(s,it){ return s + it.precio_unitario * it.cantidad; }, 0);
       listEl.innerHTML = session.items.slice(0,5).map(function(it){
-        return '<div class="jip-row"><span>'+(it.cantidad>1?it.cantidad+'× ':'')+it.nombre+'</span><span style="font-weight:700;">'+fmtP(Math.round(it.precio_unitario*it.cantidad))+'</span></div>';
+        return '<div class="jip-row"><span>'+(it.cantidad>1?it.cantidad+'× ':'')+escHtml(it.nombre)+'</span><span style="font-weight:700;">'+fmtP(Math.round(it.precio_unitario*it.cantidad))+'</span></div>';
       }).join('') + (session.items.length > 5 ? '<div style="font-size:10px;color:var(--text3);padding:4px 0;">+ '+(session.items.length-5)+' ítems más</div>' : '') +
         '<div class="jip-total"><span>Total</span><span>'+fmtP(Math.round(total))+'</span></div>';
       previewEl.style.display = 'block';
@@ -800,9 +807,9 @@ function renderJoinPeopleList(sessionPeople, joined, sid, session){
   }
   list.innerHTML = sessionPeople.map(function(p, i){
     var isTaken = joined.indexOf(p.name.toLowerCase()) > -1;
-    return '<div class="join-person-btn'+(isTaken?' taken':'')+'" onclick="joinAsName(\''+p.name.replace(/'/g,"\\'")+ '\',\''+p.color+'\')">'+
-      '<div class="join-person-av" style="background:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+
-      '<div class="join-person-name">'+p.name+'</div>'+
+    return '<div class="join-person-btn'+(isTaken?' taken':'')+'" onclick="joinAsName(\''+escJsAttr(p.name)+ '\',\''+escJsAttr(p.color)+'\')">'+
+      '<div class="join-person-av" style="background:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+
+      '<div class="join-person-name">'+escHtml(p.name)+'</div>'+
       '<div class="join-person-status" style="color:'+(isTaken?'var(--text3)':'var(--green)')+'">'+
         (isTaken?'Ya entró ✓':'→')+'</div>'+
     '</div>';
@@ -1002,8 +1009,8 @@ function updateLiveParticipants(){
   wrap.style.display = 'block';
   list.innerHTML = connected.map(function(p){
     return '<div class="p-chip" style="margin:0;">'+
-      '<div class="p-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+
-      p.name+
+      '<div class="p-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+
+      escHtml(p.name)+
       '<div style="width:7px;height:7px;border-radius:50%;background:#10b981;margin-left:2px;"></div>'+
     '</div>';
   }).join('');
@@ -1085,7 +1092,7 @@ function loadPendingDebts(){
       var fecha=new Date(s.date);
       var fechaStr=fecha.getDate()+'/'+(fecha.getMonth()+1)+' '+fecha.getHours()+':'+String(fecha.getMinutes()).padStart(2,'0');
       html+='<div class="debt-item">'+
-        '<span class="debt-name">'+(s.restaurante||'Restaurante')+' · '+fechaStr+'</span>'+
+        '<span class="debt-name">'+escHtml(s.restaurante||'Restaurante')+' · '+fechaStr+'</span>'+
         '<span class="debt-amt green">'+fmtP(Math.round(s.total))+'</span>'+
       '</div>';
     });
@@ -1103,7 +1110,7 @@ function loadPendingDebts(){
     if(deudaEntries.length>0){
       html+='<div style="font-size:10px;font-weight:800;color:var(--text3);margin:8px 0 4px;text-transform:uppercase;letter-spacing:0.06em;">💸 Pendiente</div>';
       deudaEntries.slice(0,2).forEach(function(d){
-        html+='<div class="debt-item"><span class="debt-name"><b>'+d.from+'</b> → '+d.to+'</span><span class="debt-amt">'+fmtP(Math.round(d.owes))+'</span></div>';
+        html+='<div class="debt-item"><span class="debt-name"><b>'+escHtml(d.from)+'</b> → '+escHtml(d.to)+'</span><span class="debt-amt">'+fmtP(Math.round(d.owes))+'</span></div>';
       });
     }
     html+='<div style="font-size:10px;color:var(--text3);margin-top:6px;font-weight:600;text-align:right;cursor:pointer;" onclick="clearDebts()">Limpiar historial</div></div>';
@@ -1136,7 +1143,7 @@ function loadSavedGroups(){
     wrap.style.display='block';list.innerHTML='';
     groups.forEach(function(g,i){
       var chip=document.createElement('div');chip.className='group-chip';
-      chip.innerHTML='<span style="font-size:16px;">👥</span><span class="group-chip-name">'+g.name+'</span><span style="font-size:10px;color:var(--text3);">'+g.people.length+' personas</span><span class="group-chip-del" onclick="event.stopPropagation();deleteGroup('+i+')">✕</span>';
+      chip.innerHTML='<span style="font-size:16px;">👥</span><span class="group-chip-name">'+escHtml(g.name)+'</span><span style="font-size:10px;color:var(--text3);">'+g.people.length+' personas</span><span class="group-chip-del" onclick="event.stopPropagation();deleteGroup('+i+')">✕</span>';
       chip.onclick=function(){loadGroup(g);};
       list.appendChild(chip);
     });
@@ -1399,13 +1406,13 @@ function buildExpressSummary(){
     var div=document.createElement('div');div.className='sum-card';div.style.animationDelay=(i*0.08)+'s';
     div.innerHTML=
       '<div class="sum-head">'+
-        '<div class="sum-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+
-        '<div><div class="sum-name">'+p.name+'</div><div style="font-size:11px;color:var(--text3);font-weight:600">División igual</div></div>'+
+        '<div class="sum-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+
+        '<div><div class="sum-name">'+escHtml(p.name)+'</div><div style="font-size:11px;color:var(--text3);font-weight:600">División igual</div></div>'+
         '<div class="sum-total" style="color:'+p.color+'">'+fmtP(perPerson)+'</div>'+
       '</div>'+
       '<div class="sum-actions">'+
-        '<button class="btn-copy-person" onclick="copyPersonExpress(\''+p.name+'\','+perPerson+')">📋 Copiar mi cuenta</button>'+
-        '<button class="btn-transfer" onclick="openBanks(\''+p.name+'\','+perPerson+')">🏦 Transferir</button>'+
+        '<button class="btn-copy-person" onclick="copyPersonExpress(\''+escJsAttr(p.name)+'\','+perPerson+')">📋 Copiar mi cuenta</button>'+
+        '<button class="btn-transfer" onclick="openBanks(\''+escJsAttr(p.name)+'\','+perPerson+')">🏦 Transferir</button>'+
       '</div>';
     body.appendChild(div);
   });
@@ -1497,6 +1504,21 @@ function handleFile(e){
   reader.readAsDataURL(file);
 }
 
+// Para texto de usuario embebido dentro de un string JS de un solo quote
+// que a su vez va dentro de un atributo HTML de doble quote, ej:
+// onclick="foo(\''+escJsAttr(name)+'\')" — escapa primero para el contexto JS
+// y luego para el contexto HTML, en ese orden.
+function escJsAttr(str){
+  if(str===null||str===undefined) return '';
+  return String(str)
+    .replace(/\\/g,'\\\\')
+    .replace(/'/g,"\\'")
+    .replace(/&/g,'&amp;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
 // ── MONEDA DINÁMICA ──
 function currSym(){return window._currentSymbol||'$';}
 function fmtP(n){
@@ -1553,11 +1575,11 @@ function showCountryConfirmation(data, b64, mime){
 
   // Construir opciones: primero los candidatos, luego un selector completo
   var topOptions = candidates.slice(0,4).map(function(c){
-    return '<button class="btn btn-sm" style="margin:4px;font-size:12px;" onclick="confirmCountry(\''+c.country+'\')">'+c.name+'</button>';
+    return '<button class="btn btn-sm" style="margin:4px;font-size:12px;" onclick="confirmCountry(\''+escJsAttr(c.country)+'\')">'+escHtml(c.name)+'</button>';
   }).join('');
 
   var selectOptions = available.map(function(c){
-    return '<option value="'+c.code+'">'+c.name+' ('+c.currency+')</option>';
+    return '<option value="'+escHtml(c.code)+'">'+escHtml(c.name)+' ('+escHtml(c.currency)+')</option>';
   }).join('');
 
   var html = '<div style="background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin:12px 0;">'
@@ -1627,12 +1649,12 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
     var res;
     var bodyStr=JSON.stringify(payload);
     try{
-      res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+      res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},body:bodyStr});
     }catch(netErr){
       msg.textContent='REINTENTANDO...';
       await new Promise(function(r){setTimeout(r,2000);});
       try{
-        res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json'},body:bodyStr});
+        res=await fetch('/api/scan-receipt',{method:'POST',headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},body:bodyStr});
       }catch(netErr2){
         clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
         showScanError('Sin conexión al servidor. Verifica tu internet e intenta de nuevo.');return;
@@ -1713,7 +1735,10 @@ var APP_BASE_URL = (function(){
 })();
 
 function generateSessionId(){
-  return 'dc-' + Math.random().toString(36).substring(2,9) + '-' + Date.now().toString(36);
+  // El session id es el único control de acceso al link/QR compartido de la
+  // mesa — debe ser difícil de adivinar. crypto.randomUUID() da 122 bits de
+  // entropía real vs. los ~46 bits (y predecibles, por Math.random) de antes.
+  return 'dc-' + crypto.randomUUID();
 }
 
 function showSessionQR(){
@@ -1844,7 +1869,7 @@ function buildBanksWithAmount(personName, amount, pagadorName){
   var html = '<div class="banks-deeplink-row">';
   html += '<a class="bank-deep-btn" href="' + getMachDeepLink(amount, 'pago a ' + pagadorName) + '">💳 Mach · $' + Math.round(amount).toLocaleString('es-CL') + '</a>';
   html += '<a class="bank-deep-btn" href="' + getFpayDeepLink(amount) + '">💚 FPAY</a>';
-  html += '<a class="bank-deep-btn" href="#" onclick="copyAmountToClipboard(' + amount + ',\'' + personName + '\');return false;">📋 Copiar monto</a>';
+  html += '<a class="bank-deep-btn" href="#" onclick="copyAmountToClipboard(' + amount + ',\'' + escJsAttr(personName) + '\');return false;">📋 Copiar monto</a>';
   html += '</div>';
   return html;
 }
@@ -2063,7 +2088,7 @@ function addPerson(){
 function removePerson(i){people.splice(i,1);renderPeople();document.getElementById('p2-next').disabled=people.length===0;}
 function renderPeople(){
   document.getElementById('people-wrap').innerHTML=people.map(function(p,i){
-    return '<div class="p-chip"><div class="p-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'<span class="p-remove" onclick="removePerson('+i+')">x</span></div>';
+    return '<div class="p-chip"><div class="p-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+escHtml(p.name)+'<span class="p-remove" onclick="removePerson('+i+')">x</span></div>';
   }).join('');
 }
 
@@ -2108,7 +2133,7 @@ function renderAssign(){
     var a=assigns[idx],parts=a.participants,isMulti=it.qty>1,n=parts.length;
     var hintText='';
     if(n===0)hintText='Toca quien lo consumio';
-    else if(!isMulti){if(n===1)hintText='Solo '+people[parts[0]].name+' — paga el total';else hintText='Compartido entre '+n+' — $'+Math.round(it.price/n).toLocaleString('es-CL')+' c/u';}
+    else if(!isMulti){if(n===1)hintText='Solo '+escHtml(people[parts[0]].name)+' — paga el total';else hintText='Compartido entre '+n+' — $'+Math.round(it.price/n).toLocaleString('es-CL')+' c/u';}
     else{var tq=parts.reduce(function(s,pi){return s+(a.qty[pi]||0);},0);hintText=(it.qty-tq)>0?'Faltan '+(it.qty-tq)+' por asignar':'Todas asignadas ✓';}
     var chipsHTML='<div class="person-chips">';
     people.forEach(function(p,pi){
@@ -2118,14 +2143,14 @@ function renderAssign(){
         // En modo grupo: solo mi chip es clickeable
         var isMine = pi === myPeopleIdx;
         if(isMine){
-          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+escHtml(p.name)+'</div>';
         } else {
           // Chips de otros — visibles pero no clickeables
           var lockedStyle = isOn ? 'border-color:'+p.color+';background:'+p.color+'18;color:'+p.color+';opacity:0.85;cursor:default;' : 'opacity:0.5;cursor:default;';
-          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+lockedStyle+'"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+          chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+lockedStyle+'"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+escHtml(p.name)+'</div>';
         }
       } else {
-        chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+p.name+'</div>';
+        chipsHTML+='<div class="p-toggle'+(isOn?' on':'')+'" style="'+style+'" onclick="toggleParticipant('+idx+','+pi+')"><span class="p-toggle-dot" style="background:'+p.color+'"></span>'+escHtml(p.name)+'</div>';
       }
     });
     // Botón Todos solo en modo solo
@@ -2145,15 +2170,15 @@ function renderAssign(){
         var maxVal=it.qty-othersQty;
         var canEdit = !isModoGrupo || pi === myPeopleIdx;
         if(canEdit){
-          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('+idx+','+pi+',-1)" '+(val===0?'disabled':'')+'>-</button><span class="qty-num">'+val+'</span><button class="qty-btn" onclick="changeQty('+idx+','+pi+',1)" '+(val>=maxVal?'disabled':'')+'>+</button></div></div>';
+          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+escHtml(p.name)+'</div><div class="qty-controls"><button class="qty-btn" onclick="changeQty('+idx+','+pi+',-1)" '+(val===0?'disabled':'')+'>-</button><span class="qty-num">'+val+'</span><button class="qty-btn" onclick="changeQty('+idx+','+pi+',1)" '+(val>=maxVal?'disabled':'')+'>+</button></div></div>';
         } else {
-          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'" style="opacity:0.6;"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+p.name.charAt(0).toUpperCase()+'</div>'+p.name+'</div><div class="qty-controls"><span class="qty-num">'+val+'</span></div></div>';
+          qtyHTML+='<div class="qty-row'+(val>0?' active':'')+'" style="opacity:0.6;"><div class="qty-pname"><div class="qty-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+escHtml(p.name)+'</div><div class="qty-controls"><span class="qty-num">'+val+'</span></div></div>';
         }
       });
       qtyHTML+='<div class="qty-footer">'+(rem2>0?'<span class="qty-hint warn">Faltan '+rem2+' por asignar</span>':'<span class="qty-hint">Todas asignadas ✓</span>')+(iCanEditBlock && !isModoGrupo?'<button class="btn-split" onclick="splitEqually('+idx+')">Dividir equitativamente</button>':'')+'</div></div>';
     }
     var div=document.createElement('div');div.className='assign-block';
-    div.innerHTML='<div class="assign-block-head"><div class="assign-item-name">'+it.name+(it.qty>1?' x'+it.qty:'')+'</div><div class="assign-item-price">'+fmtP(it.total)+'</div></div><div class="assign-hint">'+hintText+'</div>'+chipsHTML+qtyHTML;
+    div.innerHTML='<div class="assign-block-head"><div class="assign-item-name">'+escHtml(it.name)+(it.qty>1?' x'+it.qty:'')+'</div><div class="assign-item-price">'+fmtP(it.total)+'</div></div><div class="assign-hint">'+hintText+'</div>'+chipsHTML+qtyHTML;
     body.appendChild(div);
   });
   updateProgressBadge();
@@ -2291,7 +2316,7 @@ function buildSummary(){
   // Sin asignar
   if(ua.amount>0){
     var w=document.createElement('div');w.className='unassigned-warn';
-    w.innerHTML='<div class="uw-icon">⚠️</div><div class="uw-body"><div class="uw-title">'+fmtP(ua.amount)+' sin asignar</div><div class="uw-sub">'+ua.list.join(' · ')+'</div></div>';
+    w.innerHTML='<div class="uw-icon">⚠️</div><div class="uw-body"><div class="uw-title">'+fmtP(ua.amount)+' sin asignar</div><div class="uw-sub">'+escHtml(ua.list.join(' · '))+'</div></div>';
     body.appendChild(w);
   }
   // Selector quien pago
@@ -2300,9 +2325,9 @@ function buildSummary(){
   if(debts.length>0){
     var dc=document.createElement('div');dc.className='debts-card';
     var pagadorName=totals[pagadorIdx]?totals[pagadorIdx].person.name:'';
-    var dhtml='<div class="debts-title">💸 Le deben a '+pagadorName+'</div>';
+    var dhtml='<div class="debts-title">💸 Le deben a '+escHtml(pagadorName)+'</div>';
     debts.forEach(function(d){
-      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+d.from+'</b> → <b>'+d.to+'</b></span><span class="debt-amount">'+fmtP(Math.round(d.amount))+'</span></div>';
+      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+escHtml(d.from)+'</b> → <b>'+escHtml(d.to)+'</b></span><span class="debt-amount">'+fmtP(Math.round(d.amount))+'</span></div>';
     });
     dc.innerHTML=dhtml;body.appendChild(dc);
   }
@@ -2312,7 +2337,7 @@ function buildSummary(){
     var div=document.createElement('div');
     div.className='sum-card'+(esPagador?' invited':'');
     div.style.animationDelay=(i*0.08)+'s';
-    var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+it.label+'</span><span>'+fmtP(Math.round(it.share))+'</span></div>';}).join('');
+    var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+escHtml(it.label)+'</span><span>'+fmtP(Math.round(it.share))+'</span></div>';}).join('');
     if(!rows)rows='<div class="sum-row"><span style="color:var(--text3)">Sin items asignados</span></div>';
     if(tipPct>0)rows+='<div class="sum-row tip-s"><span>Propina '+tipPct+'%</span><span>incluida</span></div>';
     if(roundingExtra!==0&&people.length>0){
@@ -2330,7 +2355,7 @@ function buildSummary(){
       var qrId='qrp-'+i;
       transferBtn='<button class="btn-transfer" onclick="transferirA('+pagadorIdx+','+t.amount+')" >🏦 Transferir</button>';
       qrPagoHtml='<div class="qr-pago-wrap">'+
-        '<div class="qr-pago-label">Le debe a '+pagadorName+'</div>'+
+        '<div class="qr-pago-label">Le debe a '+escHtml(pagadorName)+'</div>'+
         '<div class="qr-pago-amount">'+fmtP(Math.round(t.amount))+'</div>'+
         '<div class="qr-pago-canvas" id="'+qrId+'"></div>'+
         buildBanksWithAmount(t.person.name, t.amount, pagadorName)+
@@ -2339,8 +2364,8 @@ function buildSummary(){
     }
     div.innerHTML=
       '<div class="sum-head">'+
-        '<div class="sum-av" style="background:'+t.person.color+'22;color:'+t.person.color+'">'+t.person.name.charAt(0).toUpperCase()+'</div>'+
-        '<div><div class="sum-name">'+t.person.name+'</div>'+
+        '<div class="sum-av" style="background:'+t.person.color+'22;color:'+t.person.color+'">'+escHtml(t.person.name.charAt(0).toUpperCase())+'</div>'+
+        '<div><div class="sum-name">'+escHtml(t.person.name)+'</div>'+
         '<div style="font-size:11px;color:var(--text3);font-weight:600">'+t.myItems.length+' item'+(t.myItems.length!==1?'s':'')+'</div></div>'+
         totalLabel+
       '</div>'+
@@ -2378,7 +2403,7 @@ function addPagadorSelector(body,totals){
     var style=isOn?'border-color:'+t.person.color+';background:'+t.person.color+'18;color:'+t.person.color+';font-weight:800;':'';
     chips.innerHTML+='<div style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;border:1.5px solid var(--border);background:var(--surface2);font-size:12px;font-weight:700;cursor:pointer;'+style+'" onclick="setPagador('+i+')">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:'+t.person.color+';display:inline-block;flex-shrink:0;"></span>'+
-      t.person.name+'</div>';
+      escHtml(t.person.name)+'</div>';
   });
   card.appendChild(title);card.appendChild(sub);card.appendChild(chips);
   body.appendChild(card);
@@ -2942,7 +2967,7 @@ async function showExchangeInfo(moneda){
 
   card.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:4px 0;">'
     + '≈ ' + symTo + Math.round(converted).toLocaleString('es-CL') + ' ' + _preferredCurrency
-    + ' · <span style="font-size:11px;opacity:.7;">Tipo de cambio referencial '+rateInfo.date+'</span>'
+    + ' · <span style="font-size:11px;opacity:.7;">Tipo de cambio referencial '+escHtml(rateInfo.date)+'</span>'
     + '</div>';
   card.style.display = 'block';
 }
@@ -3012,7 +3037,7 @@ function saveOnboarding(){
   if(!name){ toast('Escribe tu nombre para continuar'); return; }
 
   var user = {
-    id: 'u_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    id: 'u_' + crypto.randomUUID(),
     name: name,
     phone: phone,
     createdAt: new Date().toISOString()
@@ -3177,7 +3202,7 @@ function renderLedgerWidget(){
   else headerSub = 'Te deben un total de ' + fmtP(Math.round(totalOwed));
 
   var rows = L2.ledger.map(function(e, idx){
-    var label = e.iOwe ? 'Le debes a <b>' + e.other + '</b>' : '<b>' + e.other + '</b> te debe';
+    var label = e.iOwe ? 'Le debes a <b>' + escHtml(e.other) + '</b>' : '<b>' + escHtml(e.other) + '</b> te debe';
     var cls = e.iOwe ? 'owe' : 'owed';
     var sign = e.iOwe ? '' : '+';
     var sesCount = e.sessions ? e.sessions.length : 1;
@@ -3214,7 +3239,7 @@ function openDebtSheet(idx){
     entry.sessions.slice(0,6).forEach(function(s){
       var date = s.date ? new Date(s.date).toLocaleDateString('es-CL',{day:'2-digit',month:'short'}) : '';
       bRows += '<div class="debt-breakdown-row">'
-        + '<span class="debt-breakdown-label">' + (s.restaurante || 'Sesión') + (date?' · '+date:'') + '</span>'
+        + '<span class="debt-breakdown-label">' + escHtml(s.restaurante || 'Sesión') + (date?' · '+date:'') + '</span>'
         + '<span class="debt-breakdown-amount">' + fmtP(Math.round(s.amount)) + '</span>'
         + '</div>';
     });
@@ -3272,10 +3297,15 @@ function markDebtPaid(){
 
   // Marcar en Supabase si aplica
   if(sb){
-    var myN = L2.user ? L2.user.name : '';
-    sb.from('dc_debts').update({ paid: true })
-      .or('and(from_name.ilike.' + otherLow + ',to_name.ilike.' + myName + '),and(from_name.ilike.' + myName + ',to_name.ilike.' + otherLow + ')')
-      .then(function(){}).catch(function(){});
+    // Sanea los valores antes de interpolarlos en el filtro PostgREST crudo:
+    // un nombre con ',' o ')' podría alterar la estructura del filtro .or().
+    var safeOtherLow = otherLow.replace(/[,()."']/g,'').trim();
+    var safeMyName = myName.replace(/[,()."']/g,'').trim();
+    if(safeOtherLow && safeMyName){
+      sb.from('dc_debts').update({ paid: true })
+        .or('and(from_name.ilike.' + safeOtherLow + ',to_name.ilike.' + safeMyName + '),and(from_name.ilike.' + safeMyName + ',to_name.ilike.' + safeOtherLow + ')')
+        .then(function(){}).catch(function(){});
+    }
   }
 
   closeDebtSheet();
