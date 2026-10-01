@@ -722,6 +722,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       body: JSON.stringify({
         model,
         max_tokens: 1500,
+        temperature: 0,
         system,
         messages: [{ role:'user', content:[
           { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
@@ -743,7 +744,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model, max_tokens: 1500, system,
+        model, max_tokens: 1500, temperature: 0, system,
         messages: [{ role:'user', content:[
           { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
           { type:'text', text:userText }
@@ -761,7 +762,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model, max_tokens:1500, system,
+        body: JSON.stringify({ model, max_tokens:1500, temperature:0, system,
           messages:[{ role:'user', content:[
             { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
             { type:'text', text:userText }
