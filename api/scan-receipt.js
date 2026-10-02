@@ -294,6 +294,29 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     format:'SAR = riyales. VAT 15%.'
   },
 
+  // ── SUDÁFRICA ─────────────────────────────────────────────────────────────
+  ZA: {
+    name:'Sudáfrica', currency:'ZAR', symbol:'R', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['vat'], deposit_kw:[], refund_kw:['refund'],
+    tip_behavior:'none', tip_kw:['gratuity','tip','service'],
+    total_kw:['total','bill total'],
+    price_format:'standard',
+    signals:['vat#','tax invoice','pro-forma invoice','covers','rand','south africa','sudafrica','randburg','johannesburg','cape town','durban'],
+    format:`R = ZAR (rand sudafricano) — no confundir con otras monedas que
+también usan "R" como símbolo. VAT (14-15% según la fecha) normalmente
+incluido en los precios, IGNORAR como item (R2).
+"n/c" junto a un item (ej. "Fettuccini ... n/c") = "no charge", precio 0 →
+excluir (R1).
+CASO OBSERVADO: algunas boletas traen una "Gratuity" y un "Total" escritos
+A MANO debajo del total impreso (ej. total impreso $769, abajo a mano
+"Gratuity: 81 / Total: 850"). Cuando eso aparece, el total a mano es el
+que realmente se cobró — incluir la propina manuscrita como item
+"Gratuity" si el total a mano = suma de items impresos + esa propina.
+Si la escritura es ilegible o la suma no cierra, preferir baja confianza
+antes que inventar un monto.`
+  },
+
   // ── TURQUÍA ────────────────────────────────────────────────────────────────
   TR: {
     name:'Turquía', currency:'TRY', symbol:'₺', has_decimals:true,
