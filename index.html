@@ -485,7 +485,6 @@ input[type=text]::placeholder{color:var(--text3);}
 <!-- TOPBAR -->
 <div class="topbar" id="topbar" style="display:none;">
   <div class="logo">Divi<em>Cuenta</em></div>
-  <div class="mode-pill demo" id="mode-pill">🎬 Demo</div>
 </div>
 
 <!-- STEPBAR -->
@@ -704,7 +703,6 @@ input[type=text]::placeholder{color:var(--text3);}
 <script>
 var tipFixed=null;
 var items=[],people=[],assigns={},tipPct=0,step=0,restaurante=null,invitedBy={},pagadorIdx=-1,roundingExtra=0;
-var PROXY_URL='/api/scan-receipt';
 var COLORS=['#0ea5e9','#f472b6','#34d399','#f59e0b','#818cf8','#fb923c','#60a5fa','#4ade80'];
 // Debe ser igual a la env var APP_SHARED_SECRET configurada en Vercel para
 // api/scan-receipt.js. Sí, vive en el bundle público — no es un secreto real
@@ -1064,11 +1062,7 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }, 1800);
 
-  var savedKey = sessionStorage.getItem('dc_apikey');
-  if(savedKey){
-    var el = document.getElementById('api-key-input');
-    if(el){ el.value = savedKey; onKeyChange(); }
-  }
+  try{ sessionStorage.removeItem('dc_apikey'); }catch(e){}
   // Inicializar Supabase y detectar modo join (después de que el CDN cargó)
   initSupabase();
   checkJoinMode();
@@ -1426,38 +1420,6 @@ function buildExpressSummary(){
 
 // ── API KEY ──
 
-function toggleKeyVis(){var el=document.getElementById('api-key-input');if(el)el.type=el.type==='password'?'text':'password';}
-function toggleApiCard(){
-  var body=document.getElementById('api-body'),btn=document.getElementById('api-toggle');
-  if(body.style.display==='none'){body.style.display='block';btn.textContent='Ocultar';}
-  else{body.style.display='none';btn.textContent='Mostrar';}
-}
-function onKeyChange(){
-  var key=getKey().trim(),status=document.getElementById('key-status');
-  var pill=document.getElementById('mode-pill');
-  // Guardar en sessionStorage para que persista aunque se colapse el campo
-  if(key)sessionStorage.setItem('dc_apikey',key);
-  else sessionStorage.removeItem('dc_apikey');
-  if(!key){status.textContent='';if(pill){pill.className='mode-pill demo';pill.textContent='🎬 Demo';}return;}
-  if(key.startsWith('sk-ant-')){
-    status.style.color='var(--green)';
-    status.textContent='✅ Key válida — Claude leerá tu boleta real';
-    if(pill){pill.className='mode-pill live';pill.textContent='✅ IA activa';}
-  } else {
-    status.style.color='var(--danger)';
-    status.textContent='❌ Formato incorrecto — debe comenzar con sk-ant-';
-    if(pill){pill.className='mode-pill demo';pill.textContent='🎬 Demo';}
-  }
-}
-
-function getKey(){
-  // Primero del campo, si no del sessionStorage
-  var el=document.getElementById('api-key-input');
-  var fromField=el?el.value.trim():'';
-  if(fromField)return fromField;
-  return sessionStorage.getItem('dc_apikey')||'';
-}
-
 // ── FILE / SCAN ──
 var scanTimeout=null;
 function handleFile(e){
@@ -1486,22 +1448,7 @@ function handleFile(e){
       var ctx=cv.getContext('2d');ctx.drawImage(compressImg,0,0,w,h);
       var compressed=cv.toDataURL('image/jpeg',q);
       var b64=compressed.split(',')[1],mime='image/jpeg';
-      var key=getKey().trim();
-      if(key&&key.startsWith('sk-ant-')){
-        scanWithClaude(b64,mime);
-      } else if(key&&key.length>0){
-        showScanError('🔑 La API key debe comenzar con sk-ant-');
-      } else {
-        // Sin key — proxy o demo
-        var proxyUrl=getProxyUrl();
-        if(proxyUrl){
-          scanWithProxy(b64,mime,proxyUrl);
-        } else {
-          document.getElementById('scan-msg').textContent='CARGANDO DEMO...';
-          document.getElementById('scanOv').classList.add('on');
-          setTimeout(function(){document.getElementById('scanOv').classList.remove('on');loadItems('El Parron',DEMO);},1800);
-        }
-      }
+      scanWithClaude(b64,mime);
     };
     compressImg.src=originalSrc;
   };
@@ -1642,13 +1589,7 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
   clearTimeout(scanTimeout);
   scanTimeout=setTimeout(function(){clearInterval(ticker);ov.classList.remove('on');showScanError('Sin respuesta en 70s. Revisa tu conexión.');},70000);
   try{
-    var apiKey=getKey();
-    if(!apiKey||!apiKey.startsWith('sk-ant-')){
-      clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
-      showScanError('Necesitas una API key de Claude (sk-ant-...) para escanear boletas.');return;
-    }
-
-    var payload = {image_base64:b64, media_type:mime, api_key:apiKey};
+    var payload = {image_base64:b64, media_type:mime};
     if(countryHint){ payload.country_hint=countryHint; }
     if(isConfirmation){ payload.is_confirmation=true; }
 
@@ -1669,10 +1610,11 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
     }
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
 
-    if(res.status===401){showScanError('API key incorrecta (401)');return;}
     if(!res.ok){
-      var etxt=await res.text().catch(function(){return'';});
-      showScanError('HTTP '+res.status+': '+etxt.substring(0,150));return;
+      var ej=await res.json().catch(function(){return{};});
+      if(res.status===401){showScanError('No pudimos verificar la app. Recarga la página e intenta de nuevo.');return;}
+      if(res.status===429){showScanError(ej.error||'Demasiados escaneos seguidos. Espera un minuto e intenta de nuevo.');return;}
+      showScanError(ej.error||'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.');return;
     }
 
     var data=await res.json();
@@ -1935,53 +1877,7 @@ function showScanError(msg){
 
 // ── SHOW QR SESSION WHEN FIRST PERSON ADDED ──
 
-function getProxyUrl(){
-  return PROXY_URL || sessionStorage.getItem('dc_proxy_url') || '';
-}
-
 // ── SCAN CON PROXY (sin exponer API key) ──
-async function scanWithProxy(b64,mime,proxyUrl){
-  var ov=document.getElementById('scanOv'),msg=document.getElementById('scan-msg');
-  ov.classList.add('on');
-  msg.textContent='ENVIANDO A CLAUDE...';
-  var ticker=setInterval(function(){msg.textContent='LEYENDO BOLETA...';},1500);
-  clearTimeout(scanTimeout);
-  scanTimeout=setTimeout(function(){
-    clearInterval(ticker);ov.classList.remove('on');
-    showScanError('Sin respuesta en 70s. Revisa tu conexión.');
-  },70000);
-  try{
-    var reqInit={
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},
-      body:JSON.stringify({image_base64:b64,media_type:mime,user_id:'anon'})
-    };
-    var res;
-    try{res=await fetch(proxyUrl,reqInit);}
-    catch(netErr){
-      msg.textContent='REINTENTANDO...';
-      await new Promise(function(r){setTimeout(r,2000);});
-      res=await fetch(proxyUrl,reqInit);
-    }
-    clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
-    if(!res.ok){
-      var e=await res.json().catch(function(){return{};});
-      showScanError('Error '+(e.code||res.status)+': '+(e.error||'intenta de nuevo'));
-      return;
-    }
-    var data=await res.json();
-    if(!data.ok||!data.items||!data.items.length){
-      showScanError(data.error||'No se detectaron ítems. Asegúrate que la foto muestre la boleta completa con buena luz.');
-      return;
-    }
-    loadItems(data.restaurante||'Restaurante',data.items);
-    toast('Boleta leída — '+data.items.length+' ítems');
-  }catch(err){
-    clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
-    showScanError('Error de conexión: '+err.message);
-  }
-}
-
 function parseClaudeJSON(text){
   if(!text)return null;
   // Intento 1: parsear directo
