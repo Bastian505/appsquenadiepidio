@@ -30,6 +30,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://yporqueno.verce
 
 const APP_SHARED_SECRET = process.env.APP_SHARED_SECRET || null;
 
+const SCAN_UNAVAILABLE_MSG = 'La lectura automática no está disponible en este momento. Puedes ingresar los ítems a mano.';
 const RATE_LIMIT_MAX = 8;           // requests
 const RATE_LIMIT_WINDOW_MS = 60_000; // por minuto, por IP
 const _rateLimitHits = new Map(); // ip -> [timestamps] — vive solo mientras la instancia esté tibia
@@ -1160,17 +1161,13 @@ export default async function handler(req, res) {
     return res.status(429).json({ error:'Demasiadas solicitudes. Intenta de nuevo en un minuto.', code:'RATE_LIMITED' });
   }
 
-  // El cliente permite "traer tu propia key" (BYOK) — por eso el fallback a
-  // req.body.api_key no se elimina del todo, sería un cambio de producto, no
-  // un fix de seguridad. Lo que sí se agrega es: (a) validar el formato acá
-  // en el server, ya que la validación del cliente es trivial de saltarse, y
-  // (b) las capas de arriba (origin allow-list, secreto compartido, rate
-  // limit) para que esto no sea un relay anónimo abierto hacia la API de
-  // Anthropic para cualquiera en internet, use la key que use.
-  const apiKey = process.env.ANTHROPIC_API_KEY || req.body?.api_key;
-  if (!apiKey) return res.status(500).json({ error:'API key no configurada', code:'NO_KEY' });
-  if (typeof apiKey !== 'string' || !apiKey.startsWith('sk-ant-')) {
-    return res.status(400).json({ error:'Formato de API key inválido', code:'BAD_KEY_FORMAT' });
+  // La key de Anthropic vive SOLO en el servidor (variable de entorno). El cliente ya no
+  // envía keys: el flujo "trae tu propia key" se eliminó por seguridad y porque dejaba a los
+  // usuarios nuevos en una ruta de lectura degradada.
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    console.error('SCAN_UNAVAILABLE: ANTHROPIC_API_KEY no configurada');
+    return res.status(503).json({ error: SCAN_UNAVAILABLE_MSG, code:'SCAN_UNAVAILABLE' });
   }
 
   const {
@@ -1200,7 +1197,13 @@ export default async function handler(req, res) {
         });
       }
       console.error('OCR call failed:', e);
-      return res.status(502).json({ error:'No se pudo procesar la boleta con el servicio de OCR.', code:'OCR_ERROR' });
+      // Saldo agotado, cuota, rate limit o sobrecarga del proveedor: no es culpa de la foto.
+      // Se registra con una etiqueta fija para poder crear una alerta en los logs.
+      if (/credit balance|billing|quota|rate.?limit|overloaded|HTTP 429|HTTP 529|HTTP 401|authentication/i.test(e.message || '')) {
+        console.error('SCAN_UNAVAILABLE:', e.message);
+        return res.status(503).json({ error: SCAN_UNAVAILABLE_MSG, code:'SCAN_UNAVAILABLE' });
+      }
+      return res.status(502).json({ error:'No pudimos leer esta boleta. Prueba con otra foto o ingresa los ítems a mano.', code:'OCR_ERROR' });
     }
 
     const parsed = parseJSON(raw);
