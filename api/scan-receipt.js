@@ -349,6 +349,25 @@ total_referencia = el Grand Total (el monto final), NO el subtotal. Líneas con 
 "Duplicate Receipt" es una copia de la misma boleta: leerla normalmente.`
   },
 
+  // ── IRLANDA ───────────────────────────────────────────────────────────────
+  IE: {
+    name:'Irlanda', currency:'EUR', symbol:'€', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['vat'], deposit_kw:['deposit return scheme','drs','deposit'], refund_kw:['refund'],
+    tip_behavior:'optional', tip_kw:['service charge','tip','gratuity'],
+    total_kw:['total','amount due'],
+    price_format:'standard',
+    signals:['vat reg','vat no','vat #','deposit return scheme','dublin','cork','galway','ireland','eircode'],
+    format:`€ = EUR. VAT (23% general, 13,5% comida, 9%) YA incluido en los precios,
+"Sales 23% incl. / VAT @ 23%" son desgloses informativos: IGNORAR (R2).
+"Deposit Return Scheme" (DRS, desde 2024, ~0,15-0,45 en envases) SÍ se cobra: incluirlo
+como ítem positivo (R3). "Recommended 10% service charge" / "Service charge NOT included"
+es solo una sugerencia: no es ítem. Un "TOTAL" escrito a mano con propina es voluntario
+(R16): usar el total impreso. Cuando la línea trae solo el importe ("3 x Coke 7.50"),
+es el total de la línea: precio_unitario = total ÷ cantidad. Encabezados "===Starter==="
+y texto en chino bajo los ítems no son ítems.`
+  },
+
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
