@@ -691,6 +691,13 @@ R14. EVIDENCIA POR ÍTEM: En el campo evidencia, copia LITERAL la línea de la
 R15. PRECUENTAS Y BOLETAS NO FISCALES SON VÁLIDAS: "NON FISCALE", "PRECONTO",
      "CUENTA", "PRECUENTA", "Bill", "Check" son boletas válidas.
 
+R16. PROPINA/TOTAL ESCRITOS A MANO: si bajo el total impreso hay una "Gratuity",
+     "Tip" o "Propina" y un "Total" escritos a mano (lapicera), y
+     total_a_mano = total_impreso + propina_a_mano, entonces la propina SÍ se
+     cobró: inclúyela como un ítem "Gratuity" (cantidad 1) y usa el total a mano
+     como total_referencia. Si la escritura es ilegible o la suma no cierra,
+     NO inventes el monto: omítela y baja la confianza_global.
+
 ═══════════════════════════════════════════════════════════════════════════════
 CRITERIOS DE REHUSAR
 ═══════════════════════════════════════════════════════════════════════════════
