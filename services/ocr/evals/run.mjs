@@ -37,7 +37,7 @@ const args = Object.fromEntries(
 );
 
 const MODEL = args.model || 'claude-sonnet-4-6';
-const COUNTRY_FILTER = args.country || null;
+const COUNTRY_FILTER = (typeof args.country === 'string' && args.country.trim()) ? args.country.trim().toUpperCase() : null;
 
 const manifest = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'fixtures/manifest.json'), 'utf8')
@@ -169,6 +169,11 @@ async function main() {
 
   let fixtures = manifest.fixtures;
   if (COUNTRY_FILTER) fixtures = fixtures.filter(f => f.pais === COUNTRY_FILTER);
+  if (!fixtures.length) {
+    const paises = [...new Set(manifest.fixtures.map(f => f.pais))].sort().join(', ');
+    console.error(`No hay boletas para el país "${COUNTRY_FILTER}". Países disponibles: ${paises}`);
+    process.exit(1);
+  }
 
   const results = [];
   for (const fx of fixtures) {
