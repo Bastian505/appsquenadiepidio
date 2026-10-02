@@ -731,6 +731,10 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 25000);
 
+  // El system prompt (reglas R1-R15 + perfil de país) es idéntico entre llamadas
+  // del mismo país: se marca como cacheable para pagar ~10% del input en hits.
+  const systemBlocks = [{ type:'text', text: system, cache_control:{ type:'ephemeral' } }];
+
   let res;
   try {
     res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -739,14 +743,13 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       headers: {
         'Content-Type':       'application/json',
         'x-api-key':          apiKey,
-        'anthropic-version':  '2023-06-01',
-        'anthropic-beta':     'prompt-caching-2024-07-31'
+        'anthropic-version':  '2023-06-01'
       },
       body: JSON.stringify({
         model,
         max_tokens: 1500,
         temperature: 0,
-        system,
+        system: systemBlocks,
         messages: [{ role:'user', content:[
           { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
           { type:'text', text:userText }
@@ -767,7 +770,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model, max_tokens: 1500, temperature: 0, system,
+        model, max_tokens: 1500, temperature: 0, system: systemBlocks,
         messages: [{ role:'user', content:[
           { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
           { type:'text', text:userText }
@@ -785,7 +788,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model, max_tokens:1500, temperature:0, system,
+        body: JSON.stringify({ model, max_tokens:1500, temperature:0, system: systemBlocks,
           messages:[{ role:'user', content:[
             { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
             { type:'text', text:userText }
@@ -806,6 +809,15 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
   }
 
   const d = await res.json();
+  if (d.usage) {
+    console.log('claude usage', JSON.stringify({
+      model,
+      input: d.usage.input_tokens,
+      output: d.usage.output_tokens,
+      cache_write: d.usage.cache_creation_input_tokens || 0,
+      cache_read: d.usage.cache_read_input_tokens || 0
+    }));
+  }
   const block = d.content?.find(b => b.type === 'text');
   if (!block?.text) throw new Error('Sin respuesta de Claude');
   return block.text;
