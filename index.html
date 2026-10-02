@@ -1558,7 +1558,10 @@ function normalizeInternationalItems(json){
     // Para monedas sin decimal: redondear a entero
     // Para monedas con decimal: conservar 2 decimales exactos (NO ×100)
     var precioFinal = esMonedaSinDecimal ? Math.round(p) : Math.round(p*100)/100;
-    return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:precioFinal,cantidad:Math.max(1,parseInt(it.cantidad)||1)};
+    // Cantidad fraccionaria (por kg, "2.5 X 700"): se pliega a 1 línea con el total
+    var qty=parseFloat(it.cantidad); if(!(qty>=1))qty=1;
+    if(qty%1!==0){precioFinal=esMonedaSinDecimal?Math.round(precioFinal*qty):Math.round(precioFinal*qty*100)/100;qty=1;}
+    return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:precioFinal,cantidad:qty};
   }).filter(function(it){return it.precio_unitario!==0;});
   return{restaurante:json.restaurante||null,moneda:moneda,simbolo:sym[moneda]||moneda,items:items};
 }
@@ -1942,13 +1945,20 @@ async function scanWithProxy(b64,mime,proxyUrl){
   scanTimeout=setTimeout(function(){
     clearInterval(ticker);ov.classList.remove('on');
     showScanError('Sin respuesta en 20s. Revisa tu conexión.');
-  },20000);
+  },45000);
   try{
-    var res=await fetch(proxyUrl,{
+    var reqInit={
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','X-App-Secret':APP_SHARED_SECRET},
       body:JSON.stringify({image_base64:b64,media_type:mime,user_id:'anon'})
-    });
+    };
+    var res;
+    try{res=await fetch(proxyUrl,reqInit);}
+    catch(netErr){
+      msg.textContent='REINTENTANDO...';
+      await new Promise(function(r){setTimeout(r,2000);});
+      res=await fetch(proxyUrl,reqInit);
+    }
     clearTimeout(scanTimeout);clearInterval(ticker);ov.classList.remove('on');
     if(!res.ok){
       var e=await res.json().catch(function(){return{};});

@@ -952,11 +952,19 @@ function normalizeItems(items, currency) {
       else                                               raw = parseFloat(s.replace(',','.'));
     }
     if (isNaN(raw) || raw < 0) raw = 0;
-    const precioFinal = isNoDecimal ? Math.round(raw) : Math.round(raw * 100) / 100;
+    let precioFinal = isNoDecimal ? Math.round(raw) : Math.round(raw * 100) / 100;
+    // Cantidades fraccionarias (venta por kg, "2.5 X 700.00"): la UI divide por unidades
+    // enteras, así que se pliega a una línea con el total (precio × cantidad).
+    let qty = parseFloat(it.cantidad);
+    if (!(qty >= 1)) qty = 1;
+    if (!Number.isInteger(qty)) {
+      precioFinal = isNoDecimal ? Math.round(precioFinal * qty) : Math.round(precioFinal * qty * 100) / 100;
+      qty = 1;
+    }
     return {
       nombre:          it.nombre || it.name || ("Item " + (i+1)),
       precio_unitario: precioFinal,
-      cantidad:        Math.max(1, parseInt(it.cantidad)||1),
+      cantidad:        qty,
       confianza:       it.confianza || null,
       evidencia:       it.evidencia || null
     };
