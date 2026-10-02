@@ -831,6 +831,29 @@
       "total_referencia": 11565.00,
       "notas": "Serbia, boleta fiscal en cirílico (ЗА УПЛАТУ 11.565,00). Fila: nombre en una línea y debajo 'Nx unitario ... total Ђ'. Ojo 'Teleca corba': impreso '3x 165,00' y total de línea 495,00 (cuadra). PDV 20% ya incluido (СБ: 20,00%), informativo. Foto recortada arriba: el primer ítem visible es Viljamovka, y la suma de los 14 ítems da exactamente el total, así que no falta ninguno. Suma verificada: 11565."
     }
+    ,{ "id": "PK/dine-in-duplicate", "pais": "PK", "moneda": "PKR", "restaurante": null,
+      "items": [
+        {"nombre": "Peri Bites", "precio_unitario": 740.00, "cantidad": 1},
+        {"nombre": "Mutton Masala Champ", "precio_unitario": 1340.00, "cantidad": 1},
+        {"nombre": "Chicken Makni Handi", "precio_unitario": 1490.00, "cantidad": 1},
+        {"nombre": "Tarragon Chicken", "precio_unitario": 990.00, "cantidad": 1},
+        {"nombre": "Garlic Naan", "precio_unitario": 90.00, "cantidad": 1},
+        {"nombre": "Plain Naan", "precio_unitario": 50.00, "cantidad": 3},
+        {"nombre": "Namkeen lassi", "precio_unitario": 240.00, "cantidad": 1},
+        {"nombre": "Mint Lemonade", "precio_unitario": 330.00, "cantidad": 1},
+        {"nombre": "Pina Colada", "precio_unitario": 340.00, "cantidad": 3},
+        {"nombre": "Namkeen lassi", "precio_unitario": 240.00, "cantidad": 1},
+        {"nombre": "Mint Lemonade", "precio_unitario": 330.00, "cantidad": 1},
+        {"nombre": "Plain Naan", "precio_unitario": 50.00, "cantidad": 1},
+        {"nombre": "Garlic Naan", "precio_unitario": 90.00, "cantidad": 1},
+        {"nombre": "Crispy Jalebi", "precio_unitario": 390.00, "cantidad": 1},
+        {"nombre": "Kulfi Falooda", "precio_unitario": 375.00, "cantidad": 3},
+        {"nombre": "Crispy Jalebi", "precio_unitario": 390.00, "cantidad": -1},
+        {"nombre": "Pina Colada", "precio_unitario": 340.00, "cantidad": -1}
+      ],
+      "total_referencia": 8910.00,
+      "notas": "Pakistán, 'Duplicate Receipt'. Filas: Qty | Nombre | @unitario | Importe. Dos líneas de ANULACIÓN al final con cantidad negativa (-1 Crispy Jalebi @390 y -1 Pina Colada @340): se transcriben tal cual (R17) y el sistema las descuenta; neto = 7.885,00 (coincide con '19 Quantity 7,885.00'). 'Add Sales Tax @13%: 1,025.05' se SUMA encima: Total 8.910,00. Por eso sum(ítems) != total es esperado: el reconcile agrega el Impuesto (PK en TAX_ON_TOP_HIGH). Aviso: foto con el texto un poco borroso."
+    }
 
   ]
 }
