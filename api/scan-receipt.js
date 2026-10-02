@@ -721,7 +721,7 @@ R14. EVIDENCIA POR ÍTEM: En el campo evidencia, copia LITERAL la línea de la
      boleta donde leíste el ítem. Es la cita textual cruda.
 
 R15. PRECUENTAS Y BOLETAS NO FISCALES SON VÁLIDAS: "NON FISCALE", "PRECONTO",
-     "CUENTA", "PRECUENTA", "Bill", "Check" son boletas válidas.
+     "CUENTA", "PRECUENTA", "PONUDA" (oferta, Croacia), "Bill", "Check" son boletas válidas.
 
 R16. PROPINA/TOTAL ESCRITOS A MANO: una "Gratuity", "Tip" o "Propina" con un
      "Total" escritos a mano (lapicera) bajo el total impreso es una propina
