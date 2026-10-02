@@ -52,7 +52,7 @@ const COUNTRY_RULES = {
     tax_kw:['iva','impuesto'], deposit_kw:[], refund_kw:['devolucion','anulacion'],
     tip_behavior:'none', tip_kw:[], total_kw:['total','a pagar','monto'],
     price_format:'standard', signals:['rut','sii','folio','timbre','giro'],
-    format:'$ = CLP. Precios SIN decimales. IVA incluido. Filtrar items precio=0.'
+    format:'$ = CLP. Precios SIN decimales. IVA incluido. Filtrar items precio=0. "Propina sugerida (10%)": si el Total final impreso YA la suma (subtotal + propina = total), inclúyela como ítem "Propina" y total_referencia = ese total final; si el total no la incluye (es solo una sugerencia aparte), NO la incluyas. Decide con la aritmética (R19).'
   },
   AR: {
     name:'Argentina', currency:'ARS', symbol:'$', has_decimals:true,
@@ -77,7 +77,7 @@ const COUNTRY_RULES = {
     tip_behavior:'optional_explicit', tip_kw:['propina','servicio voluntario'],
     total_kw:['total','subtotal','valor total','a pagar'],
     price_format:'standard', signals:['nit','dian','cufe','ipc','colombia','bogota','cali','medellin'],
-    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IPC/IVA/impoconsumo = impuestos, IGNORAR siempre. Cargos de vajilla/cristalería = incluir como ítem real. TOTAL_REFERENCIA: usar el campo "Valor" o "Subtotal antes de IPC" — NUNCA el subtotal que ya incluye IPC ni el total con propina. Propina: incluir SOLO si el cliente la acepta (está en el total final cobrado) — si dice "sugerida" o "ADVERTENCIA PROPINA" es opcional, NO incluir.'
+    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IPC/IVA/impoconsumo = impuestos ya incluidos en los precios, IGNORAR como ítems (si hay una línea "Valor"/"Subtotal antes de IPC" es un desglose informativo). Cargos de vajilla/cristalería = incluir como ítem real. PROPINA / SERVICIO VOLUNTARIO: si el cliente la aceptó y está SUMADA en el total final cobrado ("TOTAL CON PROPINA", "Servicio voluntario 10%" dentro del Total), inclúyela como ítem "Propina" y total_referencia = ese total FINAL (con propina). Si es solo una sugerencia que no está en el total (ej. "ADVERTENCIA PROPINA", "propina sugerida" bajo el total), NO la incluyas y el total es el impreso. Decide con la aritmética (R19): subtotal de ítems + propina = total.'
   },
   PE: {
     name:'Perú', currency:'PEN', symbol:'S/', has_decimals:true,

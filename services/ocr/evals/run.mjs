@@ -119,7 +119,7 @@ function scoreItems(expected, actual) {
       details.push({ nombre: exp.nombre, encontrado: false });
     }
   }
-  return { matched, total: expected.length, extra: actualPool.length, details };
+  return { matched, total: expected.length, extra: actualPool.length, extraNames: actualPool.map(a => `${a.nombre} ${a.precio_unitario}x${a.cantidad}`), details };
 }
 
 async function callClaude(apiKey, imagePath, system) {
@@ -200,6 +200,15 @@ async function main() {
         ` · pais ${countryOk ? 'OK' : `MAL (${parsed.pais})`}` +
         ` · moneda ${currencyOk ? 'OK' : `MAL (${parsed.moneda})`}`
       );
+      // Detalle de fallos: qué ítems no calzaron y qué total leyó el modelo
+      const faltan = itemScore.details.filter(d => !d.encontrado || !d.priceOk || !d.qtyOk);
+      if (faltan.length || itemScore.extra || !totalOk) {
+        for (const d of faltan) {
+          console.log(`    - ${d.encontrado ? 'distinto' : 'falta'}: ${d.nombre}` + (d.got ? ` (leyó ${d.got.nombre} ${d.got.precio_unitario}x${d.got.cantidad})` : ''));
+        }
+        for (const n of itemScore.extraNames) console.log(`    + de más: ${n}`);
+        if (!totalOk) console.log(`    total leído ${parsed.total_referencia} · esperado ${fx.total_referencia} · suma ítems leídos ${(parsed.items||[]).reduce((a,i)=>a+(i.precio_unitario||0)*(i.cantidad||1),0)}`);
+      }
       results.push({ fixture: fx, ok: true, itemScore, totalOk, countryOk, currencyOk, raw: parsed });
     } catch (e) {
       console.log(`ERROR: ${e.message}`);
