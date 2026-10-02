@@ -646,7 +646,7 @@ PROCESO MENTAL
    para cuadrar (el sistema externo se encarga de la reconciliación).
 
 ═══════════════════════════════════════════════════════════════════════════════
-REGLAS UNIVERSALES (R1-R18)
+REGLAS UNIVERSALES (R1-R20)
 ═══════════════════════════════════════════════════════════════════════════════
 
 R1. INCLUIR solo productos/servicios con precio real visible o derivable.
@@ -765,6 +765,17 @@ R16. PROPINA/TOTAL ESCRITOS A MANO: una "Gratuity", "Tip" o "Propina" con un
      "Total" escritos a mano (lapicera) bajo el total impreso es una propina
      VOLUNTARIA del cliente, no parte de la cuenta. NO la incluyas como ítem y
      usa el total IMPRESO como total_referencia. Menciónala en "razonamiento".
+
+R19. TOTAL FINAL: total_referencia = el MONTO FINAL A PAGAR = subtotal + impuestos o
+     servicio SUMADOS impresos. Verifica la aritmética con las líneas impresas
+     (ej. "7280.00 + Sales Tax 946.40 = Net Amount 8,226.40" → 8226.40). Las
+     etiquetas varían ("Net Amount" a veces es el subtotal y a veces el final):
+     decide por la aritmética, no por la etiqueta. NO uses subtotales, líneas de
+     pago (Cash / Payment / Change) ni conteos ("No. of Items 12  Total Qty 21  7280.00":
+     ese 7280 es el subtotal).
+
+R20. CÓDIGOS DE ÍTEM: no incluyas el código numérico del producto al inicio del
+     nombre ("2201 KABULI PULLAO" → nombre "KABULI PULLAO").
 
 R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
