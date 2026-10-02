@@ -796,6 +796,21 @@
       "total_referencia": 252.00,
       "notas": "Croacia 2016: moneda 'kn' (HRK, antes del euro). Columnas Naziv|Kolicina|Cijena|Iznos. PDV 13% incluido (Osnovica 223,01 + Iznos poreza 28,99 = 252,00), informativo, no es ítem. Suma exacta: 20+20+20+65+90+20+17=252."
     }
+    ,{ "id": "HR/pet-bunara-zadar", "pais": "HR", "moneda": "HRK", "restaurante": "Pet bunara",
+      "items": [
+        {"nombre": "Kruh", "precio_unitario": 12.00, "cantidad": 1},
+        {"nombre": "Pivo točeno 0,3", "precio_unitario": 15.00, "cantidad": 1},
+        {"nombre": "Šinjorina smokva", "precio_unitario": 30.00, "cantidad": 1},
+        {"nombre": "Dalmatinski pršut", "precio_unitario": 55.00, "cantidad": 1},
+        {"nombre": "Hobotnica sa čičvardom", "precio_unitario": 78.00, "cantidad": 1},
+        {"nombre": "Brudet od sipe", "precio_unitario": 80.00, "cantidad": 1},
+        {"nombre": "Krpice negre", "precio_unitario": 85.00, "cantidad": 1},
+        {"nombre": "Patka", "precio_unitario": 145.00, "cantidad": 1},
+        {"nombre": "Sirah korlat", "precio_unitario": 195.00, "cantidad": 1}
+      ],
+      "total_referencia": 695.00,
+      "notas": "Croacia 2016, documento 'PONUDA' (oferta/precuenta, válido por R15). Total 695,00 kn; el 'TOTAL EUR 99,29' impreso es solo una equivalencia informativa, NO es ítem ni total a usar. Moneda kn = HRK. Suma exacta: 12+15+30+55+78+80+85+145+195=695."
+    }
 
   ]
 }
