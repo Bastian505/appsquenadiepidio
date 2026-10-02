@@ -368,6 +368,23 @@ es el total de la línea: precio_unitario = total ÷ cantidad. Encabezados "===S
 y texto en chino bajo los ítems no son ítems.`
   },
 
+  // ── MALASIA ───────────────────────────────────────────────────────────────
+  MY: {
+    name:'Malasia', currency:'MYR', symbol:'RM', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['sst','service tax'], deposit_kw:[], refund_kw:['refund','void'],
+    tip_behavior:'mandatory_service_charge', tip_kw:['service charge','service charges'],
+    total_kw:['net total','total(rm)','grand total'],
+    price_format:'standard',
+    signals:['rm','myr','sst#','sdn bhd','kuala lumpur','penang','georgetown','malaysia','rounding adjustment'],
+    format:`RM = MYR (ringgit malayo). Filas "Qty @ precio_unitario  Importe" (ej. "2.00 @ 25.00  50.00").
+Una línea con qty/importe ilegible o "0.00" (a veces el 0 inicial se corta y queda ".00") cuesta
+CERO: excluirla (R1); verifica con "Bill Amount"/"Sub Total", que debe ser la suma de los ítems.
+"Service Charges" (10%) es obligatorio: incluirlo como ítem "Service Charges". "SST" (6%/8%) se SUMA encima
+(se calcula sobre subtotal + servicio) y NO es ítem: el sistema lo agrega al reconciliar con el total.
+"Rounding Adjustment" se ignora. total_referencia = "Net Total(RM)", el monto final.`
+  },
+
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
@@ -958,7 +975,7 @@ const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
 // Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (ej. PK: 13% sobre ítems)
-const TAX_ON_TOP_HIGH           = new Set(['PK']);
+const TAX_ON_TOP_HIGH           = new Set(['PK','MY']);
 
 function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
@@ -998,6 +1015,8 @@ function reconcile(items, totalReported, countryCode) {
 
   // Guardia: ya existe un ítem de Servicio/Propina/Impuesto → no duplicar
   const hasServicio = items.some(it => /servicio|service charge|propina|tip|impuesto/i.test(it.nombre||''));
+  // En países con impuesto sumado encima (PK, MY) un cargo de servicio ya listado no bloquea el auto-fix del impuesto
+  const hasTax = items.some(it => /impuesto|tax|sst|gst|vat/i.test(it.nombre||''));
 
   // confianza_global baja → no auto-fix (lectura dudosa)
   const globalConf = items.length > 0
@@ -1008,7 +1027,7 @@ function reconcile(items, totalReported, countryCode) {
   }
 
   // 6-8%: impuesto (US/CA); hasta 15% en países con impuesto alto sumado aparte (PK)
-  if (((ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio >= 0.04 && ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !hasServicio) {
+  if (((ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio >= 0.04 && ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !(TAX_ON_TOP_HIGH.has(countryCode) ? hasTax : hasServicio)) {
     const fixed = [...items, { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1,
       auto_created:true, auto_fix_type:'tax', auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — tax no incluido en precios`, confianza:0.50 }];
     const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
