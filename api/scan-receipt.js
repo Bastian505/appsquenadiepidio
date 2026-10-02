@@ -294,6 +294,24 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     format:'SAR = riyales. VAT 15%.'
   },
 
+  // ── CROACIA ───────────────────────────────────────────────────────────────
+  HR: {
+    name:'Croacia', currency:'EUR', symbol:'€', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['pdv','porez'], deposit_kw:[], refund_kw:['storno'],
+    tip_behavior:'none', tip_kw:['napojnica'],
+    total_kw:['ukupno','za platiti'],
+    price_format:'standard',
+    signals:['oib','racun','račun','pdv','ukupno','hrvatska','zagreb','split','dubrovnik','trogir','kn','hrk'],
+    format:`MONEDA: boletas hasta 2022 → "kn" / HRK (kuna croata); desde 2023 → "€" / EUR.
+Si ves "kn" o "HRK", moneda = "HRK"; si ves "€" o "EUR", moneda = "EUR".
+Columnas: Naziv (nombre) | Količina (cantidad) | Cijena (precio UNITARIO) | Iznos
+(total de línea). precio_unitario = Cijena, cantidad = Količina.
+PDV (IVA 13% o 25%), "Osnovica" (base) e "Iznos poreza" son informativos y ya están
+incluidos en los precios: IGNORAR como items (R2). "Ukupno" = total.
+Pie con "ZKI" / "JIR" / OIB son códigos fiscales, ignorar.`
+  },
+
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
