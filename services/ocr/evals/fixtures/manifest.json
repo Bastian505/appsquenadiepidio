@@ -905,6 +905,24 @@
       "total_referencia": 12309.15,
       "notas": "Pakistán (Islamabad), 'Pending Bill'. Formato '2x NOMBRE @ Rs 195' con el importe de la línea a la derecha. 'Price Rs 11,723' es el SUBTOTAL (suma exacta de los ítems); 'Grand Total (Incl. GST) Rs 12,309.15' = 11.723 x 1,05: el GST del 5% (586,15) se SUMA encima, aunque la etiqueta diga 'Incl.'. total_referencia = Grand Total. El 5% es ~4,8% del total: PK necesita el auto-fix de impuesto desde el 4%. Hallazgo de producción: la app mostraba 11.723 y faltaban 586,15."
     }
+    ,{ "id": "PK/dine-inn-salsa10", "pais": "PK", "moneda": "PKR", "restaurante": null,
+      "items": [
+        {"nombre": "Prawn Handi Full", "precio_unitario": 1590.00, "cantidad": 1},
+        {"nombre": "Kabuli Pullao", "precio_unitario": 690.00, "cantidad": 1},
+        {"nombre": "Peshawari Chicken", "precio_unitario": 1490.00, "cantidad": 1},
+        {"nombre": "Peshawari Mutton", "precio_unitario": 1290.00, "cantidad": 1},
+        {"nombre": "Brain Masala", "precio_unitario": 690.00, "cantidad": 1},
+        {"nombre": "Plain Naan", "precio_unitario": 30.00, "cantidad": 6},
+        {"nombre": "White Colada", "precio_unitario": 250.00, "cantidad": 1},
+        {"nombre": "Lemon Mint Glacier", "precio_unitario": 170.00, "cantidad": 3},
+        {"nombre": "Choco Coffee Fantasy", "precio_unitario": 260.00, "cantidad": 1},
+        {"nombre": "Coke", "precio_unitario": 80.00, "cantidad": 1},
+        {"nombre": "Mineral Water Large", "precio_unitario": 95.00, "cantidad": 2},
+        {"nombre": "Plain Naan", "precio_unitario": 30.00, "cantidad": 2}
+      ],
+      "total_referencia": 8226.40,
+      "notas": "Pakistán 2017, 'Dine-Inn', foto rotada y borrosa. Cada fila trae un código de producto al inicio (R20, no debe ir en el nombre). Línea de conteo 'No. Of Item(s) 12  Total Qty 21  7280.00': ese 7280 es el SUBTOTAL, no el total. Sales Tax 13% = 946,40 se suma encima; 'Net Amount 8,226.40' es el total FINAL (aquí 'Net Amount' = final, a diferencia de TAO donde es el subtotal): decidir por aritmética (R19). Hallazgo de producción: la app mostró 7.280 sin impuesto porque tomó el subtotal como total."
+    }
 
   ]
 }
