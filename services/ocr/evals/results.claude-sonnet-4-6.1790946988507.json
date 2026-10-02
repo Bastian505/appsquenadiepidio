@@ -1,0 +1,387 @@
+[
+  {
+    "fixture": {
+      "id": "PK/dine-in-duplicate",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": null,
+      "items": [
+        {
+          "nombre": "Peri Bites",
+          "precio_unitario": 740,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mutton Masala Champ",
+          "precio_unitario": 1340,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken Makni Handi",
+          "precio_unitario": 1490,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tarragon Chicken",
+          "precio_unitario": 990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Garlic Naan",
+          "precio_unitario": 90,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 50,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Namkeen lassi",
+          "precio_unitario": 240,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 330,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 340,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Namkeen lassi",
+          "precio_unitario": 240,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 330,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 50,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Garlic Naan",
+          "precio_unitario": 90,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Crispy Jalebi",
+          "precio_unitario": 390,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kulfi Falooda",
+          "precio_unitario": 375,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Crispy Jalebi",
+          "precio_unitario": 390,
+          "cantidad": -1
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 340,
+          "cantidad": -1
+        }
+      ],
+      "total_referencia": 8910,
+      "notas": "Pakistán, 'Duplicate Receipt'. Filas: Qty | Nombre | @unitario | Importe. Dos líneas de ANULACIÓN al final con cantidad negativa (-1 Crispy Jalebi @390 y -1 Pina Colada @340): se transcriben tal cual (R17) y el sistema las descuenta; neto = 7.885,00 (coincide con '19 Quantity 7,885.00'). 'Add Sales Tax @13%: 1,025.05' se SUMA encima: Total 8.910,00. Por eso sum(ítems) != total es esperado: el reconcile agrega el Impuesto (PK en TAX_ON_TOP_HIGH). Aviso: foto con el texto un poco borroso."
+    },
+    "ok": false,
+    "reason": "api_error",
+    "error": "invalid x-api-key"
+  },
+  {
+    "fixture": {
+      "id": "PK/tao-clifton-blurry",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "TAO",
+      "items": [
+        {
+          "nombre": "Dynamite Prawns",
+          "precio_unitario": 725,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dynamite Chicken",
+          "precio_unitario": 725,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Crispy Beef",
+          "precio_unitario": 945,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Szechuan Chicken",
+          "precio_unitario": 785,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gaeng Phet Chicken",
+          "precio_unitario": 1095,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fish In Tamarind Sauce",
+          "precio_unitario": 1095,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken Chowmein",
+          "precio_unitario": 695,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fried Rice With Vege Full",
+          "precio_unitario": 490,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Strawberry Lemonade",
+          "precio_unitario": 350,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Fresh Lime",
+          "precio_unitario": 215,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Large Mineral Water",
+          "precio_unitario": 160,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 350,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 320,
+          "cantidad": 3
+        }
+      ],
+      "total_referencia": 10678.5,
+      "notas": "Pakistán (Karachi, Clifton), 'Duplicate Receipt' con foto MUY borrosa y de baja resolución: es un test de robustez. Net Amount 9.450,00 = suma exacta de los ítems; 'Add Sales Tax @13%: 1,228.50' se suma encima; Total 10.678,50 (el último dígito se lee borroso). Puntos difíciles: 'Fresh Lime' tiene cantidad 1 y total 215 (precio unitario ilegible; un modelo puede inventar 2 x 107,5); la última fila dice '...t Lemonade' @320 x3 (probablemente 'Mint Lemonade'). sum(ítems) != total es esperado (reconcile agrega el impuesto, PK en TAX_ON_TOP_HIGH)."
+    },
+    "ok": false,
+    "reason": "api_error",
+    "error": "invalid x-api-key"
+  },
+  {
+    "fixture": {
+      "id": "PK/tkr-islamabad",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "TKR (Tahir Khan Restaurant)",
+      "items": [
+        {
+          "nombre": "M-Large Water",
+          "precio_unitario": 229,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lamb Karahi",
+          "precio_unitario": 4249,
+          "cantidad": 1
+        },
+        {
+          "nombre": "TKR Special Platter",
+          "precio_unitario": 7900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tandori Roti",
+          "precio_unitario": 80,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Roghni Naan",
+          "precio_unitario": 90,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Zeera Raita",
+          "precio_unitario": 219,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Green Salad",
+          "precio_unitario": 399,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Soft Drink Can",
+          "precio_unitario": 189,
+          "cantidad": 6
+        },
+        {
+          "nombre": "FBR POS Charges",
+          "precio_unitario": 1,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 16630,
+      "notas": "Pakistán (Islamabad), tabla Description|Rate|Qty|Amount. Sub Total 14.460,00 = suma de los 8 ítems de comida; 'Tax 15.00%: 2,169.00' se SUMA encima; 'FBR POS CHARGES 1.00' es un cargo fijo de la autoridad tributaria que SÍ está en el total. Grand Total 16.630,00 = 14.460 + 2.169 + 1. Efectivo 16.640 (vuelto 10) no es el total. sum(ítems)=14.461 != total es esperado: el reconcile agrega el Impuesto 2.169 (PK en TAX_ON_TOP_HIGH). Caso validado en producción: el resultado final cuadró en 16.630."
+    },
+    "ok": false,
+    "reason": "api_error",
+    "error": "invalid x-api-key"
+  },
+  {
+    "fixture": {
+      "id": "PK/taus-i8-islamabad",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "Tau's I-8",
+      "items": [
+        {
+          "nombre": "Fries",
+          "precio_unitario": 450,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Raita",
+          "precio_unitario": 195,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Salad",
+          "precio_unitario": 155,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mutton Karahi",
+          "precio_unitario": 2529,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Chicken Makhni",
+          "precio_unitario": 2630,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Jamia Masjid Kebab",
+          "precio_unitario": 1440,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 75,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Chapati",
+          "precio_unitario": 55,
+          "cantidad": 5
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 175,
+          "cantidad": 2
+        },
+        {
+          "nombre": "7UP",
+          "precio_unitario": 175,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Water Large",
+          "precio_unitario": 175,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 12309.15,
+      "notas": "Pakistán (Islamabad), 'Pending Bill'. Formato '2x NOMBRE @ Rs 195' con el importe de la línea a la derecha. 'Price Rs 11,723' es el SUBTOTAL (suma exacta de los ítems); 'Grand Total (Incl. GST) Rs 12,309.15' = 11.723 x 1,05: el GST del 5% (586,15) se SUMA encima, aunque la etiqueta diga 'Incl.'. total_referencia = Grand Total. El 5% es ~4,8% del total: PK necesita el auto-fix de impuesto desde el 4%. Hallazgo de producción: la app mostraba 11.723 y faltaban 586,15."
+    },
+    "ok": false,
+    "reason": "api_error",
+    "error": "invalid x-api-key"
+  },
+  {
+    "fixture": {
+      "id": "PK/dine-inn-salsa10",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": null,
+      "items": [
+        {
+          "nombre": "Prawn Handi Full",
+          "precio_unitario": 1590,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kabuli Pullao",
+          "precio_unitario": 690,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Peshawari Chicken",
+          "precio_unitario": 1490,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Peshawari Mutton",
+          "precio_unitario": 1290,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Brain Masala",
+          "precio_unitario": 690,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 30,
+          "cantidad": 6
+        },
+        {
+          "nombre": "White Colada",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lemon Mint Glacier",
+          "precio_unitario": 170,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choco Coffee Fantasy",
+          "precio_unitario": 260,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 80,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mineral Water Large",
+          "precio_unitario": 95,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 30,
+          "cantidad": 2
+        }
+      ],
+      "total_referencia": 8226.4,
+      "notas": "Pakistán 2017, 'Dine-Inn', foto rotada y borrosa. Cada fila trae un código de producto al inicio (R20, no debe ir en el nombre). Línea de conteo 'No. Of Item(s) 12  Total Qty 21  7280.00': ese 7280 es el SUBTOTAL, no el total. Sales Tax 13% = 946,40 se suma encima; 'Net Amount 8,226.40' es el total FINAL (aquí 'Net Amount' = final, a diferencia de TAO donde es el subtotal): decidir por aritmética (R19). Hallazgo de producción: la app mostró 7.280 sin impuesto porque tomó el subtotal como total."
+    },
+    "ok": false,
+    "reason": "api_error",
+    "error": "invalid x-api-key"
+  }
+]
