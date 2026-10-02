@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 // Chequeo sin API de la fuente única de monedas (core/currencies.js):
-//  1. cada moneda de COUNTRY_RULES (servidor) existe en core con los mismos decimales;
+//  1. cada moneda de core/country-rules.js existe en core/currencies.js con los mismos decimales;
 //  2. ambas copias del HTML cargan /core/currencies.js antes de su código;
 //  3. nadie vuelve a escribir listas de monedas a mano en el HTML o el servidor.
 // Uso: node tests/check-currencies.mjs   (sale con código 1 si algo falla)
 import fs from 'node:fs';
 import '../core/currencies.js';
+import '../core/country-rules.js';
 const C = globalThis.DC_CURRENCIES;
 
 let errors = 0;
 const fail = m => { console.log('✗ ' + m); errors++; };
 
 const server = fs.readFileSync('api/scan-receipt.js', 'utf8');
-const rules = [...server.matchAll(/^  ([A-Z]{2}): \{\s*\n\s*name:'([^']*)', currency:'([A-Z]{3})', symbol:'([^']*)', has_decimals:(true|false)/gm)]
-  .map(m => ({ code: m[1], name: m[2], cur: m[3], dec: m[5] === 'true' }));
-if (rules.length < 30) { console.error('No pude leer COUNTRY_RULES (' + rules.length + ' países)'); process.exit(1); }
+const rules = Object.entries(globalThis.DC_COUNTRY_RULES)
+  .map(([code, r]) => ({ code, name: r.name, cur: r.currency, dec: r.has_decimals }));
+if (rules.length < 30) { console.error('No pude leer DC_COUNTRY_RULES (' + rules.length + ' países)'); process.exit(1); }
+for (const r of rules) if (typeof r.dec !== 'boolean' || !/^[A-Z]{3}$/.test(r.cur || '')) fail(`${r.code}: currency/has_decimals inválidos`);
 
 for (const r of rules) {
   if (!C.list[r.cur]) { fail(`core: falta la moneda ${r.cur} (${r.name})`); continue; }
@@ -40,6 +42,8 @@ for (const file of ['index.html', 'apps/divicuenta/index.html', 'api/scan-receip
   }
 }
 if (!/import '\.\.\/core\/currencies\.js'/.test(server)) fail('api/scan-receipt.js: no importa core/currencies.js');
+if (!/import '\.\.\/core\/country-rules\.js'/.test(server)) fail('api/scan-receipt.js: no importa core/country-rules.js');
+if (/^\s+[A-Z]{2}: \{\s*\n\s*name:'/m.test(server)) fail('api/scan-receipt.js: tiene reglas de país escritas a mano; van en core/country-rules.js');
 
 if (errors) { console.log(`\n${errors} problema(s)`); process.exit(1); }
 console.log(`✓ ${rules.length} países y ${Object.keys(C.list).length} monedas: una sola fuente (core/currencies.js), sin listas duplicadas`);
