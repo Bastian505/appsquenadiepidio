@@ -888,6 +888,23 @@
       "total_referencia": 16630.00,
       "notas": "Pakistán (Islamabad), tabla Description|Rate|Qty|Amount. Sub Total 14.460,00 = suma de los 8 ítems de comida; 'Tax 15.00%: 2,169.00' se SUMA encima; 'FBR POS CHARGES 1.00' es un cargo fijo de la autoridad tributaria que SÍ está en el total. Grand Total 16.630,00 = 14.460 + 2.169 + 1. Efectivo 16.640 (vuelto 10) no es el total. sum(ítems)=14.461 != total es esperado: el reconcile agrega el Impuesto 2.169 (PK en TAX_ON_TOP_HIGH). Caso validado en producción: el resultado final cuadró en 16.630."
     }
+    ,{ "id": "PK/taus-i8-islamabad", "pais": "PK", "moneda": "PKR", "restaurante": "Tau's I-8",
+      "items": [
+        {"nombre": "Fries", "precio_unitario": 450.00, "cantidad": 1},
+        {"nombre": "Raita", "precio_unitario": 195.00, "cantidad": 2},
+        {"nombre": "Salad", "precio_unitario": 155.00, "cantidad": 1},
+        {"nombre": "Mutton Karahi", "precio_unitario": 2529.00, "cantidad": 2},
+        {"nombre": "Chicken Makhni", "precio_unitario": 2630.00, "cantidad": 1},
+        {"nombre": "Jamia Masjid Kebab", "precio_unitario": 1440.00, "cantidad": 1},
+        {"nombre": "Plain Naan", "precio_unitario": 75.00, "cantidad": 6},
+        {"nombre": "Chapati", "precio_unitario": 55.00, "cantidad": 5},
+        {"nombre": "Coke", "precio_unitario": 175.00, "cantidad": 2},
+        {"nombre": "7UP", "precio_unitario": 175.00, "cantidad": 2},
+        {"nombre": "Water Large", "precio_unitario": 175.00, "cantidad": 1}
+      ],
+      "total_referencia": 12309.15,
+      "notas": "Pakistán (Islamabad), 'Pending Bill'. Formato '2x NOMBRE @ Rs 195' con el importe de la línea a la derecha. 'Price Rs 11,723' es el SUBTOTAL (suma exacta de los ítems); 'Grand Total (Incl. GST) Rs 12,309.15' = 11.723 x 1,05: el GST del 5% (586,15) se SUMA encima, aunque la etiqueta diga 'Incl.'. total_referencia = Grand Total. El 5% es ~4,8% del total: PK necesita el auto-fix de impuesto desde el 4%. Hallazgo de producción: la app mostraba 11.723 y faltaban 586,15."
+    }
 
   ]
 }

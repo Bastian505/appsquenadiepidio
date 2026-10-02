@@ -343,7 +343,9 @@ es N × unitario (verifícalo).`
     format:`PKR = rupia pakistaní ("Rs", "Rs." o PKR). Formato "1,340.00" (coma = miles,
 punto = decimal). Filas "Qty  Nombre  @unitario  Importe". "Add Sales Tax @13%" /
 "GST" es impuesto SUMADO encima del subtotal: NO es ítem (R2), el sistema lo agrega
-al reconciliar con el total final. Líneas con cantidad negativa son anulaciones (R17).
+al reconciliar con el total final. La tasa varía (5%, 13%, 15%) según ciudad y forma de pago.
+Si hay un subtotal ("Price", "Net Amount", "Sub Total") y más abajo un "Grand Total (Incl. GST)" mayor,
+total_referencia = el Grand Total (el monto final), NO el subtotal. Líneas con cantidad negativa son anulaciones (R17).
 "Duplicate Receipt" es una copia de la misma boleta: leerla normalmente.`
   },
 
@@ -942,8 +944,8 @@ function reconcile(items, totalReported, countryCode) {
     return { ok:true, sum, total:totalReported, diff, ratio, note:null, auto_fixed:false };
   }
 
-  // 3-6%: warning leve, no crear ítem
-  if (ratio < 0.06) {
+  // 3-6%: warning leve, no crear ítem (salvo PK: un 5% sumado encima es ~4,8% del total)
+  if (ratio < 0.06 && !(TAX_ON_TOP_HIGH.has(countryCode) && diff > 0 && ratio >= 0.04)) {
     return { ok:true, sum, total:totalReported, diff, ratio,
       note:'Pequeña diferencia (redondeo o ítem menor no capturado).', auto_fixed:false };
   }
@@ -976,7 +978,7 @@ function reconcile(items, totalReported, countryCode) {
   }
 
   // 6-8%: impuesto (US/CA); hasta 15% en países con impuesto alto sumado aparte (PK)
-  if (ratio >= 0.06 && ((ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !hasServicio) {
+  if (((ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio >= 0.04 && ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !hasServicio) {
     const fixed = [...items, { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1,
       auto_created:true, auto_fix_type:'tax', auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — tax no incluido en precios`, confianza:0.50 }];
     const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
