@@ -1,6 +1,6 @@
 name: Checks
 
-# Chequeos rápidos sin API ni secretos: monedas/símbolos sincronizados y cálculo del reparto de cuentas.
+# Chequeos sin API ni secretos: monedas, cálculo del reparto y prueba de punta a punta en Chromium (tamaño celular).
 on:
   pull_request:
   push:
@@ -16,3 +16,19 @@ jobs:
           node-version: 20
       - run: node tests/check-currencies.mjs
       - run: node tests/check-split.mjs
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npx playwright install --with-deps chromium
+      - run: mkdir -p e2e-capturas && E2E_OUT=e2e-capturas node tests/e2e.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-capturas
+          path: e2e-capturas

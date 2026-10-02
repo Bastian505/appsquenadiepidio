@@ -14,7 +14,7 @@ function fnSrc(src, name) {
     if (src[k] === '}' && --d === 0) return src.slice(i, k + 1);
   }
 }
-const NAMES = ['isExtraItem','activeItems','extrasSum','extraRatio','totalMul','decPlaces','rnd','getUnassigned','calcTotals'];
+const NAMES = ['sharedWhole','isExtraItem','activeItems','extrasSum','extraRatio','totalMul','decPlaces','rnd','getUnassigned','calcTotals'];
 let failures = 0, checks = 0;
 const ok = (cond, msg) => { checks++; if (!cond) { failures++; console.log('  ✗ ' + msg); } };
 
@@ -63,6 +63,11 @@ for (const file of ['index.html', 'apps/divicuenta/index.html']) {
   E.set({ cur: 'HUF', tip: 10, items: [mk('Gulyás', 3290), mk('Sör', 990, 3)], people: [{ name: 'A' }, { name: 'B' }],
           assigns: { 0: { participants: [0, 1] }, 1: { participants: [0, 1], qty: { 0: 2, 1: 1 } } } });
   ok(E.calcTotals().every(t => Number.isInteger(t.amount)), `HUF: montos enteros (${E.calcTotals().map(t => t.amount)})`);
+
+  // 4c) "Todos" en un ítem de varias unidades sin repartir unidades = línea completa compartida
+  E.set({ cur: 'MYR', tip: 0, items: [mk('Heineken', 18.2, 5), mk('Fries', 20)], people: [{ name: 'A' }, { name: 'B' }],
+          assigns: { 0: { participants: [0, 1], qty: {} }, 1: { participants: [0, 1] } } });
+  ok(Math.abs(sumAll() - 111) < 0.01 && E.getUnassigned().amount === 0, `"Todos" en ítem x5: suma ${sumAll()} vs 111, sin asignar ${E.getUnassigned().amount}`);
 
   // 5) Sin asignar suma al total cuando nadie tiene nada
   E.set({ cur: 'EUR', tip: 0, items: [mk('A', 10.5), mk('B', 4.25)], people: [{ name: 'P' }], assigns: {} });

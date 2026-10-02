@@ -8,3 +8,4 @@
 | 2026-10-02 | Opus se usa para diseño/arquitectura; el modelo de lectura se elige con evals por costo y precisión | Opus es caro para lectura masiva |
 | 2026-10-02 | `core/currencies.js` es la única fuente de monedas (símbolo, decimales, sufijo, selector) para servidor y navegador | Había 6 listas distintas de "monedas sin decimales" que no coincidían; causaron 5 errores de moneda y un reparto con centavos en HUF/ISK |
 | 2026-10-02 | `core/country-rules.js` es la única fuente de reglas por país (servidor + evals) | Las reglas eran 560 líneas dentro del servidor y el harness las extraía con un parser frágil; ahora ambos importan el mismo archivo |
+| 2026-10-02 | Un ítem de varias unidades marcado con "Todos" sin repartir unidades se divide en partes iguales (línea completa) | Antes contaba como 0 y desaparecía de las cuentas (encontrado por la prueba e2e) |
