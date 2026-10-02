@@ -499,35 +499,11 @@ incluir SOLO si quedó sumada al total final cobrado (ver R9).`
   },
 };
 
-// ── Selección de modelo — cascada barato-primero ─────────────────────────────
-// Se intenta primero con Haiku (~1/3 del costo) y se ESCALA a Sonnet cuando el
-// resultado no es de total confianza (ver haikuResultAcceptable). Países
-// 'complex' (o con hint de país complejo) van directo a Sonnet.
-// Kill switch sin redeploy: env HAIKU_DISABLED=1 → siempre Sonnet.
-// IMPORTANTE: la precisión de Haiku por país NO está validada todavía — correr
-// services/ocr/evals/run.mjs --model=claude-haiku-4-5 y revisar los logs
-// ("model_used") antes de confiar a ciegas en el ahorro.
-const MODEL_HAIKU = 'claude-haiku-4-5';
-function selectModel(countryHint) {
-  if (process.env.HAIKU_DISABLED === '1') return MODEL_SONNET;
-  if (countryHint) {
-    const r = COUNTRY_RULES[countryHint];
-    if (!r || r.complexity !== 'simple') return MODEL_SONNET;
-  }
-  return MODEL_HAIKU;
-}
-
-// Acepta el resultado de Haiku solo si todo cuadra; si no, se re-lee con Sonnet.
-function haikuResultAcceptable(parsed) {
-  if (!parsed || parsed.ok === false || !Array.isArray(parsed.items) || !parsed.items.length) return false;
-  const rules = COUNTRY_RULES[parsed.pais];
-  if (!rules || rules.complexity !== 'simple') return false;
-  if (/AMBIGUOUS/.test(parsed.moneda || '')) return false;
-  if ((parsed.confianza_global || 0) < 0.85) return false;
-  const total = parsed.total_referencia || 0;
-  if (total <= 0) return false;
-  const sum = parsed.items.reduce((a, it) => a + (it.precio_unitario || 0) * (it.cantidad || 1), 0);
-  return Math.abs(sum - total) / total <= 0.03;
+// ── Selección de modelo — siempre Sonnet hasta tener corpus de eval validado ──
+// (Opus 4.7 spec: "Con 0 usuarios, el riesgo de marcar mal complexity:simple
+//  es mayor que el ahorro. Cuando tengas datos, mover países simples a Haiku.")
+function selectModel() {
+  return MODEL_SONNET;
 }
 
 // ── CAPA 2: Detección de país ─────────────────────────────────────────────────
@@ -1036,21 +1012,13 @@ export default async function handler(req, res) {
 
   try {
     // Una sola llamada. Siempre Sonnet. Prompt v5 con perfil del país inyectado.
-    let model    = selectModel(country_hint);
+    const model  = selectModel();
     const system = buildV5Prompt(country_hint || null);
     let raw;
 
-    let parsed;
-    const userText = 'Extrae todos los ítems con sus precios de esta boleta.';
     try {
-      raw = await callClaude(apiKey, image_base64, media_type, system, userText, model);
-      parsed = parseJSON(raw);
-      if (model === MODEL_HAIKU && !haikuResultAcceptable(parsed)) {
-        console.log('haiku escalated to sonnet', JSON.stringify({ pais: parsed?.pais, conf: parsed?.confianza_global }));
-        model = MODEL_SONNET;
-        raw = await callClaude(apiKey, image_base64, media_type, system, userText, model);
-        parsed = parseJSON(raw);
-      }
+      raw = await callClaude(apiKey, image_base64, media_type, system,
+        'Extrae todos los ítems con sus precios de esta boleta.', model);
     } catch(e) {
       // Timeout explícito → respuesta específica al usuario
       if(e.message?.startsWith('TIMEOUT')) {
@@ -1062,6 +1030,8 @@ export default async function handler(req, res) {
       console.error('OCR call failed:', e);
       return res.status(502).json({ error:'No se pudo procesar la boleta con el servicio de OCR.', code:'OCR_ERROR' });
     }
+
+    const parsed = parseJSON(raw);
 
     // Refusal explícito del modelo
     if (parsed && parsed.ok === false && parsed.reason) {
