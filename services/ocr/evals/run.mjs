@@ -61,28 +61,13 @@ function extractFn(src, name) {
   return src.slice(start, end);
 }
 
-// COUNTRY_RULES es un const al tope del archivo — lo extraemos igual que las funciones.
-function extractConst(src, name) {
-  const marker = `const ${name} = {`;
-  const start = src.indexOf(marker);
-  if (start === -1) throw new Error(`No se encontro ${name} en scan-receipt.js`);
-  let depth = 0, i = src.indexOf('{', start), end = i;
-  for (; i < src.length; i++) {
-    if (src[i] === '{') depth++;
-    if (src[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
-  }
-  return src.slice(start, end);
-}
-
-const countryRulesSrc = extractConst(scanReceiptSrc, 'COUNTRY_RULES');
+// Las reglas por país viven en core/country-rules.js (fuente única que también usa el servidor).
+import '../../../core/country-rules.js';
+const COUNTRY_RULES = globalThis.DC_COUNTRY_RULES;
 const buildV5PromptSrc = extractFn(scanReceiptSrc, 'buildV5Prompt');
 
 // eslint-disable-next-line no-new-func
-const { COUNTRY_RULES, buildV5Prompt } = new Function(`
-  ${countryRulesSrc}
-  ${buildV5PromptSrc}
-  return { COUNTRY_RULES, buildV5Prompt };
-`)();
+const buildV5Prompt = new Function('COUNTRY_RULES', `${buildV5PromptSrc}; return buildV5Prompt;`)(COUNTRY_RULES);
 
 function normName(s) {
   return String(s || '')
