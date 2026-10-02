@@ -1,0 +1,17 @@
+name: Checks
+
+# Chequeos rápidos sin API ni secretos: monedas y símbolos sincronizados entre servidor y cliente.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  currencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/check-currencies.mjs
