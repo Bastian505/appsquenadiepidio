@@ -2025,6 +2025,10 @@ function setTipCustom(btn){
 }
 function tipPctStr(){return Number.isInteger(tipPct)?String(tipPct):tipPct.toFixed(1).replace('.',',');}
 
+// Decimales de la moneda activa: 0 (CLP, JPY...) o 2. Evita redondear a entero en monedas con centavos.
+function decPlaces(){return ['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG'].indexOf(window._currentCurrency||'CLP')>-1?0:2;}
+function rnd(v){var d=decPlaces();return d?Math.round(v*100)/100:Math.round(v);}
+
 // Impuesto / cargos de servicio impresos en la boleta (o agregados por el reconciliador):
 // NO se asignan a una persona, se reparten proporcional al consumo de cada uno (como la
 // propina). Se detectan por nombre para que anfitrión e invitados calculen igual.
@@ -2038,7 +2042,7 @@ function updateTotal(){
   var sel=items.filter(function(i){return i.selected;});
   var sub=sel.reduce(function(s,i){return s+i.total;},0);
   if(tipFixed!==null)tipPct=sub>0?tipFixed/sub*100:0;
-  var tip=Math.round(sub*tipPct/100);
+  var tip=rnd(sub*tipPct/100);
   window._lastTotal=sub+tip;
   document.getElementById('total-num').textContent=fmtP(sub+tip);
   document.getElementById('sub-label').textContent='Subtotal '+fmtP(sub)+(tipPct>0?' + propina '+fmtP(tip):'');
@@ -2223,7 +2227,7 @@ function getUnassigned(){
     if(it.qty===1){if(!a.participants||a.participants.length===0){amount+=it.price;list.push(it.name);}}
     else{var tq=a.participants?a.participants.reduce(function(s,pi){return s+(a.qty[pi]||0);},0):0;var r=it.qty-tq;if(r>0){amount+=it.price*r;list.push(it.name+' ('+r+' sin asignar)');}}
   });
-  return{amount:Math.round(amount*tipMul),list:list};
+  return{amount:rnd(amount*tipMul),list:list};
 }
 
 function calcTotals(){
@@ -2236,7 +2240,7 @@ function calcTotals(){
         var parts=a.participants||[];
         if(parts.indexOf(pi)>-1){
           // Propina aplicada al precio total del item antes de dividir
-          var itemTotal=Math.round(it.price*tipMul);
+          var itemTotal=rnd(it.price*tipMul);
           var share=itemTotal/parts.length;
           amt+=share;
           myItems.push({label:parts.length>1?it.name+' (compartido)':it.name,share:share});
@@ -2244,13 +2248,13 @@ function calcTotals(){
       } else {
         var q=(a.qty&&a.qty[pi])||0;
         if(q>0){
-          var share=Math.round(it.price*tipMul)*q;
+          var share=rnd(it.price*tipMul)*q;
           amt+=share;
           myItems.push({label:it.name+(q>1?' x'+q:''),share:share});
         }
       }
     });
-    return{person:p,amount:Math.round(amt),myItems:myItems};
+    return{person:p,amount:rnd(amt),myItems:myItems};
   });
 }
 
@@ -2270,7 +2274,7 @@ function calcDebts(totals){
 // ── RESUMEN COMPLETO ──
 function buildSummary(){
   var sel=activeItems(),tipMul=totalMul();
-  var baseTotal=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
+  var baseTotal=rnd(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
   var grandTotal=baseTotal+roundingExtra;
   var ua=getUnassigned(),totals=calcTotals();
   // Aplicar redondeo extra a los totales si hay — sin error de $1
@@ -2304,7 +2308,7 @@ function buildSummary(){
     var pagadorName=totals[pagadorIdx]?totals[pagadorIdx].person.name:'';
     var dhtml='<div class="debts-title">💸 Le deben a '+escHtml(pagadorName)+'</div>';
     debts.forEach(function(d){
-      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+escHtml(d.from)+'</b> → <b>'+escHtml(d.to)+'</b></span><span class="debt-amount">'+fmtP(Math.round(d.amount))+fxApprox(d.amount)+'</span></div>';
+      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+escHtml(d.from)+'</b> → <b>'+escHtml(d.to)+'</b></span><span class="debt-amount">'+fmtP(rnd(d.amount))+fxApprox(d.amount)+'</span></div>';
     });
     dc.innerHTML=dhtml;body.appendChild(dc);
   }
@@ -2314,7 +2318,7 @@ function buildSummary(){
     var div=document.createElement('div');
     div.className='sum-card'+(esPagador?' invited':'');
     div.style.animationDelay=(i*0.08)+'s';
-    var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+escHtml(it.label)+'</span><span>'+fmtP(Math.round(it.share))+'</span></div>';}).join('');
+    var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+escHtml(it.label)+'</span><span>'+fmtP(rnd(it.share))+'</span></div>';}).join('');
     if(!rows)rows='<div class="sum-row"><span style="color:var(--text3)">Sin items asignados</span></div>';
     if(extraRatio()>0)rows+='<div class="sum-row tip-s"><span>Impuesto y cargos ('+Math.round(extraRatio()*1000)/10+'%)</span><span>incluido</span></div>';
     if(tipPct>0)rows+='<div class="sum-row tip-s"><span>Propina '+tipPctStr()+'%</span><span>incluida</span></div>';
@@ -2334,7 +2338,7 @@ function buildSummary(){
       transferBtn='<button class="btn-transfer" onclick="transferirA('+pagadorIdx+','+t.amount+')" >🏦 Transferir</button>';
       qrPagoHtml='<div class="qr-pago-wrap">'+
         '<div class="qr-pago-label">Le debe a '+escHtml(pagadorName)+'</div>'+
-        '<div class="qr-pago-amount">'+fmtP(Math.round(t.amount))+fxApprox(t.amount)+'</div>'+
+        '<div class="qr-pago-amount">'+fmtP(rnd(t.amount))+fxApprox(t.amount)+'</div>'+
         '<div class="qr-pago-canvas" id="'+qrId+'"></div>'+
         buildBanksWithAmount(t.person.name, t.amount, pagadorName)+
         '<div class="qr-pago-hint">Escanea el QR con Mach, FPAY o cualquier app de pago</div>'+
@@ -2395,7 +2399,7 @@ function setPagador(idx){
 
 // ── REDONDEO A CIENTOS ──
 function addRoundingBar(body,baseTotal){
-  if(!people.length)return;
+  if(!people.length||decPlaces()>0)return;
   var rounded=Math.ceil(baseTotal/100)*100;
   if(rounded===baseTotal)rounded=Math.round(baseTotal/100)*100;
   if(rounded===baseTotal)return;
@@ -2459,7 +2463,7 @@ function copyPerson(pi){
   var totals=calcTotals();var t=totals[pi];
   var txt='💸 Mi cuenta — DiviCuenta\n';
   if(restaurante)txt+='📍 '+restaurante+'\n\n';
-  t.myItems.forEach(function(it){txt+=it.label+': $'+Math.round(it.share).toLocaleString('es-CL')+'\n';});
+  t.myItems.forEach(function(it){txt+=it.label+': '+fmtP(rnd(it.share))+'\n';});
   if(tipPct>0)txt+='Propina '+tipPctStr()+'%: incluida\n';
   txt+='\n💰 Total: $'+t.amount.toLocaleString('es-CL');
   if(navigator.share)navigator.share({title:'Mi cuenta',text:txt}).catch(function(){});
@@ -2495,11 +2499,11 @@ function getSummaryText(){
     if(invitedBy[pi])txt+=t.person.name+': 🎉 Invita\n';
     else txt+=t.person.name+': $'+t.amount.toLocaleString('es-CL')+'\n';
   });
-  var total=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
+  var total=rnd(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
   txt+='\nTotal: $'+total.toLocaleString('es-CL');
   if(tipPct>0)txt+='\nPropina ('+tipPctStr()+'%) incluida';
   var debts=calcDebts(totals);
-  if(debts.length>0){txt+='\n\n💸 Transferencias:\n';debts.forEach(function(d){txt+=d.from+' → '+d.to+': $'+Math.round(d.amount).toLocaleString('es-CL')+'\n';});}
+  if(debts.length>0){txt+='\n\n💸 Transferencias:\n';debts.forEach(function(d){txt+=d.from+' → '+d.to+': '+fmtP(rnd(d.amount))+'\n';});}
   return txt;
 }
 
@@ -2536,7 +2540,7 @@ function shareImage(){
   ctx.fillStyle='white';ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.fillText('DiviCuenta',W/2,66);
   if(restaurante){ctx.font='15px sans-serif';ctx.fillStyle='rgba(255,255,255,0.85)';ctx.fillText(restaurante,W/2,94);}
   var sel=activeItems();
-  var tot=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*totalMul());
+  var tot=rnd(sel.reduce(function(s,i){return s+i.total;},0)*totalMul());
   ctx.font='bold 26px sans-serif';ctx.fillStyle='white';ctx.fillText('$'+tot.toLocaleString('es-CL'),W/2,134);
   ctx.font='13px sans-serif';ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText(tipPct>0?'Propina '+tipPctStr()+'% incluida':'Sin propina',W/2,158);
   totals.forEach(function(t,i){
