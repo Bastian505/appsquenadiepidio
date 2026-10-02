@@ -16,6 +16,7 @@ jobs:
           node-version: 20
       - run: node tests/check-currencies.mjs
       - run: node tests/check-split.mjs
+      - run: node tests/check-split-core.mjs
 
   e2e:
     runs-on: ubuntu-latest
@@ -27,6 +28,8 @@ jobs:
       - run: npm install --no-save --no-package-lock playwright@1.56.1
       - run: npx playwright install --with-deps chromium
       - run: mkdir -p e2e-capturas && E2E_OUT=e2e-capturas node tests/e2e.mjs
+      - run: E2E_OUT=e2e-capturas node tests/e2e-v2.mjs
+      - run: E2E_OUT=e2e-capturas E2E_DARK=1 node tests/e2e-v2.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
