@@ -321,7 +321,8 @@ Pie con "ZKI" / "JIR" / OIB son códigos fiscales, ignorar.`
     total_kw:['za uplatu','за уплату','ukupno','укупно'],
     price_format:'standard',
     signals:['pib','пиб','pfr','пфр','београд','beograd','srbija','србија','novi sad','рачун','racun'],
-    format:`RSD = dinar serbio ("din", "RSD" o el signo "Ђ" al final de cada línea). Los
+    format:`RSD = dinar serbio ("din", "дин." o "RSD"). La letra al final de cada línea (Ђ, Е...)
+es la CATEGORÍA DE IMPUESTO (Ђ = IVA 20%), NO la moneda: ignórala. Los
 precios usan punto para miles y coma para decimales ("1.545,00" = 1545.00).
 Boletas fiscales en cirílico: "ЗА УПЛАТУ" = total a pagar, "ГОТОВИНА" = efectivo,
 "УПЛАЋЕНО" = pagado, "СБ: 20,00%" = tasa de IVA (PDV) ya incluida: IGNORAR como item.
@@ -627,7 +628,7 @@ PROCESO MENTAL
    para cuadrar (el sistema externo se encarga de la reconciliación).
 
 ═══════════════════════════════════════════════════════════════════════════════
-REGLAS UNIVERSALES (R1-R16)
+REGLAS UNIVERSALES (R1-R18)
 ═══════════════════════════════════════════════════════════════════════════════
 
 R1. INCLUIR solo productos/servicios con precio real visible o derivable.
@@ -745,6 +746,17 @@ R16. PROPINA/TOTAL ESCRITOS A MANO: una "Gratuity", "Tip" o "Propina" con un
      "Total" escritos a mano (lapicera) bajo el total impreso es una propina
      VOLUNTARIA del cliente, no parte de la cuenta. NO la incluyas como ítem y
      usa el total IMPRESO como total_referencia. Menciónala en "razonamiento".
+
+R17. ANULACIONES (STORNO / VOID): una línea con cantidad o importe NEGATIVO que
+     repite un ítem anterior (ej. "Dodatni prilozi 1,00 30,00" y luego
+     "Dodatni prilozi -1,00 30,00 -30,00") lo ANULA. No listes ni el ítem ni su
+     anulación (neto cero); si anula solo parte de la cantidad, reduce la cantidad.
+     Una línea negativa sin ítem previo (ej. devolución de envase) va con precio
+     negativo. El total de la boleta ya viene neto de las anulaciones.
+
+R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
+     → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas
+     una cantidad decimal ni uses el precio por kg como precio del ítem.
 
 ═══════════════════════════════════════════════════════════════════════════════
 CRITERIOS DE REHUSAR
@@ -1011,8 +1023,10 @@ function normalizeItems(items, currency) {
     // Cantidades fraccionarias (venta por kg, "2.5 X 700.00"): la UI divide por unidades
     // enteras, así que se pliega a una línea con el total (precio × cantidad).
     let qty = parseFloat(it.cantidad);
-    if (!(qty >= 1)) qty = 1;
-    if (!Number.isInteger(qty)) {
+    if (!isFinite(qty) || qty === 0) qty = 1;
+    // Fraccionarias (0,85 kg) o negativas (anulación -1): se pliegan al total de la línea,
+    // así nunca se convierte una cantidad negativa en positiva ni se ignora una < 1.
+    if (qty < 0 || !Number.isInteger(qty)) {
       precioFinal = isNoDecimal ? Math.round(precioFinal * qty) : Math.round(precioFinal * qty * 100) / 100;
       qty = 1;
     }
