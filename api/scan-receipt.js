@@ -1,3 +1,5 @@
+import '../core/currencies.js'; // define globalThis.DC_CURRENCIES (fuente única de monedas)
+const DC_CURRENCIES = globalThis.DC_CURRENCIES;
 // api/scan-receipt.js — DiviCuenta v5
 // Arquitectura diseñada por Claude Opus 4.7 — spec: divicuenta_ocr_v5_spec.md
 // 1 sola llamada a Sonnet (siempre) — prompt universal R1-R15 + perfil de país inyectado
@@ -1076,8 +1078,7 @@ function reconcile(items, totalReported, countryCode) {
 // Fix: recibe currency ISO directamente (no countryCode).
 // Antes: countryCode='UNKNOWN' resolvía a {} y nunca aplicaba isNoDecimal → redondeo incorrecto.
 function normalizeItems(items, currency) {
-  const NO_DECIMAL = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
-    'UGX','RWF','TZS','XOF','XAF','COP','PYG','HUF','ISK','ALL']);
+  const NO_DECIMAL = new Set(DC_CURRENCIES.noDecimalCodes);
   const isNoDecimal = NO_DECIMAL.has((currency||'').toUpperCase());
   const round = v => isNoDecimal ? Math.round(v) : Math.round(v * 100) / 100;
 
@@ -1426,7 +1427,6 @@ function normalizePrice(raw, currency) {
     else                                               val = parseFloat(s.replace(',','.'));
   }
   if (isNaN(val) || val < 0) return 0;
-  const NO_DEC = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
-    'UGX','RWF','TZS','XOF','XAF','COP','ISK','HUF','IRR','IQD','LBP','SYP','PYG']);
+  const NO_DEC = new Set(DC_CURRENCIES.noDecimalCodes);
   return NO_DEC.has(currency) ? Math.round(val) : Math.round(val * 100) / 100;
 }

@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="DiviCuenta">
 <link rel="apple-touch-icon" href="https://fav.farm/🧾">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital@0;1&display=swap" rel="stylesheet">
+<script src="/core/currencies.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
@@ -1369,9 +1370,9 @@ function handleFile(e){
 function currSym(){return window._currentSymbol||'$';}
 function fmtP(n){
   var s=currSym();
-  var sinDec=['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG','HUF','ISK'];
+  var sinDec=DC_CURRENCIES.noDecimalCodes;
   var esSinDecimal=sinDec.indexOf(window._currentCurrency||'CLP')>-1;
-  var suf=['kr','zl','Kc','Ft','lei','Fr','AED','SAR','Lek','kn','z\u0142','K\u010d','RSD'];
+  var suf=DC_CURRENCIES.suffixSymbols;
   var esSufijo=suf.indexOf(s)>-1;
   var v;
   if(esSinDecimal){
@@ -1389,9 +1390,9 @@ function normalizeInternationalItems(json){
   // Monedas SIN decimales: Claude devuelve entero (440 para ¥440)
   // Monedas CON decimales: Claude devuelve float correcto (7.90 para €7,90)
   // NO aplicar factor ×100 — los precios ya vienen en escala correcta desde el pipeline
-  var sinD=['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA','ALL','PYG','COP','HUF','ISK'];
+  var sinD=DC_CURRENCIES.noDecimalCodes;
   var esMonedaSinDecimal=sinD.indexOf(moneda)>-1;
-  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','ILS':'\u20aa','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei','ALL':'Lek','UYU':'$','PYG':'\u20b2','NAD':'N$','HRK':'kn','PKR':'Rs','MYR':'RM','RSD':'RSD','HUF':'Ft','ISK':'kr'};
+  var sym=DC_CURRENCIES.symbols;
   var items=(json.items||[]).map(function(it,i){
     var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
     if(typeof raw==='string'){
@@ -1896,7 +1897,7 @@ function setTipCustom(btn){
 function tipPctStr(){return Number.isInteger(tipPct)?String(tipPct):tipPct.toFixed(1).replace('.',',');}
 
 // Decimales de la moneda activa: 0 (CLP, JPY...) o 2. Evita redondear a entero en monedas con centavos.
-function decPlaces(){return ['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG'].indexOf(window._currentCurrency||'CLP')>-1?0:2;}
+function decPlaces(){return DC_CURRENCIES.decimals(window._currentCurrency||'CLP');}
 function rnd(v){var d=decPlaces();return d?Math.round(v*100)/100:Math.round(v);}
 
 // Impuesto / cargos de servicio impresos en la boleta (o agregados por el reconciliador):
@@ -2793,14 +2794,14 @@ async function fetchExchangeRate(fromCurrency){
   return fallback();
 }
 
-var DC_CURRENCY_CHOICES = ['CLP','USD','EUR','GBP','ARS','MXN','BRL','COP','PEN','UYU','CAD','AUD','CHF','JPY'];
+var DC_CURRENCY_CHOICES = DC_CURRENCIES.localChoices;
 function changePreferredCurrency(code){
   setPreferredCurrency(code);
   showExchangeInfo(window._currentCurrency);
 }
 
 function fmtLocal(v){
-  var noDec = ['CLP','COP','JPY','KRW','PYG','ALL','VND','IDR'].indexOf(_preferredCurrency) > -1;
+  var noDec = DC_CURRENCIES.decimals(_preferredCurrency) === 0;
   try {
     return new Intl.NumberFormat('es-CL',{style:'currency',currency:_preferredCurrency,
       minimumFractionDigits:noDec?0:2,maximumFractionDigits:noDec?0:2}).format(v);
@@ -2848,7 +2849,7 @@ async function showExchangeInfo(moneda){
   }
 
   var converted = totalNum * rateInfo.rate;
-  var noDec = ['CLP','COP','JPY','KRW','PYG','ALL','VND','IDR'].indexOf(_preferredCurrency) > -1;
+  var noDec = DC_CURRENCIES.decimals(_preferredCurrency) === 0;
   var convStr;
   try {
     convStr = new Intl.NumberFormat('es-CL',{style:'currency',currency:_preferredCurrency,
