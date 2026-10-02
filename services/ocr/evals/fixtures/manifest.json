@@ -783,5 +783,19 @@
       "total_referencia": 303.50,
       "notas": "'Fettuccini ... n/c' = 'no charge' (cortesía/reposición), precio 0 -> excluir (R1). Suma verificada exacta: 29.90+38.90+94.90+34.90+104.90=303.50. 'Tax @ 15% (already included)' es informativo, ya está en los precios, no sumar aparte (R2)."
     }
+    ,{ "id": "HR/skrapa-trogir", "pais": "HR", "moneda": "HRK", "restaurante": "Konoba Skrapa",
+      "items": [
+        {"nombre": "Voda 0,75", "precio_unitario": 20.00, "cantidad": 1},
+        {"nombre": "Riblja juha", "precio_unitario": 20.00, "cantidad": 1},
+        {"nombre": "Juha od rajcice", "precio_unitario": 20.00, "cantidad": 1},
+        {"nombre": "Svinjski vrat", "precio_unitario": 65.00, "cantidad": 1},
+        {"nombre": "Tunjevina na zaru", "precio_unitario": 90.00, "cantidad": 1},
+        {"nombre": "Blitva", "precio_unitario": 20.00, "cantidad": 1},
+        {"nombre": "Slani krumpir", "precio_unitario": 17.00, "cantidad": 1}
+      ],
+      "total_referencia": 252.00,
+      "notas": "Croacia 2016: moneda 'kn' (HRK, antes del euro). Columnas Naziv|Kolicina|Cijena|Iznos. PDV 13% incluido (Osnovica 223,01 + Iznos poreza 28,99 = 252,00), informativo, no es ítem. Suma exacta: 20+20+20+65+90+20+17=252."
+    }
+
   ]
 }
