@@ -310,11 +310,8 @@ incluido en los precios, IGNORAR como item (R2).
 excluir (R1).
 CASO OBSERVADO: algunas boletas traen una "Gratuity" y un "Total" escritos
 A MANO debajo del total impreso (ej. total impreso $769, abajo a mano
-"Gratuity: 81 / Total: 850"). Cuando eso aparece, el total a mano es el
-que realmente se cobró — incluir la propina manuscrita como item
-"Gratuity" si el total a mano = suma de items impresos + esa propina.
-Si la escritura es ilegible o la suma no cierra, preferir baja confianza
-antes que inventar un monto.`
+"Gratuity: 81 / Total: 850"). Es una propina voluntaria: NO incluirla como
+item y usar el total impreso (769) como total_referencia (ver R16).`
   },
 
   // ── TURQUÍA ────────────────────────────────────────────────────────────────
@@ -691,12 +688,10 @@ R14. EVIDENCIA POR ÍTEM: En el campo evidencia, copia LITERAL la línea de la
 R15. PRECUENTAS Y BOLETAS NO FISCALES SON VÁLIDAS: "NON FISCALE", "PRECONTO",
      "CUENTA", "PRECUENTA", "Bill", "Check" son boletas válidas.
 
-R16. PROPINA/TOTAL ESCRITOS A MANO: si bajo el total impreso hay una "Gratuity",
-     "Tip" o "Propina" y un "Total" escritos a mano (lapicera), y
-     total_a_mano = total_impreso + propina_a_mano, entonces la propina SÍ se
-     cobró: inclúyela como un ítem "Gratuity" (cantidad 1) y usa el total a mano
-     como total_referencia. Si la escritura es ilegible o la suma no cierra,
-     NO inventes el monto: omítela y baja la confianza_global.
+R16. PROPINA/TOTAL ESCRITOS A MANO: una "Gratuity", "Tip" o "Propina" con un
+     "Total" escritos a mano (lapicera) bajo el total impreso es una propina
+     VOLUNTARIA del cliente, no parte de la cuenta. NO la incluyas como ítem y
+     usa el total IMPRESO como total_referencia. Menciónala en "razonamiento".
 
 ═══════════════════════════════════════════════════════════════════════════════
 CRITERIOS DE REHUSAR
