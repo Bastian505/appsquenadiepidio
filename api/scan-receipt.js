@@ -294,6 +294,23 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     format:'SAR = riyales. VAT 15%.'
   },
 
+  // ── NAMIBIA ───────────────────────────────────────────────────────────────
+  NA: {
+    name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['vat'], deposit_kw:[], refund_kw:['refund'],
+    tip_behavior:'none', tip_kw:['tip','gratuity'],
+    total_kw:['total due','grand total','total'],
+    price_format:'standard',
+    signals:['namibia','windhoek','swakopmund','nad','n$','vat reg'],
+    format:`N$ = NAD (dólar namibio), a la par del rand sudafricano. VAT 15%
+incluido en los precios, IGNORAR como item (R2). Filas tipo "NOMBRE / @ precio /
+QTY / PRICE": el "@ precio" es el unitario y la última columna el total de línea.
+Items con precio 0.00 (ej. pan de cortesía) → excluir (R1). "TIP: ....." en blanco
+y un "GRAND TOTAL" escrito a mano es una propina voluntaria: no es ítem, usar el
+"TOTAL DUE" impreso como total_referencia (R16).`
+  },
+
   // ── SUDÁFRICA ─────────────────────────────────────────────────────────────
   ZA: {
     name:'Sudáfrica', currency:'ZAR', symbol:'R', has_decimals:true,
