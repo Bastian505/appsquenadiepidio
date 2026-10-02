@@ -177,8 +177,6 @@ button { cursor: pointer; }
 #toast.on { opacity: 1; transform: translateX(-50%); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-/* Traducción del nombre del ítem */
-.tr { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); margin-top: 1px; }
-.muted-tr { font-style: italic; }
-.namebox { min-width: 0; }
-.assign .head .name .tr { font-size: 12px; }
+/* Compartir */
+.qr { width: 220px; height: 220px; margin: 0 auto; display: grid; place-items: center; background: #fff; border-radius: 12px; padding: 10px; }
+.qr svg, .qr img, .qr canvas { width: 100%; height: 100%; }
