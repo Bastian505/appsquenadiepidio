@@ -638,7 +638,7 @@ PROCESO MENTAL
 2. Identifica el sistema POS si es reconocible (TouchBistro, Toast, Square, etc.).
 3. Identifica el layout de las filas de ítems (típico, qty×unit=total,
    qty-antes-de-nombre, modificadores indentados, columnas RTL).
-4. Extrae cada ítem con su precio_unitario, cantidad, confianza y evidencia.
+4. Extrae cada ítem con su precio_unitario, cantidad y confianza (y evidencia solo si confianza < 0.80).
 5. Verifica que la suma de tus ítems sea coherente con el total declarado;
    si hay diferencia, refleja eso en confianza_global pero NO inventes ítems
    para cuadrar (el sistema externo se encarga de la reconciliación).
@@ -752,8 +752,9 @@ R13. CONFIANZA POR ÍTEM (0.0 a 1.0):
      · 0.30-0.59: muy dudoso, parte del texto parcialmente ilegible.
      · <0.30: prácticamente adivinado — incluir en items_dudosos.
 
-R14. EVIDENCIA POR ÍTEM: En el campo evidencia, copia LITERAL la línea de la
-     boleta donde leíste el ítem. Es la cita textual cruda.
+R14. EVIDENCIA: SOLO para ítems con confianza < 0.80, copia LITERAL en el campo
+     evidencia la línea de la boleta donde lo leíste. Para el resto OMITE el
+     campo evidencia (ahorra tiempo de respuesta).
 
 R15. PRECUENTAS Y BOLETAS NO FISCALES SON VÁLIDAS: "NON FISCALE", "PRECONTO",
      "CUENTA", "PRECUENTA", "PONUDA" (oferta, Croacia), "Bill", "Check" son boletas válidas.
@@ -795,7 +796,8 @@ OUTPUT JSON
 Responde SOLO con JSON válido. Sin markdown, sin backticks, sin texto extra.
 
 Caso éxito:
-{"ok":true,"restaurante":"nombre o null","pos_detected":"touchbistro|toast|square|clover|lightspeed|tpv_es|nfe_br|sii_cl|generic|unknown","pais":"ISO_2_o_UNKNOWN","moneda":"ISO_3_o_AMBIGUOUS_DOLLAR_o_AMBIGUOUS_YEN","monedas_candidatas":[],"items":[{"nombre":"ítem","precio_unitario":4.00,"cantidad":3,"confianza":0.95,"evidencia":"3 Coffee $12.00"}],"items_dudosos":[],"total_referencia":12.00,"razonamiento":"1-2 líneas sobre layout y decisiones clave","confianza_global":0.92}
+{"ok":true,"restaurante":"nombre o null","pos_detected":"touchbistro|toast|square|clover|lightspeed|tpv_es|nfe_br|sii_cl|generic|unknown","pais":"ISO_2_o_UNKNOWN","moneda":"ISO_3_o_AMBIGUOUS_DOLLAR_o_AMBIGUOUS_YEN","monedas_candidatas":[],"items":[{"nombre":"Coffee","precio_unitario":4.00,"cantidad":3,"confianza":0.95},{"nombre":"Cake","precio_unitario":6.50,"cantidad":1,"confianza":0.65,"evidencia":"Cke 6.5"}],"items_dudosos":[],"total_referencia":18.50,"razonamiento":"máx. 12 palabras","confianza_global":0.92}
+Escribe el JSON compacto en una sola línea, sin espacios ni saltos de línea de más, y sin texto fuera del JSON.
 
 Caso refusal:
 {"ok":false,"reason":"illegible_image|not_a_receipt|unknown_currency","message":"Mensaje al usuario","candidates":[]}`;
