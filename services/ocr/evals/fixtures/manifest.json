@@ -766,11 +766,10 @@
         {"nombre": "Bombay Basket", "precio_unitario": 64.00, "cantidad": 1},
         {"nombre": "Lamb Picanha Kebabs", "precio_unitario": 180.00, "cantidad": 1},
         {"nombre": "Rock Shrimp Burger", "precio_unitario": 148.00, "cantidad": 1},
-        {"nombre": "Churros", "precio_unitario": 48.00, "cantidad": 1},
-        {"nombre": "Gratuity", "precio_unitario": 81.00, "cantidad": 1}
+        {"nombre": "Churros", "precio_unitario": 48.00, "cantidad": 1}
       ],
-      "total_referencia": 850.00,
-      "notas": "CASO NUEVO, validado en producción: el total impreso por la máquina es R769,00 (con R94.44 de VAT incluido al 14%, informativo, se ignora). Debajo, A MANO, alguien escribió 'Gratuity: 81.00' y 'Total: 850.00' — 769+81=850, cuadra exacto. El total real cobrado es el escrito a mano, no el impreso; la propina manuscrita se incluye como item 'Gratuity'. Primer caso visto de una boleta con corrección a mano sobre un total impreso — no hay regla específica de país para esto, es un patrón general a tener en cuenta en cualquier país."
+      "total_referencia": 769.00,
+      "notas": "Total impreso R769,00 (VAT 14% incluido, informativo). Debajo, A MANO, 'Gratuity: 81.00' y 'Total: 850.00': es una propina VOLUNTARIA del cliente, NO es ítem de la cuenta (R16); el total esperado es el impreso. Patrón general, aplica a cualquier país."
     },
 
     { "id": "ZA/panarottis-ferndale", "pais": "ZA", "moneda": "ZAR", "restaurante": "Panarottis Ferndale",
