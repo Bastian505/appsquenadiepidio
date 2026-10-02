@@ -854,6 +854,25 @@
       "total_referencia": 8910.00,
       "notas": "Pakistán, 'Duplicate Receipt'. Filas: Qty | Nombre | @unitario | Importe. Dos líneas de ANULACIÓN al final con cantidad negativa (-1 Crispy Jalebi @390 y -1 Pina Colada @340): se transcriben tal cual (R17) y el sistema las descuenta; neto = 7.885,00 (coincide con '19 Quantity 7,885.00'). 'Add Sales Tax @13%: 1,025.05' se SUMA encima: Total 8.910,00. Por eso sum(ítems) != total es esperado: el reconcile agrega el Impuesto (PK en TAX_ON_TOP_HIGH). Aviso: foto con el texto un poco borroso."
     }
+    ,{ "id": "PK/tao-clifton-blurry", "pais": "PK", "moneda": "PKR", "restaurante": "TAO",
+      "items": [
+        {"nombre": "Dynamite Prawns", "precio_unitario": 725.00, "cantidad": 1},
+        {"nombre": "Dynamite Chicken", "precio_unitario": 725.00, "cantidad": 1},
+        {"nombre": "Crispy Beef", "precio_unitario": 945.00, "cantidad": 1},
+        {"nombre": "Szechuan Chicken", "precio_unitario": 785.00, "cantidad": 1},
+        {"nombre": "Gaeng Phet Chicken", "precio_unitario": 1095.00, "cantidad": 1},
+        {"nombre": "Fish In Tamarind Sauce", "precio_unitario": 1095.00, "cantidad": 1},
+        {"nombre": "Chicken Chowmein", "precio_unitario": 695.00, "cantidad": 1},
+        {"nombre": "Fried Rice With Vege Full", "precio_unitario": 490.00, "cantidad": 1},
+        {"nombre": "Strawberry Lemonade", "precio_unitario": 350.00, "cantidad": 2},
+        {"nombre": "Fresh Lime", "precio_unitario": 215.00, "cantidad": 1},
+        {"nombre": "Large Mineral Water", "precio_unitario": 160.00, "cantidad": 2},
+        {"nombre": "Pina Colada", "precio_unitario": 350.00, "cantidad": 2},
+        {"nombre": "Mint Lemonade", "precio_unitario": 320.00, "cantidad": 3}
+      ],
+      "total_referencia": 10678.50,
+      "notas": "Pakistán (Karachi, Clifton), 'Duplicate Receipt' con foto MUY borrosa y de baja resolución: es un test de robustez. Net Amount 9.450,00 = suma exacta de los ítems; 'Add Sales Tax @13%: 1,228.50' se suma encima; Total 10.678,50 (el último dígito se lee borroso). Puntos difíciles: 'Fresh Lime' tiene cantidad 1 y total 215 (precio unitario ilegible; un modelo puede inventar 2 x 107,5); la última fila dice '...t Lemonade' @320 x3 (probablemente 'Mint Lemonade'). sum(ítems) != total es esperado (reconcile agrega el impuesto, PK en TAX_ON_TOP_HIGH)."
+    }
 
   ]
 }
