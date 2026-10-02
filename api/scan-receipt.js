@@ -331,6 +331,22 @@ TOTAL_LÍNEA Ђ". precio_unitario = el precio tras "Nx", cantidad = N; el total 
 es N × unitario (verifícalo).`
   },
 
+  // ── PAKISTÁN ──────────────────────────────────────────────────────────────
+  PK: {
+    name:'Pakistán', currency:'PKR', symbol:'Rs', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['sales tax','gst','pra','fbr'], deposit_kw:[], refund_kw:['refund','void'],
+    tip_behavior:'none', tip_kw:['service charges','service charge','tip'],
+    total_kw:['total','grand total','net total'],
+    price_format:'standard',
+    signals:['pkr','rs.','rs ','pakistan','lahore','karachi','islamabad','ntn','strn','pra','fbr'],
+    format:`PKR = rupia pakistaní ("Rs", "Rs." o PKR). Formato "1,340.00" (coma = miles,
+punto = decimal). Filas "Qty  Nombre  @unitario  Importe". "Add Sales Tax @13%" /
+"GST" es impuesto SUMADO encima del subtotal: NO es ítem (R2), el sistema lo agrega
+al reconciliar con el total final. Líneas con cantidad negativa son anulaciones (R17).
+"Duplicate Receipt" es una copia de la misma boleta: leerla normalmente.`
+  },
+
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
@@ -747,12 +763,11 @@ R16. PROPINA/TOTAL ESCRITOS A MANO: una "Gratuity", "Tip" o "Propina" con un
      VOLUNTARIA del cliente, no parte de la cuenta. NO la incluyas como ítem y
      usa el total IMPRESO como total_referencia. Menciónala en "razonamiento".
 
-R17. ANULACIONES (STORNO / VOID): una línea con cantidad o importe NEGATIVO que
-     repite un ítem anterior (ej. "Dodatni prilozi 1,00 30,00" y luego
-     "Dodatni prilozi -1,00 30,00 -30,00") lo ANULA. No listes ni el ítem ni su
-     anulación (neto cero); si anula solo parte de la cantidad, reduce la cantidad.
-     Una línea negativa sin ítem previo (ej. devolución de envase) va con precio
-     negativo. El total de la boleta ya viene neto de las anulaciones.
+R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
+     "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
+     TAL CUAL como ítem aparte con cantidad NEGATIVA (cantidad:-1,
+     precio_unitario:390, positivo). NO la omitas ni hagas tú la resta: el sistema
+     la descuenta del ítem original. El total de la boleta ya viene neto.
 
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
      → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas
@@ -908,6 +923,8 @@ function parseJSON(raw) {
 const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
+// Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (ej. PK: 13% sobre ítems)
+const TAX_ON_TOP_HIGH           = new Set(['PK']);
 
 function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
@@ -956,8 +973,8 @@ function reconcile(items, totalReported, countryCode) {
       note:'Lectura con baja confianza — diferencia no resuelta. Revisa los ítems.', auto_fixed:false };
   }
 
-  // 6-8%: impuesto (US/CA solo)
-  if (ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode) && !hasServicio) {
+  // 6-8%: impuesto (US/CA); hasta 15% en países con impuesto alto sumado aparte (PK)
+  if (ratio >= 0.06 && ((ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !hasServicio) {
     const fixed = [...items, { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1,
       auto_created:true, auto_fix_type:'tax', auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — tax no incluido en precios`, confianza:0.50 }];
     const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
@@ -1008,26 +1025,29 @@ function normalizeItems(items, currency) {
   const NO_DECIMAL = new Set(['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK',
     'UGX','RWF','TZS','XOF','XAF','COP','PYG','HUF','ISK','ALL']);
   const isNoDecimal = NO_DECIMAL.has((currency||'').toUpperCase());
+  const round = v => isNoDecimal ? Math.round(v) : Math.round(v * 100) / 100;
 
-  return items.map((it,i) => {
+  const mapped = items.map((it,i) => {
     let raw = it.precio_unitario ?? it.precio ?? 0;
     if (typeof raw === 'string') {
       const s = raw.trim();
-      if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))      raw = parseFloat(s.replace(/\./g,'').replace(',','.'));
-      else if (/^\d+,\d{1,2}$/.test(s))                raw = parseFloat(s.replace(',','.'));
-      else if (/^\d{1,3}(,\d{3})+(\d+)?$/.test(s))  raw = parseFloat(s.replace(/,/g,''));
+      if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(s))     raw = parseFloat(s.replace(/\./g,'').replace(',','.'));
+      else if (/^-?\d+,\d{1,2}$/.test(s))               raw = parseFloat(s.replace(',','.'));
+      else if (/^-?\d{1,3}(,\d{3})+(\d+)?$/.test(s))   raw = parseFloat(s.replace(/,/g,''));
       else                                               raw = parseFloat(s.replace(',','.'));
     }
-    if (isNaN(raw) || raw < 0) raw = 0;
-    let precioFinal = isNoDecimal ? Math.round(raw) : Math.round(raw * 100) / 100;
-    // Cantidades fraccionarias (venta por kg, "2.5 X 700.00"): la UI divide por unidades
-    // enteras, así que se pliega a una línea con el total (precio × cantidad).
+    if (isNaN(raw)) raw = 0;
+    // Precio negativo = línea de anulación/devolución: se trata como cantidad negativa
+    const negPrice = raw < 0;
+    if (negPrice) raw = -raw;
+    let precioFinal = round(raw);
     let qty = parseFloat(it.cantidad);
     if (!isFinite(qty) || qty === 0) qty = 1;
-    // Fraccionarias (0,85 kg) o negativas (anulación -1): se pliegan al total de la línea,
-    // así nunca se convierte una cantidad negativa en positiva ni se ignora una < 1.
-    if (qty < 0 || !Number.isInteger(qty)) {
-      precioFinal = isNoDecimal ? Math.round(precioFinal * qty) : Math.round(precioFinal * qty * 100) / 100;
+    if (negPrice) qty = -Math.abs(qty);
+    // Fraccionarias (venta por peso, "2.5 X 700.00", 0,85 kg): la UI divide por unidades
+    // enteras, así que se pliegan a una línea con el total (precio × cantidad).
+    if (!Number.isInteger(qty)) {
+      precioFinal = round(precioFinal * qty);
       qty = 1;
     }
     return {
@@ -1037,7 +1057,29 @@ function normalizeItems(items, currency) {
       confianza:       it.confianza || null,
       evidencia:       it.evidencia || null
     };
-  }).filter(it => it.precio_unitario !== 0);
+  });
+
+  // Anulaciones (storno/void): una línea con cantidad negativa resta del ítem original
+  // (mismo nombre, idealmente mismo precio). Sin original → queda como línea negativa
+  // (ej. devolución de envase).
+  const norm = n => String(n || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const out = [];
+  for (const it of mapped) {
+    if (it.cantidad < 0) {
+      const k = norm(it.nombre);
+      let idx = out.findIndex(o => o.cantidad > 0 && norm(o.nombre) === k && o.precio_unitario === it.precio_unitario);
+      if (idx < 0) idx = out.findIndex(o => o.cantidad > 0 && norm(o.nombre) === k);
+      if (idx > -1) {
+        out[idx].cantidad += it.cantidad;
+        if (out[idx].cantidad <= 0) out.splice(idx, 1);
+        continue;
+      }
+      it.precio_unitario = round(it.precio_unitario * it.cantidad);
+      it.cantidad = 1;
+    }
+    out.push(it);
+  }
+  return out.filter(it => it.precio_unitario !== 0);
 }
 
 // ── PIPELINE PRINCIPAL v5 ────────────────────────────────────────────────────
