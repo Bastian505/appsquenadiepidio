@@ -200,6 +200,7 @@ input[type=text]::placeholder{color:var(--text3);}
 
 /* SUMMARY */
 .rest-label{text-align:center;font-size:12px;color:var(--text2);font-weight:700;margin-bottom:4px;font-family:'Lora',serif;font-style:italic;}
+.fx-approx{display:block;font-size:11px;font-weight:600;opacity:.7;}
 .summary-total-bar{background:linear-gradient(135deg,var(--primary),var(--pd));border-radius:var(--radius);padding:16px 20px;display:flex;justify-content:space-between;align-items:center;color:white;box-shadow:0 4px 14px var(--pg);}
 .st-label{font-size:13px;font-weight:700;opacity:0.9;}
 .st-amount{font-size:26px;font-weight:800;}
@@ -1398,7 +1399,7 @@ function buildExpressSummary(){
   body.appendChild(banner);
   // Total
   var tb=document.createElement('div');tb.className='summary-total-bar';
-  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+'</div>';
+  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
   body.appendChild(tb);
   // Personas — calcular monto por persona con remainder al primero
   people.forEach(function(p,i){
@@ -1408,7 +1409,7 @@ function buildExpressSummary(){
       '<div class="sum-head">'+
         '<div class="sum-av" style="background:'+p.color+'22;color:'+p.color+'">'+escHtml(p.name.charAt(0).toUpperCase())+'</div>'+
         '<div><div class="sum-name">'+escHtml(p.name)+'</div><div style="font-size:11px;color:var(--text3);font-weight:600">División igual</div></div>'+
-        '<div class="sum-total" style="color:'+p.color+'">'+fmtP(perPerson)+'</div>'+
+        '<div class="sum-total" style="color:'+p.color+'">'+fmtP(perPerson)+fxApprox(perPerson)+'</div>'+
       '</div>'+
       '<div class="sum-actions">'+
         '<button class="btn-copy-person" onclick="copyPersonExpress(\''+escJsAttr(p.name)+'\','+perPerson+')">📋 Copiar mi cuenta</button>'+
@@ -2320,7 +2321,7 @@ function buildSummary(){
   if(restaurante){var rl=document.createElement('p');rl.className='rest-label';rl.textContent='📍 '+restaurante;body.appendChild(rl);}
   // Total
   var tb=document.createElement('div');tb.className='summary-total-bar';
-  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+(roundingExtra!==0?' · redondeado':'')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+'</div>';
+  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+(roundingExtra!==0?' · redondeado':'')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
   body.appendChild(tb);
   // Redondeo — solo si no se ha aplicado aun
   if(roundingExtra===0)addRoundingBar(body,baseTotal);
@@ -2338,7 +2339,7 @@ function buildSummary(){
     var pagadorName=totals[pagadorIdx]?totals[pagadorIdx].person.name:'';
     var dhtml='<div class="debts-title">💸 Le deben a '+escHtml(pagadorName)+'</div>';
     debts.forEach(function(d){
-      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+escHtml(d.from)+'</b> → <b>'+escHtml(d.to)+'</b></span><span class="debt-amount">'+fmtP(Math.round(d.amount))+'</span></div>';
+      dhtml+='<div class="debt-row"><span class="debt-text"><b>'+escHtml(d.from)+'</b> → <b>'+escHtml(d.to)+'</b></span><span class="debt-amount">'+fmtP(Math.round(d.amount))+fxApprox(d.amount)+'</span></div>';
     });
     dc.innerHTML=dhtml;body.appendChild(dc);
   }
@@ -2358,7 +2359,7 @@ function buildSummary(){
     }
     var totalLabel=esPagador
       ?'<div class="sum-total" style="color:var(--green);font-size:13px;text-align:right;">💳 Pagó todo</div>'
-      :'<div class="sum-total" style="color:'+t.person.color+'">'+fmtP(t.amount)+'</div>';
+      :'<div class="sum-total" style="color:'+t.person.color+'">'+fmtP(t.amount)+fxApprox(t.amount)+'</div>';
     var transferBtn='';
     var qrPagoHtml='';
     if(pagadorIdx>=0&&!esPagador&&t.amount>0){
@@ -2367,7 +2368,7 @@ function buildSummary(){
       transferBtn='<button class="btn-transfer" onclick="transferirA('+pagadorIdx+','+t.amount+')" >🏦 Transferir</button>';
       qrPagoHtml='<div class="qr-pago-wrap">'+
         '<div class="qr-pago-label">Le debe a '+escHtml(pagadorName)+'</div>'+
-        '<div class="qr-pago-amount">'+fmtP(Math.round(t.amount))+'</div>'+
+        '<div class="qr-pago-amount">'+fmtP(Math.round(t.amount))+fxApprox(t.amount)+'</div>'+
         '<div class="qr-pago-canvas" id="'+qrId+'"></div>'+
         buildBanksWithAmount(t.person.name, t.amount, pagadorName)+
         '<div class="qr-pago-hint">Escanea el QR con Mach, FPAY o cualquier app de pago</div>'+
@@ -2952,6 +2953,23 @@ var DC_CURRENCY_CHOICES = ['CLP','USD','EUR','GBP','ARS','MXN','BRL','COP','PEN'
 function changePreferredCurrency(code){
   setPreferredCurrency(code);
   showExchangeInfo(window._currentCurrency);
+}
+
+function fmtLocal(v){
+  var noDec = ['CLP','COP','JPY','KRW','PYG','ALL','VND','IDR'].indexOf(_preferredCurrency) > -1;
+  try {
+    return new Intl.NumberFormat('es-CL',{style:'currency',currency:_preferredCurrency,
+      minimumFractionDigits:noDec?0:2,maximumFractionDigits:noDec?0:2}).format(v);
+  } catch(e){ return Math.round(v).toLocaleString('es-CL') + ' ' + _preferredCurrency; }
+}
+// Equivalente aproximado en la moneda local, sincrónico: usa la tasa ya cacheada
+// por showExchangeInfo (paso 1). Sin tasa o misma moneda → '' (no muestra nada).
+function fxApprox(amount){
+  var cur = window._currentCurrency;
+  if(!cur || cur === _preferredCurrency || !(amount > 0)) return '';
+  var r = _exchangeRates[cur + '_' + _preferredCurrency];
+  if(!r) return '';
+  return '<span class="fx-approx">≈ ' + escHtml(fmtLocal(amount * r.rate)) + '</span>';
 }
 
 // Mostrar conversión debajo del total
