@@ -454,6 +454,7 @@ input[type=text]::placeholder{color:var(--text3);}
         <button class="tip-chip" onclick="setTip(10,this)">10%</button>
         <button class="tip-chip" onclick="setTip(15,this)">15%</button>
         <button class="tip-chip" onclick="setTip(20,this)">20%</button>
+        <button class="tip-chip" id="tip-custom-chip" onclick="setTipCustom(this)">Otro</button>
       </div>
       <!-- PROPINA WARNING -->
       <div class="propina-warn" id="propina-warn">
@@ -611,6 +612,7 @@ input[type=text]::placeholder{color:var(--text3);}
 </div>
 
 <script>
+var tipFixed=null;
 var items=[],people=[],assigns={},tipPct=0,step=0,restaurante=null,invitedBy={},pagadorIdx=-1,roundingExtra=0;
 var PROXY_URL='/api/scan-receipt';
 var COLORS=['#0ea5e9','#f472b6','#34d399','#f59e0b','#818cf8','#fb923c','#60a5fa','#4ade80'];
@@ -821,7 +823,7 @@ async function saveSessionToSupabase(sessionId, rest, rawItems){
       id: sessionId,
       restaurante: rest,
       items: rawItems,
-      tip_pct: tipPct,
+      tip_pct: Math.round(tipPct),
       people_list: peopleList,
       assigns_data: {}
     });
@@ -1310,7 +1312,7 @@ function buildExpressSummary(){
   body.appendChild(banner);
   // Total
   var tb=document.createElement('div');tb.className='summary-total-bar';
-  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
+  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPctStr()+'% incluida':'Sin propina')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
   body.appendChild(tb);
   // Personas — calcular monto por persona con remainder al primero
   people.forEach(function(p,i){
@@ -2004,11 +2006,27 @@ function addNewItem(){
   renderItems();updateTotal();
 }
 function setTip(pct,btn){
+  tipFixed=null;resetCustomChip();
   tipPct=pct;document.querySelectorAll('.tip-chip').forEach(function(b){b.classList.remove('on');});btn.classList.add('on');updateTotal();
 }
+function resetCustomChip(){var c=document.getElementById('tip-custom-chip');if(c)c.textContent='Otro';}
+// Propina como monto exacto (ej. la que dejó escrita el cliente). Se mantiene como
+// monto fijo y se convierte a % del subtotal, así se reparte proporcional a lo consumido.
+function setTipCustom(btn){
+  var raw=prompt('Monto de la propina (en la moneda de la boleta):','');
+  if(raw===null)return;
+  var amt=parseFloat(String(raw).replace(',','.'));
+  if(!(amt>0)){toast('Monto inválido');return;}
+  tipFixed=amt;
+  document.querySelectorAll('.tip-chip').forEach(function(b){b.classList.remove('on');});
+  btn.classList.add('on');btn.textContent='Otro: '+fmtP(amt);
+  updateTotal();
+}
+function tipPctStr(){return Number.isInteger(tipPct)?String(tipPct):tipPct.toFixed(1).replace('.',',');}
 function updateTotal(){
   var sel=items.filter(function(i){return i.selected;});
   var sub=sel.reduce(function(s,i){return s+i.total;},0);
+  if(tipFixed!==null)tipPct=sub>0?tipFixed/sub*100:0;
   var tip=Math.round(sub*tipPct/100);
   window._lastTotal=sub+tip;
   document.getElementById('total-num').textContent=fmtP(sub+tip);
@@ -2257,7 +2275,7 @@ function buildSummary(){
   if(restaurante){var rl=document.createElement('p');rl.className='rest-label';rl.textContent='📍 '+restaurante;body.appendChild(rl);}
   // Total
   var tb=document.createElement('div');tb.className='summary-total-bar';
-  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina')+(roundingExtra!==0?' · redondeado':'')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
+  tb.innerHTML='<div><div class="st-label">Total general</div><div class="st-sub">'+(tipPct>0?'Propina '+tipPctStr()+'% incluida':'Sin propina')+(roundingExtra!==0?' · redondeado':'')+'</div></div><div class="st-amount">'+fmtP(grandTotal)+fxApprox(grandTotal)+'</div>';
   body.appendChild(tb);
   // Redondeo — solo si no se ha aplicado aun
   if(roundingExtra===0)addRoundingBar(body,baseTotal);
@@ -2287,7 +2305,7 @@ function buildSummary(){
     div.style.animationDelay=(i*0.08)+'s';
     var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+escHtml(it.label)+'</span><span>'+fmtP(Math.round(it.share))+'</span></div>';}).join('');
     if(!rows)rows='<div class="sum-row"><span style="color:var(--text3)">Sin items asignados</span></div>';
-    if(tipPct>0)rows+='<div class="sum-row tip-s"><span>Propina '+tipPct+'%</span><span>incluida</span></div>';
+    if(tipPct>0)rows+='<div class="sum-row tip-s"><span>Propina '+tipPctStr()+'%</span><span>incluida</span></div>';
     if(roundingExtra!==0&&people.length>0){
       var baseEp=Math.floor(roundingExtra/people.length);
       var ep=baseEp+(i<(roundingExtra-(baseEp*people.length))?1:0);
@@ -2430,7 +2448,7 @@ function copyPerson(pi){
   var txt='💸 Mi cuenta — DiviCuenta\n';
   if(restaurante)txt+='📍 '+restaurante+'\n\n';
   t.myItems.forEach(function(it){txt+=it.label+': $'+Math.round(it.share).toLocaleString('es-CL')+'\n';});
-  if(tipPct>0)txt+='Propina '+tipPct+'%: incluida\n';
+  if(tipPct>0)txt+='Propina '+tipPctStr()+'%: incluida\n';
   txt+='\n💰 Total: $'+t.amount.toLocaleString('es-CL');
   if(navigator.share)navigator.share({title:'Mi cuenta',text:txt}).catch(function(){});
   else if(navigator.clipboard)navigator.clipboard.writeText(txt).then(function(){toast('Cuenta de '+t.person.name+' copiada');});
@@ -2467,7 +2485,7 @@ function getSummaryText(){
   });
   var total=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
   txt+='\nTotal: $'+total.toLocaleString('es-CL');
-  if(tipPct>0)txt+='\nPropina ('+tipPct+'%) incluida';
+  if(tipPct>0)txt+='\nPropina ('+tipPctStr()+'%) incluida';
   var debts=calcDebts(totals);
   if(debts.length>0){txt+='\n\n💸 Transferencias:\n';debts.forEach(function(d){txt+=d.from+' → '+d.to+': $'+Math.round(d.amount).toLocaleString('es-CL')+'\n';});}
   return txt;
@@ -2508,7 +2526,7 @@ function shareImage(){
   var sel=items.filter(function(i){return i.selected;});
   var tot=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*(1+tipPct/100));
   ctx.font='bold 26px sans-serif';ctx.fillStyle='white';ctx.fillText('$'+tot.toLocaleString('es-CL'),W/2,134);
-  ctx.font='13px sans-serif';ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText(tipPct>0?'Propina '+tipPct+'% incluida':'Sin propina',W/2,158);
+  ctx.font='13px sans-serif';ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText(tipPct>0?'Propina '+tipPctStr()+'% incluida':'Sin propina',W/2,158);
   totals.forEach(function(t,i){
     var y=HEADER+i*ROW;
     ctx.fillStyle=i%2===0?'#ffffff':'#f0f9ff';ctx.fillRect(16,y,W-32,ROW);
@@ -2539,7 +2557,7 @@ function toast(msg){
 }
 
 function reset(){
-  items=[];people=[];assigns={};tipPct=0;restaurante=null;invitedBy={};pagadorIdx=-1;roundingExtra=0;
+  items=[];people=[];assigns={};tipPct=0;tipFixed=null;resetCustomChip();restaurante=null;invitedBy={};pagadorIdx=-1;roundingExtra=0;
   if(scanTimeout)clearTimeout(scanTimeout);
   document.getElementById('items-card').style.display='none';
   document.getElementById('prev-img').style.display='none';
