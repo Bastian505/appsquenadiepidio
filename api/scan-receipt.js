@@ -312,6 +312,24 @@ incluidos en los precios: IGNORAR como items (R2). "Ukupno" = total.
 Pie con "ZKI" / "JIR" / OIB son códigos fiscales, ignorar.`
   },
 
+  // ── SERBIA ────────────────────────────────────────────────────────────────
+  RS: {
+    name:'Serbia', currency:'RSD', symbol:'RSD', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['pdv','пдв','porez','порез'], deposit_kw:[], refund_kw:['storno'],
+    tip_behavior:'none', tip_kw:['napojnica'],
+    total_kw:['za uplatu','за уплату','ukupno','укупно'],
+    price_format:'standard',
+    signals:['pib','пиб','pfr','пфр','београд','beograd','srbija','србија','novi sad','рачун','racun'],
+    format:`RSD = dinar serbio ("din", "RSD" o el signo "Ђ" al final de cada línea). Los
+precios usan punto para miles y coma para decimales ("1.545,00" = 1545.00).
+Boletas fiscales en cirílico: "ЗА УПЛАТУ" = total a pagar, "ГОТОВИНА" = efectivo,
+"УПЛАЋЕНО" = pagado, "СБ: 20,00%" = tasa de IVA (PDV) ya incluida: IGNORAR como item.
+Layout típico: el NOMBRE va en una línea y la siguiente trae "Nx PRECIO_UNITARIO ...
+TOTAL_LÍNEA Ђ". precio_unitario = el precio tras "Nx", cantidad = N; el total de línea
+es N × unitario (verifícalo).`
+  },
+
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
@@ -766,7 +784,7 @@ function buildGenericPrompt()     { return buildV5Prompt(null); }
 // Retry: 1 solo en errores transitorios 5xx. NUNCA en timeout.
 async function callClaude(apiKey, imageBase64, mediaType, system, userText, model) {
   const controller = new AbortController();
-  const timeoutId  = setTimeout(() => controller.abort(), 25000);
+  const timeoutId  = setTimeout(() => controller.abort(), 50000);
 
   // El system prompt (reglas R1-R15 + perfil de país) es idéntico entre llamadas
   // del mismo país: se marca como cacheable para pagar ~10% del input en hits.
@@ -784,7 +802,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       },
       body: JSON.stringify({
         model,
-        max_tokens: 1500,
+        max_tokens: 3000,
         temperature: 0,
         system: systemBlocks,
         messages: [{ role:'user', content:[
@@ -796,7 +814,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
   } catch(e) {
     clearTimeout(timeoutId);
     if(e.name === 'AbortError') {
-      throw new Error('TIMEOUT: La llamada a Claude tardó más de 25 segundos');
+      throw new Error('TIMEOUT: La llamada a Claude tardó más de 50 segundos');
     }
     // Retry una vez en errores de red transitorios
     res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -807,7 +825,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model, max_tokens: 1500, temperature: 0, system: systemBlocks,
+        model, max_tokens: 3000, temperature: 0, system: systemBlocks,
         messages: [{ role:'user', content:[
           { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
           { type:'text', text:userText }
@@ -825,7 +843,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model, max_tokens:1500, temperature:0, system: systemBlocks,
+        body: JSON.stringify({ model, max_tokens:3000, temperature:0, system: systemBlocks,
           messages:[{ role:'user', content:[
             { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
             { type:'text', text:userText }

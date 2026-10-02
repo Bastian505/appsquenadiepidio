@@ -811,6 +811,26 @@
       "total_referencia": 695.00,
       "notas": "Croacia 2016, documento 'PONUDA' (oferta/precuenta, válido por R15). Total 695,00 kn; el 'TOTAL EUR 99,29' impreso es solo una equivalencia informativa, NO es ítem ni total a usar. Moneda kn = HRK. Suma exacta: 12+15+30+55+78+80+85+145+195=695."
     }
+    ,{ "id": "RS/belgrade-konoba", "pais": "RS", "moneda": "RSD", "restaurante": null,
+      "items": [
+        {"nombre": "Viljamovka 0.05", "precio_unitario": 175.00, "cantidad": 1},
+        {"nombre": "Dunja 0.05", "precio_unitario": 170.00, "cantidad": 1},
+        {"nombre": "Hoegaarden 0.33", "precio_unitario": 260.00, "cantidad": 1},
+        {"nombre": "Sok borovnica 0.20", "precio_unitario": 170.00, "cantidad": 1},
+        {"nombre": "Kisela voda 1l", "precio_unitario": 180.00, "cantidad": 2},
+        {"nombre": "Aqua viva 0.75", "precio_unitario": 165.00, "cantidad": 2},
+        {"nombre": "Biftek salata", "precio_unitario": 495.00, "cantidad": 2},
+        {"nombre": "Teleca corba", "precio_unitario": 165.00, "cantidad": 3},
+        {"nombre": "Biftek u ulju", "precio_unitario": 1545.00, "cantidad": 1},
+        {"nombre": "Teletina ispod saca", "precio_unitario": 1030.00, "cantidad": 4},
+        {"nombre": "Hleb ispod saca", "precio_unitario": 60.00, "cantidad": 8},
+        {"nombre": "Cilic Cabernet Sauv. 0.15", "precio_unitario": 350.00, "cantidad": 1},
+        {"nombre": "Basta salata", "precio_unitario": 180.00, "cantidad": 4},
+        {"nombre": "Tre lece", "precio_unitario": 280.00, "cantidad": 5}
+      ],
+      "total_referencia": 11565.00,
+      "notas": "Serbia, boleta fiscal en cirílico (ЗА УПЛАТУ 11.565,00). Fila: nombre en una línea y debajo 'Nx unitario ... total Ђ'. Ojo 'Teleca corba': impreso '3x 165,00' y total de línea 495,00 (cuadra). PDV 20% ya incluido (СБ: 20,00%), informativo. Foto recortada arriba: el primer ítem visible es Viljamovka, y la suma de los 14 ítems da exactamente el total, así que no falta ninguno. Suma verificada: 11565."
+    }
 
   ]
 }

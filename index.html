@@ -1529,14 +1529,14 @@ function fmtP(n){
   var s=currSym();
   var sinDec=['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG'];
   var esSinDecimal=sinDec.indexOf(window._currentCurrency||'CLP')>-1;
-  var suf=['kr','zl','Kc','Ft','lei','Fr','AED','SAR','Lek','kn','z\u0142','K\u010d'];
+  var suf=['kr','zl','Kc','Ft','lei','Fr','AED','SAR','Lek','kn','z\u0142','K\u010d','RSD'];
   var esSufijo=suf.indexOf(s)>-1;
   var v;
   if(esSinDecimal){
     v=Math.round(n).toLocaleString('es-CL');
   } else {
     var num=parseFloat(n)||0;
-    v=num.toFixed(2).replace('.',',');
+    v=num.toLocaleString('es-CL',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
   return esSufijo?v+' '+s:s+v;
 }
@@ -1640,7 +1640,7 @@ async function scanWithClaude(b64, mime, countryHint, isConfirmation){
   var mi=0;
   var ticker=setInterval(function(){mi=(mi+1)%msgs.length;msg.textContent=msgs[mi];},1500);
   clearTimeout(scanTimeout);
-  scanTimeout=setTimeout(function(){clearInterval(ticker);ov.classList.remove('on');showScanError('Sin respuesta en 45s. Revisa tu conexión.');},45000);
+  scanTimeout=setTimeout(function(){clearInterval(ticker);ov.classList.remove('on');showScanError('Sin respuesta en 70s. Revisa tu conexión.');},70000);
   try{
     var apiKey=getKey();
     if(!apiKey||!apiKey.startsWith('sk-ant-')){
@@ -1948,8 +1948,8 @@ async function scanWithProxy(b64,mime,proxyUrl){
   clearTimeout(scanTimeout);
   scanTimeout=setTimeout(function(){
     clearInterval(ticker);ov.classList.remove('on');
-    showScanError('Sin respuesta en 20s. Revisa tu conexión.');
-  },45000);
+    showScanError('Sin respuesta en 70s. Revisa tu conexión.');
+  },70000);
   try{
     var reqInit={
       method:'POST',
@@ -2014,6 +2014,7 @@ function runDemo(){
 }
 
 function loadItems(rest,raw){
+  var _ec=document.getElementById('scan-error-card');if(_ec)_ec.classList.remove('show');
   restaurante=rest;
   items=raw.map(function(it,i){
     return{id:Date.now()+i,name:it.nombre,price:it.precio_unitario,qty:it.cantidad,get total(){return this.price*this.qty;},selected:true};
