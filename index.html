@@ -1527,7 +1527,7 @@ function escJsAttr(str){
 function currSym(){return window._currentSymbol||'$';}
 function fmtP(n){
   var s=currSym();
-  var sinDec=['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG'];
+  var sinDec=['JPY','KRW','VND','IDR','KHR','MMK','CLP','COP','ALL','PYG','HUF','ISK'];
   var esSinDecimal=sinDec.indexOf(window._currentCurrency||'CLP')>-1;
   var suf=['kr','zl','Kc','Ft','lei','Fr','AED','SAR','Lek','kn','z\u0142','K\u010d','RSD'];
   var esSufijo=suf.indexOf(s)>-1;
@@ -1547,9 +1547,9 @@ function normalizeInternationalItems(json){
   // Monedas SIN decimales: Claude devuelve entero (440 para ¥440)
   // Monedas CON decimales: Claude devuelve float correcto (7.90 para €7,90)
   // NO aplicar factor ×100 — los precios ya vienen en escala correcta desde el pipeline
-  var sinD=['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA','ALL','PYG'];
+  var sinD=['CLP','JPY','KRW','VND','IDR','TWD','KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA','ALL','PYG','COP','HUF','ISK'];
   var esMonedaSinDecimal=sinD.indexOf(moneda)>-1;
-  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','ILS':'\u20aa','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei','ALL':'Lek','UYU':'$','PYG':'\u20b2','NAD':'N$','HRK':'kn','PKR':'Rs','MYR':'RM'};
+  var sym={'EUR':'\u20ac','USD':'$','GBP':'\u00a3','BRL':'R$','MXN':'$','ARS':'$','JPY':'\u00a5','CNY':'\u00a5','KRW':'\u20a9','INR':'\u20b9','TRY':'\u20ba','THB':'\u0e3f','VND':'\u20ab','CLP':'$','COP':'$','PEN':'S/','CHF':'Fr','AUD':'A$','SGD':'S$','CAD':'$','AED':'AED','SAR':'SAR','ILS':'\u20aa','NZD':'NZ$','ZAR':'R','SEK':'kr','NOK':'kr','DKK':'kr','PLN':'z\u0142','CZK':'K\u010d','HUF':'Ft','RON':'lei','ALL':'Lek','UYU':'$','PYG':'\u20b2','NAD':'N$','HRK':'kn','PKR':'Rs','MYR':'RM','RSD':'RSD','HUF':'Ft','ISK':'kr'};
   var items=(json.items||[]).map(function(it,i){
     var raw=it.precio_unitario!==undefined?it.precio_unitario:it.precio;
     if(typeof raw==='string'){
