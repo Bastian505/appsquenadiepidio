@@ -3,6 +3,7 @@
 // y comprueba que lo que paga cada persona + lo no asignado = total, con impuesto/servicio
 // proporcional, propina y monedas con y sin decimales.
 import fs from 'node:fs';
+import '../core/currencies.js'; // decPlaces() usa DC_CURRENCIES
 
 function fnSrc(src, name) {
   const i = src.indexOf(`function ${name}(`);
@@ -22,7 +23,7 @@ for (const file of ['index.html', 'apps/divicuenta/index.html']) {
   const html = fs.readFileSync(file, 'utf8');
   const re = html.match(/var EXTRA_RE=.*;/)?.[0];
   if (!re) { console.log('  ✗ no encontré EXTRA_RE'); failures++; continue; }
-  const code = `var items=[],people=[],assigns={},tipPct=0,window={_currentCurrency:'CLP'};\n${re}\n${NAMES.map(n => fnSrc(html, n)).join('\n')}
+  const code = `var DC_CURRENCIES=globalThis.DC_CURRENCIES,items=[],people=[],assigns={},tipPct=0,window={_currentCurrency:'CLP'};\n${re}\n${NAMES.map(n => fnSrc(html, n)).join('\n')}
     return { set(o){ if('items' in o) items=o.items; if('people' in o) people=o.people; if('assigns' in o) assigns=o.assigns; if('tip' in o) tipPct=o.tip; if('cur' in o) window._currentCurrency=o.cur; },
              calcTotals, getUnassigned, isExtraItem, extraRatio };`;
   const E = new Function(code)();
@@ -57,6 +58,11 @@ for (const file of ['index.html', 'apps/divicuenta/index.html']) {
   // 4) Detección de extras por nombre: no confundir platos reales
   for (const n of ['Sales Tax 5%', 'Service Charges', 'FBR POS CHARGES', 'Impuesto', 'GST', 'Propina']) ok(E.isExtraItem({ name: n }), `"${n}" debería ser extra`);
   for (const n of ['Tax Free Water', 'Chicken Tikka', 'Tipsy Cake', 'Servicio de mesa especial']) ok(!E.isExtraItem({ name: n }), `"${n}" NO debería ser extra`);
+
+  // 4b) HUF no usa centavos: el reparto debe quedar en enteros
+  E.set({ cur: 'HUF', tip: 10, items: [mk('Gulyás', 3290), mk('Sör', 990, 3)], people: [{ name: 'A' }, { name: 'B' }],
+          assigns: { 0: { participants: [0, 1] }, 1: { participants: [0, 1], qty: { 0: 2, 1: 1 } } } });
+  ok(E.calcTotals().every(t => Number.isInteger(t.amount)), `HUF: montos enteros (${E.calcTotals().map(t => t.amount)})`);
 
   // 5) Sin asignar suma al total cuando nadie tiene nada
   E.set({ cur: 'EUR', tip: 0, items: [mk('A', 10.5), mk('B', 4.25)], people: [{ name: 'P' }], assigns: {} });
