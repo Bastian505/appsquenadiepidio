@@ -2073,6 +2073,7 @@ function updateTotal(){
   var sel=items.filter(function(i){return i.selected;});
   var sub=sel.reduce(function(s,i){return s+i.total;},0);
   var tip=Math.round(sub*tipPct/100);
+  window._lastTotal=sub+tip;
   document.getElementById('total-num').textContent=fmtP(sub+tip);
   document.getElementById('sub-label').textContent='Subtotal $'+sub.toLocaleString('es-CL')+(tipPct>0?' + propina $'+tip.toLocaleString('es-CL'):'');
 }
@@ -2946,6 +2947,13 @@ async function fetchExchangeRate(fromCurrency){
   }
 }
 
+
+var DC_CURRENCY_CHOICES = ['CLP','USD','EUR','GBP','ARS','MXN','BRL','COP','PEN','UYU','CAD','AUD','CHF','JPY'];
+function changePreferredCurrency(code){
+  setPreferredCurrency(code);
+  showExchangeInfo(window._currentCurrency);
+}
+
 // Mostrar conversión debajo del total
 async function showExchangeInfo(moneda){
   var card = document.getElementById('exchange-info');
@@ -2963,9 +2971,7 @@ async function showExchangeInfo(moneda){
     return;
   }
 
-  var totalDiv = document.getElementById('total-num');
-  var totalStr = totalDiv ? totalDiv.textContent : '';
-  var totalNum = parseFloat(totalStr.replace(/[^0-9.,]/g,'').replace(',','.')) || 0;
+  var totalNum = window._lastTotal || 0;
 
   if(totalNum <= 0){
     card.style.display = 'none';
@@ -2973,11 +2979,21 @@ async function showExchangeInfo(moneda){
   }
 
   var converted = totalNum * rateInfo.rate;
-  var symTo = {'CLP':'$','USD':'US$','EUR':'€','GBP':'£','ARS':'$','MXN':'$','BRL':'R$'}[_preferredCurrency] || _preferredCurrency;
+  var noDec = ['CLP','COP','JPY','KRW','PYG','ALL','VND','IDR'].indexOf(_preferredCurrency) > -1;
+  var convStr;
+  try {
+    convStr = new Intl.NumberFormat('es-CL',{style:'currency',currency:_preferredCurrency,
+      minimumFractionDigits:noDec?0:2,maximumFractionDigits:noDec?0:2}).format(converted);
+  } catch(e){ convStr = Math.round(converted).toLocaleString('es-CL') + ' ' + _preferredCurrency; }
 
+  var opts = DC_CURRENCY_CHOICES.map(function(c){
+    return '<option value="'+c+'"'+(c===_preferredCurrency?' selected':'')+'>'+c+'</option>';
+  }).join('');
   card.innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:4px 0;">'
-    + '≈ ' + symTo + Math.round(converted).toLocaleString('es-CL') + ' ' + _preferredCurrency
-    + ' · <span style="font-size:11px;opacity:.7;">Tipo de cambio referencial '+escHtml(rateInfo.date)+'</span>'
+    + '≈ ' + escHtml(convStr)
+    + ' <select onchange="changePreferredCurrency(this.value)" aria-label="Moneda local" '
+    + 'style="font-size:11px;border:1px solid var(--border);border-radius:8px;background:transparent;color:inherit;padding:1px 2px;">'+opts+'</select>'
+    + '<br><span style="font-size:11px;opacity:.7;">Tipo de cambio referencial '+escHtml(rateInfo.date)+'</span>'
     + '</div>';
   card.style.display = 'block';
 }
