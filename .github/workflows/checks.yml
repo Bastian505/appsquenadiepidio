@@ -1,6 +1,6 @@
 name: Checks
 
-# Chequeos rápidos sin API ni secretos: monedas y símbolos sincronizados entre servidor y cliente.
+# Chequeos rápidos sin API ni secretos: monedas/símbolos sincronizados y cálculo del reparto de cuentas.
 on:
   pull_request:
   push:
@@ -15,3 +15,4 @@ jobs:
         with:
           node-version: 20
       - run: node tests/check-currencies.mjs
+      - run: node tests/check-split.mjs
