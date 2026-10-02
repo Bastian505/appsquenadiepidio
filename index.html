@@ -1563,8 +1563,8 @@ function normalizeInternationalItems(json){
     // Para monedas con decimal: conservar 2 decimales exactos (NO ×100)
     var precioFinal = esMonedaSinDecimal ? Math.round(p) : Math.round(p*100)/100;
     // Cantidad fraccionaria (por kg, "2.5 X 700"): se pliega a 1 línea con el total
-    var qty=parseFloat(it.cantidad); if(!(qty>=1))qty=1;
-    if(qty%1!==0){precioFinal=esMonedaSinDecimal?Math.round(precioFinal*qty):Math.round(precioFinal*qty*100)/100;qty=1;}
+    var qty=parseFloat(it.cantidad); if(!isFinite(qty)||qty===0)qty=1;
+    if(qty<0||qty%1!==0){precioFinal=esMonedaSinDecimal?Math.round(precioFinal*qty):Math.round(precioFinal*qty*100)/100;qty=1;}
     return{nombre:it.nombre||it.name||('Item '+(i+1)),precio_unitario:precioFinal,cantidad:qty};
   }).filter(function(it){return it.precio_unitario!==0;});
   return{restaurante:json.restaurante||null,moneda:moneda,simbolo:sym[moneda]||moneda,items:items};
