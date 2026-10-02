@@ -3,6 +3,7 @@
 (function (root) {
   root.DC_CONFIG = {
     SCAN_URL: '/api/scan-receipt',
+    TRANSLATE_URL: '/api/translate',
     APP_SHARED_SECRET: 'CHANGE_ME_TO_MATCH_VERCEL_ENV_VAR'
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

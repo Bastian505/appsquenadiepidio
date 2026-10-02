@@ -31,10 +31,12 @@ const browser = await chromium.launch();
 const shot = async (p, name) => { if (OUT) await p.screenshot({ path: path.join(OUT, (DARK ? 'dark-' : '') + name), fullPage: true }); };
 
 async function open(scan) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: DARK ? 'dark' : 'light' });
+  const ctx = await browser.newContext({ locale: 'es-CL', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: DARK ? 'dark' : 'light' });
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
-  const sent = [];
+  const sent = [], translated = [];
+  page._translated = translated;
   await page.route('**/api/scan-receipt', async rt => { sent.push(JSON.parse(rt.request().postData())); await new Promise(r => setTimeout(r, 2500)); await rt.fulfill({ status: scan.status, contentType: 'application/json', body: JSON.stringify(scan.body) }); });
+  await page.route('**/api/translate', async rt => { const b = JSON.parse(rt.request().postData()); translated.push(b); await rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, translations: b.names.map(n => n === 'Gosht Hyderabadi Biryani' ? 'Biryani de cordero' : n === 'French Fries' ? 'Papas fritas' : n) }) }); });
   await page.route(/^https?:\/\/(?!localhost)/, r => r.abort());
   await page.goto(BASE); return { page, errs, sent };
 }
@@ -52,6 +54,10 @@ async function open(scan) {
   ok(/Cuadra con el total impreso/.test(body), 'confirma que cuadra con la boleta');
   ok(/528,44/.test(body), 'total RM528,44');
   ok(/revisar/.test(body), 'marca el ítem de baja confianza');
+  await page.waitForTimeout(400);
+  body = await page.innerText('body');
+  ok(page._translated.length === 1 && page._translated[0].lang === 'es', 'pide traducción una vez, al español');
+  ok(/Biryani de cordero/.test(body) && /Papas fritas/.test(body), 'muestra la traducción bajo el nombre original');
   await shot(page, 'v2-3-revision.png');
   await page.click('text=Agregar personas');
   for (const nm of ['Rodrigo', 'Tiano', 'Caro']) { await page.fill('input[name=name]', nm); await page.press('input[name=name]', 'Enter'); }
@@ -78,7 +84,7 @@ async function open(scan) {
   ok(amounts.length === 3, 'tres cuentas: ' + amounts.join(' · '));
   ok(Math.abs(sum - TOTAL) < 0.005, `suman exacto el total: ${sum.toFixed(2)}`);
   body = await page.innerText('body');
-  ok(/Las cuentas suman el total/.test(body), 'muestra que cuadra');
+  ok(/Todo repartido/.test(body), 'muestra que todo está repartido y cuadra');
   await page.locator('.pcard summary').first().click();
   await shot(page, 'v2-6-cobro.png');
   ok(/Impuesto y cargos \(/.test(await page.innerText('body')), 'detalle con impuesto y cargos');

@@ -14,3 +14,5 @@
 | 2026-10-02 | Cuentas: anfitrión con Google; invitados sin registrarse (anónimos) | Mantener la ventaja de cero fricción para invitados; la cuenta controla costo, historial y cobro |
 | 2026-10-02 | Cuentas compartidas: anfitrión dueño, invitados anónimos por token, permisos impuestos por RLS en Postgres (no por la app) | Hoy cualquiera con un id de sesión puede leer y editar sesiones ajenas |
 | 2026-10-02 | `dc_join_bill` devuelve vacío (no excepción) con token inválido | Al lanzar excepción, Postgres deshacía también el registro del intento y el bloqueo por fuerza bruta nunca se activaba (lo detectó la prueba) |
+| 2026-10-02 | Traducción de nombres en una llamada aparte (`/api/translate`, Haiku, solo texto) después de leer la boleta | Pedírsela al modelo de visión alarga la respuesta justo donde ya era lenta; así la boleta aparece al instante y la traducción llega sola |
+| 2026-10-02 | Con ítems sin asignar el sello dice "Cuentas + sin asignar = total" | "Las cuentas suman el total" junto a "Falta asignar" se contradecía |
