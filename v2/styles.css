@@ -176,3 +176,9 @@ button { cursor: pointer; }
 #toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); opacity: 0; pointer-events: none; background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; transition: all .2s; z-index: 20; max-width: calc(100% - 32px); }
 #toast.on { opacity: 1; transform: translateX(-50%); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+/* Traducción del nombre del ítem */
+.tr { display: block; font-size: 12px; font-weight: 500; color: var(--text-3); margin-top: 1px; }
+.muted-tr { font-style: italic; }
+.namebox { min-width: 0; }
+.assign .head .name .tr { font-size: 12px; }

@@ -27,6 +27,11 @@
   }
   function inputNum(v) { var d = C.decimals(state.currency); return d ? (Number(v) || 0).toFixed(2).replace('.', ',') : String(Math.round(Number(v) || 0)); }
   function pctTxt(r) { return (Math.round(r * 1000) / 10).toString().replace('.', ','); }
+  // Nombre del ítem + traducción al idioma del usuario debajo (si existe y es distinta)
+  function nameHtml(it) {
+    var tr = it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? it.tr : '';
+    return esc(it.name) + (tr ? '<span class="tr">' + esc(tr) + '</span>' : '');
+  }
   function initials(n) { return String(n || '?').trim().split(/\s+/).map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase(); }
   function person(id) { return state.people.filter(function (p) { return p.id === id; })[0]; }
   function item(id) { return state.items.filter(function (i) { return i.id === id; })[0]; }
@@ -113,7 +118,8 @@
   function itemRow(it) {
     var low = it.confidence != null && it.confidence < 0.8;
     return '<div class="item' + (low ? ' low' : '') + '">' +
-      '<input class="name" value="' + esc(it.name) + '" data-action="edit" data-id="' + it.id + '" data-field="name" aria-label="Nombre">' +
+      '<span class="namebox"><input class="name" value="' + esc(it.name) + '" data-action="edit" data-id="' + it.id + '" data-field="name" aria-label="Nombre">' +
+      (it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? '<span class="tr">' + esc(it.tr) + '</span>' : (ui.translating && it.needsTr ? '<span class="tr muted-tr">traduciendo…</span>' : '')) + '</span>' +
       '<span class="total num">' + money(it.price * it.qty) + '</span>' +
       '<span class="meta"><input class="qty num" inputmode="numeric" value="' + it.qty + '" data-action="edit" data-id="' + it.id + '" data-field="qty" aria-label="Cantidad">×' +
       '<input class="num" inputmode="decimal" value="' + inputNum(it.price) + '" data-action="edit" data-id="' + it.id + '" data-field="price" aria-label="Precio unitario">' +
@@ -176,7 +182,7 @@
       : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? 'Unidades repartidas ✓' : 'Faltan ' + (it.qty - unitSum) + ' de ' + it.qty + ' unidades')
       : who.length > 1 ? 'Se divide en partes iguales entre ' + who.length : 'Lo paga ' + esc(person(who[0]) ? person(who[0]).name : '');
     return '<div class="assign' + (isAssigned(it) ? ' done' : '') + '">' +
-      '<div class="head"><span class="name">' + esc(it.name) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
+      '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
       '<div class="who">' + state.people.map(function (p) {
         var on = who.indexOf(p.id) > -1;
         return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
@@ -192,16 +198,19 @@
   function summary() {
     var r = split(), paid = r.perPerson.reduce(function (s, p) { return s + p.amount; }, 0) + r.unassigned;
     var cuadra = Math.abs(paid - r.grandTotal) < (C.decimals(state.currency) === 0 ? 1 : 0.01);
+    var seal = !cuadra ? '<span class="badge">Revisa: las cuentas no suman el total</span>'
+      : r.unassigned ? '<span class="badge accent">Cuentas + sin asignar = total</span>'
+      : '<span class="badge ok">✓ Todo repartido: las cuentas suman el total</span>';
     var pct = pctTxt(r.extrasRatio), tiny = C.decimals(state.currency) ? 0.005 : 0.5;
     return top('Cuánto paga cada uno', 'assign') +
       '<div class="card summary-total"><div class="small">Total de la cuenta</div><div class="amount num">' + money(r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
-      '<div style="margin-top:8px">' + (cuadra ? '<span class="badge ok">✓ Las cuentas suman el total</span>' : '<span class="badge">Revisa: las cuentas no suman el total</span>') + '</div></div>' +
+      '<div style="margin-top:8px">' + seal + '</div></div>' +
       (r.unassigned ? '<div class="banner warn"><b>Falta asignar ' + money(r.unassigned) + ':</b> ' + esc(r.unassignedNames.join(', ')) + '<div class="actions"><button class="btn sm" data-action="go" data-to="assign">Asignar</button></div></div>' : '') +
       r.perPerson.map(function (p) {
         var ppl = person(p.id);
         return '<div class="card pcard"><div class="row">' + avatar(ppl) + '<b style="flex:1">' + esc(p.name) + '</b><div><div class="amount num">' + money(p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
           '<details><summary>Ver detalle</summary><div class="lines">' +
-          p.lines.map(function (l) { return '<div class="row"><span>' + esc(l.name) + (l.units ? ' ×' + l.units : '') + (l.shared ? ' (compartido)' : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
+          p.lines.map(function (l) { return '<div class="row"><span>' + nameHtml(item(l.itemId) || { name: l.name }) + (l.units ? ' ×' + l.units : '') + (l.shared ? ' (compartido)' : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
           (p.extras > tiny ? '<div class="row"><span>Impuesto y cargos (' + pct + '%)</span><span class="spacer"></span><span>' + money(p.extras) + '</span></div>' : '') +
           (p.tip > tiny ? '<div class="row"><span>Propina</span><span class="spacer"></span><span>' + money(p.tip) + '</span></div>' : '') +
           '</div></details></div>';
@@ -258,7 +267,7 @@
   function addItem(name, price) { state.items.push({ id: state.nextId++, name: name, price: price, qty: 1 }); }
   function editItem(id, field, value) {
     var it = item(id); if (!it) return;
-    if (field === 'name') it.name = value.trim() || it.name;
+    if (field === 'name') { var nn = value.trim(); if (nn && nn !== it.name) { it.name = nn; it.tr = null; it.needsTr = false; } }
     if (field === 'price') it.price = Math.max(0, parseNum(value));
     if (field === 'qty') { it.qty = Math.max(1, Math.round(parseNum(value)) || 1); var a = state.assigns[id]; if (a) a.units = {}; }
     it.confidence = null; save(); render();
@@ -320,7 +329,7 @@
     var keep = state.people;
     state = fresh(); state.people = keep;
     state.currency = (d.moneda && C.list[d.moneda]) ? d.moneda : (d.moneda || 'CLP');
-    state.restaurant = d.restaurante || null; state.country = d.pais_nombre || null;
+    state.restaurant = d.restaurante || null; state.country = d.pais_nombre || null; state.countryCode = d.pais || null;
     var rec = d.reconciliation || {};
     state.receiptTotal = rec.total_boleta || d.total_referencia || null;
     (d.items || []).forEach(function (it) {
@@ -329,6 +338,26 @@
     state.nextId = Math.max(state.nextId, 1 + state.people.reduce(function (m, p) { return Math.max(m, p.id); }, 0));
     state.step = 'review'; ui.photo = null; save(); render();
     toast('Boleta leída · ' + state.items.length + ' líneas');
+    translateNames();
+  }
+
+  // ── traducción de nombres (en segundo plano, no bloquea) ───────────────────
+  var LANG_BY_COUNTRY = { es: ['CL','AR','MX','CO','PE','UY','PY','ES','BO','EC','VE','CR','GT','PA','DO','SV','HN','NI'],
+                          en: ['US','GB','IE','AU','NZ','ZA','NA','CA'] };
+  function userLang() { var l = String(navigator.language || 'es').slice(0, 2).toLowerCase(); return ['es','en','pt','fr','de','it'].indexOf(l) > -1 ? l : 'es'; }
+  function translateNames() {
+    var lang = userLang(), same = (LANG_BY_COUNTRY[lang] || []).indexOf(state.countryCode) > -1;
+    var todo = state.items.filter(function (it) { return !it.tr && it.name && /\p{L}/u.test(it.name) && (!same || /[^\u0000-\u024F\s\d.,()&'\/+\-]/.test(it.name)); }).slice(0, 60);
+    if (!todo.length) return;
+    todo.forEach(function (it) { it.needsTr = true; }); ui.translating = true; render();
+    fetch(CFG.TRANSLATE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-App-Secret': CFG.APP_SHARED_SECRET },
+      body: JSON.stringify({ names: todo.map(function (it) { return it.name.slice(0, 80); }), lang: lang }) })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.translations) todo.forEach(function (it, i) { var cur = item(it.id); if (cur && cur.name === it.name) cur.tr = d.translations[i]; });
+      })
+      .catch(function () {})
+      .then(function () { state.items.forEach(function (it) { it.needsTr = false; }); ui.translating = false; save(); render(); });
   }
 
   function compress(file, cb) {
