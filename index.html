@@ -1199,7 +1199,7 @@ function initAssign(idx){
 }
 
 function getAssignedCount(){
-  var sel=items.filter(function(i){return i.selected;});
+  var sel=activeItems();
   var count=0;
   sel.forEach(function(it,idx){
     var a=assigns[idx];if(!a)return;
@@ -1210,7 +1210,7 @@ function getAssignedCount(){
 }
 
 function updateProgressBadge(){
-  var sel=items.filter(function(i){return i.selected;});
+  var sel=activeItems();
   var done=getAssignedCount();
   var badge=document.getElementById('progress-badge');
   if(badge){
@@ -2089,6 +2089,16 @@ function setTipCustom(btn){
   updateTotal();
 }
 function tipPctStr(){return Number.isInteger(tipPct)?String(tipPct):tipPct.toFixed(1).replace('.',',');}
+
+// Impuesto / cargos de servicio impresos en la boleta (o agregados por el reconciliador):
+// NO se asignan a una persona, se reparten proporcional al consumo de cada uno (como la
+// propina). Se detectan por nombre para que anfitrión e invitados calculen igual.
+var EXTRA_RE=/^\s*(impuesto|servicio|propina|sales tax|service charges?|service fee|gratuity|tax|gst|vat|iva|fbr pos charges?|cargo (por )?servicio)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
+function isExtraItem(it){return EXTRA_RE.test((it&&it.name)||'');}
+function activeItems(){return items.filter(function(i){return i.selected&&!isExtraItem(i);});}
+function extrasSum(){return items.filter(function(i){return i.selected&&isExtraItem(i);}).reduce(function(s,i){return s+i.total;},0);}
+function extraRatio(){var b=activeItems().reduce(function(s,i){return s+i.total;},0);return b>0?extrasSum()/b:0;}
+function totalMul(){return (1+extraRatio())*(1+tipPct/100);}
 function updateTotal(){
   var sel=items.filter(function(i){return i.selected;});
   var sub=sel.reduce(function(s,i){return s+i.total;},0);
@@ -2126,7 +2136,7 @@ function renderPeople(){
 
 // ── ASIGNAR ──
 function renderAssign(){
-  var sel=items.filter(function(i){return i.selected;});
+  var sel=activeItems();
   var body=document.getElementById('assign-body');body.innerHTML='';
   var hint=document.createElement('p');
   hint.style.cssText='font-size:12px;color:var(--text2);font-family:Lora,serif;font-style:italic;padding:0 2px 4px;';
@@ -2219,7 +2229,7 @@ function renderAssign(){
 function toggleParticipant(idx,pi){
   initAssign(idx);
   var a=assigns[idx],pos=a.participants.indexOf(pi);
-  var it=items.filter(function(i){return i.selected;})[idx];
+  var it=activeItems()[idx];
   if(pos>-1){
     a.participants.splice(pos,1);
     delete a.qty[pi];
@@ -2244,7 +2254,7 @@ function toggleAll(idx){
 }
 function changeQty(idx,pi,delta){
   initAssign(idx);var a=assigns[idx];
-  var it=items.filter(function(i){return i.selected;})[idx];
+  var it=activeItems()[idx];
   var cur=a.qty[pi]||0;
   var othersQty=a.participants.reduce(function(s,opi){return s+(opi===pi?0:(a.qty[opi]||0));},0);
   var newVal=Math.max(0,Math.min(it.qty-othersQty,cur+delta));
@@ -2254,7 +2264,7 @@ function changeQty(idx,pi,delta){
 }
 function splitEqually(idx){
   initAssign(idx);var a=assigns[idx];
-  var it=items.filter(function(i){return i.selected;})[idx];
+  var it=activeItems()[idx];
   var n=a.participants.length;if(!n)return;
   a.qty={};var base=Math.floor(it.qty/n),rem=it.qty%n;
   a.participants.forEach(function(pi,i){var v=base+(i<rem?1:0);if(v>0)a.qty[pi]=v;});
@@ -2271,7 +2281,7 @@ function debouncedSync(){
 }
 
 function getUnassigned(){
-  var sel=items.filter(function(i){return i.selected;}),tipMul=1+tipPct/100,amount=0,list=[];
+  var sel=activeItems(),tipMul=totalMul(),amount=0,list=[];
   sel.forEach(function(it,idx){
     var a=assigns[idx];
     if(!a){amount+=it.total;list.push(it.name);return;}
@@ -2282,7 +2292,7 @@ function getUnassigned(){
 }
 
 function calcTotals(){
-  var sel=items.filter(function(i){return i.selected;}),tipMul=1+tipPct/100;
+  var sel=activeItems(),tipMul=totalMul();
   return people.map(function(p,pi){
     var amt=0,myItems=[];
     sel.forEach(function(it,idx){
@@ -2324,7 +2334,7 @@ function calcDebts(totals){
 
 // ── RESUMEN COMPLETO ──
 function buildSummary(){
-  var sel=items.filter(function(i){return i.selected;}),tipMul=1+tipPct/100;
+  var sel=activeItems(),tipMul=totalMul();
   var baseTotal=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*tipMul);
   var grandTotal=baseTotal+roundingExtra;
   var ua=getUnassigned(),totals=calcTotals();
@@ -2371,6 +2381,7 @@ function buildSummary(){
     div.style.animationDelay=(i*0.08)+'s';
     var rows=t.myItems.map(function(it){return '<div class="sum-row"><span>'+escHtml(it.label)+'</span><span>'+fmtP(Math.round(it.share))+'</span></div>';}).join('');
     if(!rows)rows='<div class="sum-row"><span style="color:var(--text3)">Sin items asignados</span></div>';
+    if(extraRatio()>0)rows+='<div class="sum-row tip-s"><span>Impuesto y cargos ('+Math.round(extraRatio()*1000)/10+'%)</span><span>incluido</span></div>';
     if(tipPct>0)rows+='<div class="sum-row tip-s"><span>Propina '+tipPctStr()+'%</span><span>incluida</span></div>';
     if(roundingExtra!==0&&people.length>0){
       var baseEp=Math.floor(roundingExtra/people.length);
@@ -2540,7 +2551,7 @@ function addShareCard(body,grandTotal,debts){
 }
 
 function getSummaryText(){
-  var sel=items.filter(function(i){return i.selected;}),tipMul=1+tipPct/100;
+  var sel=activeItems(),tipMul=totalMul();
   var txt='🧾 DiviCuenta\n';
   if(restaurante)txt+='📍 '+restaurante+'\n';
   txt+='\n';
@@ -2589,8 +2600,8 @@ function shareImage(){
   })();ctx.fill();
   ctx.fillStyle='white';ctx.font='bold 30px sans-serif';ctx.textAlign='center';ctx.fillText('DiviCuenta',W/2,66);
   if(restaurante){ctx.font='15px sans-serif';ctx.fillStyle='rgba(255,255,255,0.85)';ctx.fillText(restaurante,W/2,94);}
-  var sel=items.filter(function(i){return i.selected;});
-  var tot=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*(1+tipPct/100));
+  var sel=activeItems();
+  var tot=Math.round(sel.reduce(function(s,i){return s+i.total;},0)*totalMul());
   ctx.font='bold 26px sans-serif';ctx.fillStyle='white';ctx.fillText('$'+tot.toLocaleString('es-CL'),W/2,134);
   ctx.font='13px sans-serif';ctx.fillStyle='rgba(255,255,255,0.7)';ctx.fillText(tipPct>0?'Propina '+tipPctStr()+'% incluida':'Sin propina',W/2,158);
   totals.forEach(function(t,i){
