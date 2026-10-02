@@ -4,19 +4,22 @@
 (function () {
   'use strict';
   var C = window.DC_CURRENCIES, S = window.DC_SPLIT, CFG = window.DC_CONFIG;
+  var SYNC = window.DC_SYNC || null;   // cuentas compartidas (opcional)
   var COLORS = ['#2563eb', '#db2777', '#059669', '#d97706', '#7c3aed', '#0891b2', '#dc2626', '#65a30d'];
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
   var state = load() || fresh();
-  var ui = { unitsOpen: {}, scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
+  var ui = { unitsOpen: {}, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
 
   function fresh() {
     return { step: 'home', currency: 'CLP', restaurant: null, country: null, items: [], people: [], assigns: {},
-      tip: null, receiptTotal: null, recon: null, nextId: 1 };
+      tip: null, receiptTotal: null, recon: null, nextId: 1,
+      // Cuenta compartida: 'host' si la compartí yo, 'guest' si entré por un link.
+      share: null, myMemberId: null };
   }
   function load() { try { var s = JSON.parse(localStorage.getItem(DRAFT_KEY)); return s && s.step ? s : null; } catch (e) { return null; } }
-  function save() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(state)); } catch (e) {} }
+  function save() { try { localStorage.setItem(DRAFT_KEY, JSON.stringify(state)); } catch (e) {} pushIfHost(); }
 
   // ── utilidades ─────────────────────────────────────────────────────────────
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -45,7 +48,7 @@
   // ── pantallas ──────────────────────────────────────────────────────────────
   function render() {
     var app = document.getElementById('app');
-    var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary }[state.step] || home)();
+    var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary, join: join, share: shareScreen }[state.step] || home)();
     app.innerHTML = html;
     var f = app.querySelector('[data-autofocus]'); if (f) f.focus();
   }
@@ -154,16 +157,84 @@
       (state.people.length ? '<div class="list">' + state.people.map(function (p) {
         return '<div class="person">' + avatar(p) + '<span style="flex:1;font-weight:600">' + esc(p.name) + '</span><button class="btn sm ghost" data-action="del-person" data-id="' + p.id + '">Quitar</button></div>';
       }).join('') + '</div>' : '') +
+      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">📲 Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
+      (state.share ? sharePanel() : '') +
       footer('<button class="btn primary" data-action="go" data-to="assign"' + (state.people.length ? '' : ' disabled') + '>Asignar ítems →</button>');
+  }
+
+  function shareLink() { return location.origin + '/v2/#' + (state.share && state.share.token || ''); }
+
+  function sharePanel() {
+    if (!state.share) return '';
+    var joined = state.people.filter(function (p) { return p.memberId; }).length;
+    return '<div class="card" style="margin-top:12px"><div class="row"><b style="flex:1">Cuenta compartida</b><span class="badge ok">en vivo</span></div>' +
+      '<p class="muted" style="margin:6px 0 10px">' + (joined > 1 ? joined + ' personas conectadas' : 'Esperando a que entren tus amigos…') + '</p>' +
+      '<div class="row"><button class="btn sm" data-action="copy-link">Copiar link</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button><button class="btn sm ghost" data-action="go" data-to="share">Ver QR</button></div></div>';
+  }
+
+  function shareScreen() {
+    var link = shareLink();
+    setTimeout(drawQR, 0);
+    return top('Compartir la cuenta', 'people') +
+      '<div class="card" style="text-align:center"><div id="qr" class="qr"><span class="small">Generando código…</span></div>' +
+      '<p class="muted" style="margin:14px 0 4px">Que escaneen este código o abran el link</p>' +
+      '<p class="small" style="word-break:break-all">' + esc(link) + '</p>' +
+      '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm" data-action="copy-link">Copiar</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button></div></div>' +
+      '<p class="small" style="margin:0 4px">El link caduca en 24 horas. Cada uno marca lo suyo y tú ves los totales al instante.</p>' +
+      footer('<button class="btn primary" data-action="go" data-to="assign">Seguir →</button>');
+  }
+
+  // El QR se dibuja con qrcodejs, cargado solo al entrar a esta pantalla.
+  function drawQR() {
+    var box = document.getElementById('qr'); if (!box) return;
+    function draw() {
+      if (!window.QRCode) { box.innerHTML = '<span class="small">Usa el link de abajo</span>'; return; }
+      box.innerHTML = '';
+      new window.QRCode(box, { text: shareLink(), width: 200, height: 200, correctLevel: window.QRCode.CorrectLevel.M });
+    }
+    if (window.QRCode) return draw();
+    var sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+    sc.onload = draw; sc.onerror = function () { box.innerHTML = '<span class="small">Usa el link de abajo</span>'; };
+    document.head.appendChild(sc);
+  }
+
+  function join() {
+    return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
+      '<section class="hero"><h1 style="font-size:26px">Te invitaron a dividir una cuenta</h1>' +
+      '<p>Escribe tu nombre y marca lo que consumiste. No necesitas registrarte.</p></section>' +
+      (ui.joinError ? '<div class="banner danger">' + esc(ui.joinError) + '</div>' : '') +
+      '<form class="field" data-action="do-join"><input name="name" placeholder="Tu nombre" maxlength="24" value="' + esc(ui.joinName) + '" data-autofocus aria-label="Tu nombre"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? 'Entrando…' : 'Entrar') + '</button></form>';
   }
 
   function assign() {
     var base = baseItems(), done = base.filter(isAssigned).length;
+    var guest = state.share && state.share.role === 'guest';
+    if (guest) return assignGuest(base);
     return top('¿Quién consumió qué?', 'people') +
+      (state.share ? sharePanel() : '') +
       '<div class="card"><div class="row"><b>' + done + ' de ' + base.length + ' ítems asignados</b><span class="spacer"></span><button class="btn sm" data-action="all-everything">Compartir todo</button></div>' +
       '<div class="progress" style="margin-top:10px"><i style="width:' + (base.length ? Math.round(100 * done / base.length) : 0) + '%"></i></div></div>' +
       '<div class="list">' + base.map(assignRow).join('') + '</div>' +
       footer('<button class="btn primary" data-action="go" data-to="summary">Ver cuánto paga cada uno →</button>');
+  }
+
+  // Vista del invitado: solo marca lo suyo, no toca a los demás.
+  function assignGuest(base) {
+    var mine = state.myMemberId;
+    var r = split(), me = r.perPerson.filter(function (p) { return p.id === mine; })[0];
+    return top('Marca lo tuyo', null) +
+      '<div class="card"><div class="row"><div><div class="small">Lo que llevas</div><div style="font-size:26px;font-weight:800" class="num">' + money(me ? me.amount : 0) + '</div></div><span class="spacer"></span><span class="badge ok">en vivo</span></div></div>' +
+      '<div class="list">' + base.map(function (it) {
+        var a = state.assigns[it.id] || { people: [], units: {} };
+        var mineOn = (a.people || []).indexOf(mine) > -1;
+        var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name : ''; }).filter(Boolean);
+        return '<div class="assign' + (mineOn ? ' done' : '') + '">' +
+          '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
+          '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' +
+          '<div class="state">' + (others.length ? 'También: ' + esc(others.join(', ')) : 'Nadie más lo marcó') + '</div></div>';
+      }).join('') + '</div>' +
+      footer('<button class="btn primary" data-action="go" data-to="summary">Ver el total →</button>');
   }
 
   function isAssigned(it) {
@@ -238,6 +309,10 @@
       case 'unit': changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); break;
       case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); break;
       case 'country': rescan(el.dataset.code); break;
+      case 'share-bill': startSharing(); break;
+      case 'copy-link': copyText(shareLink()); break;
+      case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
+      case 'claim': toggleClaim(itemId); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
     }
@@ -250,6 +325,10 @@
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
   document.addEventListener('submit', function (e) {
+    if (e.target.dataset.action === 'do-join') {
+      e.preventDefault(); var n = e.target.elements.name.value.trim();
+      if (!n) return; ui.joinName = n; doJoin(pendingToken, n); return;
+    }
     if (e.target.dataset.action !== 'add-person') return;
     e.preventDefault(); var input = e.target.elements.name, n = input.value.trim(); if (!n) return;
     state.people.push({ id: state.nextId++, name: n, color: COLORS[state.people.length % COLORS.length] }); save(); render();
@@ -376,6 +455,92 @@
     reader.readAsDataURL(file);
   }
 
+  // ── cuentas compartidas ────────────────────────────────────────────────────
+  var pendingToken = null;
+
+  function startSharing() {
+    if (!SYNC) return;
+    var me = state.people[0];
+    toast('Creando el link…');
+    SYNC.createBill(me ? me.name : 'Yo', state)
+      .then(function (st) {
+        state.share = { role: 'host', token: st.token, billId: st.billId };
+        state.myMemberId = me ? me.id : null;
+        if (me) me.memberId = st.memberId;
+        save(); render(); listen();
+        toast('Listo: comparte el link');
+      })
+      .catch(function (e) { toast(e.message === 'SIN_CONEXION' ? 'No se pudo conectar. Sigue en este teléfono.' : 'No se pudo compartir'); });
+  }
+
+  function doJoin(token, name) {
+    if (!SYNC || !token) return;
+    ui.joining = true; ui.joinError = null; render();
+    SYNC.joinBill(token, name)
+      .then(function (st) {
+        state = fresh();
+        state.share = { role: 'guest', token: token, billId: st.billId };
+        state.myMemberId = null; state._pendingMember = st.memberId;
+        state.step = 'assign'; save();
+        return SYNC.fetchAll().then(applyRemote).then(function () { listen(); render(); });
+      })
+      .catch(function (e) {
+        ui.joining = false;
+        ui.joinError = e.message === 'LINK_INVALIDO' ? 'Ese link ya no sirve: la cuenta se cerró o venció.'
+          : e.message === 'DEMASIADOS_INTENTOS' ? 'Demasiados intentos. Espera unos minutos.'
+          : 'No se pudo entrar. Revisa tu conexión.';
+        render();
+      });
+  }
+
+  function memberIdOf(localId) { var p = person(localId); return p ? p.memberId : null; }
+
+  function listen() { if (SYNC) SYNC.subscribe(function (d) { applyRemote(d); render(); }); }
+
+  // Traduce lo que hay en la base al estado local (ítems, personas y marcas).
+  function applyRemote(d) {
+    if (!d) return;
+    var mineUser = SYNC.state.memberId;
+    state.currency = d.bill.currency || state.currency;
+    state.restaurant = d.bill.restaurant || state.restaurant;
+    state.countryCode = d.bill.country_code || state.countryCode;
+    state.receiptTotal = d.bill.receipt_total != null ? Number(d.bill.receipt_total) : state.receiptTotal;
+    if (state.share && state.share.role === 'guest') {
+      state.items = (d.bill.items || []).map(function (it) { return { id: it.id, name: it.name, price: Number(it.price) || 0, qty: Number(it.qty) || 1, tr: it.tr || null, confidence: it.confidence }; });
+      state.tip = d.bill.tip || null;
+    }
+    state.people = d.members.map(function (m, i) {
+      var prev = state.people.filter(function (p) { return p.memberId === m.id; })[0];
+      return { id: prev ? prev.id : (state.nextId++), name: m.name, color: (prev && prev.color) || COLORS[i % COLORS.length], memberId: m.id };
+    });
+    var byMember = {}; state.people.forEach(function (p) { byMember[p.memberId] = p.id; });
+    if (mineUser && byMember[mineUser]) state.myMemberId = byMember[mineUser];
+    state.assigns = {};
+    d.claims.forEach(function (c) {
+      var pid = byMember[c.member_id]; if (pid == null) return;
+      var it = state.items.filter(function (x) { return String(x.id) === String(c.item_id); })[0]; if (!it) return;
+      var a = state.assigns[it.id] || (state.assigns[it.id] = { people: [], units: {} });
+      if (a.people.indexOf(pid) < 0) a.people.push(pid);
+      if (c.units != null) a.units[pid] = c.units;
+    });
+    save();
+  }
+
+  function toggleClaim(itemId) {
+    var a = state.assigns[itemId] || { people: [] };
+    var mine = state.myMemberId, on = (a.people || []).indexOf(mine) > -1;
+    // Optimista: se ve al instante y la base confirma (o corrige) por tiempo real.
+    togglePerson(itemId, mine); save(); render();
+    if (SYNC) (on ? SYNC.clearClaim(itemId) : SYNC.setClaim(itemId, null)).then(function () { return SYNC.fetchAll(); }).then(function (d) { applyRemote(d); render(); });
+  }
+
+  // El anfitrión publica los cambios de la boleta (ítems, propina) para que los invitados los vean.
+  var pushTimer = null;
+  function pushIfHost() {
+    if (!SYNC || !state.share || state.share.role !== 'host') return;
+    clearTimeout(pushTimer); pushTimer = setTimeout(function () { SYNC.pushBill(state); }, 400);
+  }
+
   // ── moneda local y tipo de cambio ──────────────────────────────────────────
   function prefCurrency() { try { return localStorage.getItem('dc_preferred_currency') || 'CLP'; } catch (e) { return 'CLP'; } }
   var fxLoading = null;
@@ -411,5 +576,21 @@
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Copiado'); }, function () { toast('No se pudo copiar'); });
   }
 
-  render();
+  // ¿Llego por un link compartido? (/v2/#token)
+  (function start() {
+    var token = (location.hash || '').replace(/^#/, '').trim();
+    if (token && /^[A-Za-z0-9_-]{16,64}$/.test(token) && window.DC_SYNC) {
+      SYNC = window.DC_SYNC; pendingToken = token;
+      history.replaceState(null, '', location.pathname);
+      state = fresh(); state.step = 'join'; render(); return;
+    }
+    if (!SYNC && window.DC_SYNC) SYNC = window.DC_SYNC;
+    render();
+    // Si venía de una cuenta compartida, reconectar y traer lo último.
+    if (state.share && SYNC) {
+      SYNC.resume({ billId: state.share.billId, memberId: memberIdOf(state.myMemberId), token: state.share.token, role: state.share.role })
+        .then(function (st) { if (!st) return; return SYNC.fetchAll().then(function (d) { applyRemote(d); listen(); render(); }); });
+    }
+  })();
 })();
+

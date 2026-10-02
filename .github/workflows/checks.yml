@@ -46,6 +46,7 @@ jobs:
       - run: mkdir -p e2e-capturas && E2E_OUT=e2e-capturas node tests/e2e.mjs
       - run: E2E_OUT=e2e-capturas node tests/e2e-v2.mjs
       - run: E2E_OUT=e2e-capturas E2E_DARK=1 node tests/e2e-v2.mjs
+      - run: E2E_OUT=e2e-capturas node tests/e2e-shared.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
