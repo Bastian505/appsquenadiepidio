@@ -2181,12 +2181,19 @@ function debouncedSync(){
   syncTimer = setTimeout(function(){ syncAssigns(); }, 600);
 }
 
+// Ítem de varias unidades marcado por personas pero sin unidades asignadas a nadie
+function sharedWhole(a){
+  if(!a||!a.participants||!a.participants.length)return false;
+  var q=a.qty||{};
+  return !a.participants.some(function(pi){return (q[pi]||0)>0;});
+}
 function getUnassigned(){
   var sel=activeItems(),tipMul=totalMul(),amount=0,list=[];
   sel.forEach(function(it,idx){
     var a=assigns[idx];
     if(!a){amount+=it.total;list.push(it.name);return;}
     if(it.qty===1){if(!a.participants||a.participants.length===0){amount+=it.price;list.push(it.name);}}
+    else if(sharedWhole(a)){/* "Todos": línea completa compartida, nada sin asignar */}
     else{var tq=a.participants?a.participants.reduce(function(s,pi){return s+(a.qty[pi]||0);},0):0;var r=it.qty-tq;if(r>0){amount+=it.price*r;list.push(it.name+' ('+r+' sin asignar)');}}
   });
   return{amount:rnd(amount*tipMul),list:list};
@@ -2206,6 +2213,14 @@ function calcTotals(){
           var share=itemTotal/parts.length;
           amt+=share;
           myItems.push({label:parts.length>1?it.name+' (compartido)':it.name,share:share});
+        }
+      } else if(sharedWhole(a)){
+        // Varias unidades marcadas con "Todos"/varias personas sin repartir unidades:
+        // la línea completa se divide en partes iguales entre quienes la marcaron.
+        if(a.participants.indexOf(pi)>-1){
+          var shareW=rnd(it.price*it.qty*tipMul)/a.participants.length;
+          amt+=shareW;
+          myItems.push({label:it.name+' x'+it.qty+' (compartido)',share:shareW});
         }
       } else {
         var q=(a.qty&&a.qty[pi])||0;
