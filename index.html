@@ -2095,7 +2095,7 @@ function updateTotal(){
   var tip=Math.round(sub*tipPct/100);
   window._lastTotal=sub+tip;
   document.getElementById('total-num').textContent=fmtP(sub+tip);
-  document.getElementById('sub-label').textContent='Subtotal $'+sub.toLocaleString('es-CL')+(tipPct>0?' + propina $'+tip.toLocaleString('es-CL'):'');
+  document.getElementById('sub-label').textContent='Subtotal '+fmtP(sub)+(tipPct>0?' + propina '+fmtP(tip):'');
 }
 
 // ── PERSONAS ──
