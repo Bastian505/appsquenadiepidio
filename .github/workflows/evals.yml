@@ -1,0 +1,49 @@
+name: Evals OCR
+
+# Corre services/ocr/evals/run.mjs contra la API de Claude con las boletas reales del repo.
+# Solo se ejecuta a mano (botón "Run workflow"); necesita el secreto ANTHROPIC_API_KEY.
+on:
+  workflow_dispatch:
+    inputs:
+      country:
+        description: "Código de país (ej. PK). Vacío = todos"
+        required: false
+        default: ""
+      model:
+        description: "Modelo"
+        required: false
+        default: "claude-sonnet-4-6"
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Correr evals
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COUNTRY: ${{ inputs.country }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          set -o pipefail
+          ARGS="--model=$MODEL"
+          if [ -n "$COUNTRY" ]; then ARGS="$ARGS --country=$COUNTRY"; fi
+          node services/ocr/evals/run.mjs $ARGS | tee evals-output.txt
+      - name: Resumen
+        if: always()
+        run: |
+          echo '### Evals OCR' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat evals-output.txt >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evals-resultados
+          path: |
+            evals-output.txt
+            services/ocr/evals/results.*.json
