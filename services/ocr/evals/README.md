@@ -20,13 +20,22 @@ reales de distintos países, sin tener que confiar a ojo.
 
 ## Cobertura actual
 
-58 fixtures, 17 de los 37 países de `COUNTRY_RULES` (36 + Albania, agregada
-a partir de este mismo lote de boletas — ver commit que la agrega):
-CL, DE, ES, MX, AR, US, NL, CH, CO, IL, JP, KR, GB, CA, IT, TR, AL.
+60 fixtures, 18 de los 38 países de `COUNTRY_RULES` (37 + Sudáfrica,
+agregada a partir de este mismo lote — ver commit que la agrega):
+CL, DE, ES, MX, AR, US, NL, CH, CO, IL, JP, KR, GB, CA, IT, TR, AL, ZA.
 Países `complexity:'complex'` cubiertos: DE, ES, CO, IL, AL (de los 8
 marcados así en el código). Faltan: PE, BR, FR, PT, CN, IN, TH, SG, AU, AE,
 SA, GR, PL, CZ, HU, SE, NO, DK, UY, PY — si alguien saca fotos de boletas
 de esos países, agregarlas acá es el próximo paso obvio.
+
+Nota sobre Sudáfrica: las dos boletas reales de este país funcionaron
+correctamente en producción ANTES de que `ZA` existiera en `COUNTRY_RULES`
+— las reglas universales (R1-R15) ya le alcanzaban al modelo sin un perfil
+de país dedicado. Se agregó igual, ya con datos reales en mano, para
+currency/VAT y para documentar un caso nuevo encontrado ahí: boletas con
+una propina y un total corregidos A MANO sobre el total impreso por la
+máquina (`ZA/handwritten-gratuity`) — un patrón general, no específico de
+Sudáfrica, que vale la pena tener presente en cualquier país.
 
 Algunos fixtures traen `confianza_transcripcion` mencionada en sus `notas`
 cuando la foto original no permite leer todos los ítems con certeza total
