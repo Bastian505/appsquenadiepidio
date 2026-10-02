@@ -12,3 +12,5 @@
 | 2026-10-02 | App nueva en `/v2` en paralelo a la actual; HTML + JS sin framework ni build por ahora | No cambia el deploy de Vercel ni arriesga la app actual; React/Vite se decide cuando /v2 reemplace a v1 |
 | 2026-10-02 | `core/split.js`: reparto con "mayor resto" para que la suma de las cuentas sea exactamente el total | Antes podía quedar 1 unidad de diferencia por redondeo |
 | 2026-10-02 | Cuentas: anfitrión con Google; invitados sin registrarse (anónimos) | Mantener la ventaja de cero fricción para invitados; la cuenta controla costo, historial y cobro |
+| 2026-10-02 | Cuentas compartidas: anfitrión dueño, invitados anónimos por token, permisos impuestos por RLS en Postgres (no por la app) | Hoy cualquiera con un id de sesión puede leer y editar sesiones ajenas |
+| 2026-10-02 | `dc_join_bill` devuelve vacío (no excepción) con token inválido | Al lanzar excepción, Postgres deshacía también el registro del intento y el bloqueo por fuerza bruta nunca se activaba (lo detectó la prueba) |

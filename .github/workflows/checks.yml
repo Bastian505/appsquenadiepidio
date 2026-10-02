@@ -18,6 +18,22 @@ jobs:
       - run: node tests/check-split.mjs
       - run: node tests/check-split-core.mjs
 
+  sql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Pruebas de seguridad de las cuentas compartidas
+        env: { PGPASSWORD: postgres }
+        run: PGHOST=localhost PGPORT=5432 PGUSER=postgres bash tests/check-sql.sh
+
   e2e:
     runs-on: ubuntu-latest
     steps:
