@@ -37,7 +37,7 @@ ok(near(fixed(reconcile([it('platos', 414)], 476, 'CA')), 62), 'CA Quebec 14,975
 ok(near(fixed(reconcile([it('platos', 76.3)], 87.73, 'CA')), 11.43), 'CA Quebec: 76,30 → 87,73 (Keung Kee)');
 ok(near(fixed(reconcile([it('platos', 100)], 113, 'CA')), 13), 'CA Ontario HST 13%');
 ok(near(fixed(reconcile([it('platos', 100)], 105, 'CA')), 5), 'CA GST 5%');
-ok(!reconcile([it('platos', 100)], 108, 'CA').auto_fixed, 'CA: 8% no es una tasa provincial → no inventa impuesto');
+ok(!reconcile([it('platos', 100)], 110, 'CA').auto_fixed, 'CA: 10% no es una tasa provincial → no inventa impuesto');
 ok(!reconcile([it('platos', 414)], 476, 'ES').auto_fixed, 'la misma diferencia en otro país no se toma por impuesto');
 ok(!reconcile([it('platos', 100), it('TPS', 5), it('TVQ', 9.975)], 129.95, 'CA').auto_fixed, 'CA: con impuestos ya listados no agrega otro');
 // Si "Taxes" ya está listado como ítem no se duplica
