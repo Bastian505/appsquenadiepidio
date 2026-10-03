@@ -495,7 +495,10 @@ FORMATO TURCO: columnas son Cinsi(nombre) | Adedi(cantidad) | Tutar(precio_total
     total_kw:['σύνολο','synolo','total'],
     price_format:'standard',
     signals:['αφμ','φπα','ελλάδα','greece','eur'],
-    format:'EUR. ΦΠΑ = IVA griego, ignorar. Decimal con coma.'
+    format:`EUR. Columnas: cantidad | nombre | ΦΠΑ % | importe de la LÍNEA ("6 ΑΡΤΟΣ 4.80" = 6 x 0.80). El "0%" de cada fila es
+la tasa de ΦΠΑ, NO es un precio: ignorar. "ΣΥΝΟΛΟ" es el subtotal; "ΠΛΗΡΩΤΕΟ" es el total a pagar; "ΕΚΠΤΩΣΗ" = descuento.
+Anotaciones a mano (importes escritos con lápiz, "-4,00", ítems tachados a mano) NO cambian la boleta: el total
+impreso sigue siendo el de la máquina. Productos por kilo ("0.38 ΚΙΛΟ"): el importe es el de la derecha (R18).`
   },
 
   // ── ALBANIA ───────────────────────────────────────────────────────────────
