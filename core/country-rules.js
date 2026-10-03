@@ -348,6 +348,56 @@ CERO: excluirla (R1); verifica con "Bill Amount"/"Sub Total", que debe ser la su
   },
 
   // ── NAMIBIA ───────────────────────────────────────────────────────────────
+  NG: {
+    name:'Nigeria', currency:'NGN', symbol:'₦', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['vat','stamp duty'], deposit_kw:[], refund_kw:['refund'],
+    tip_behavior:'mandatory_service_charge', tip_kw:['sc','service charge'],
+    total_kw:['total','grand total'],
+    price_format:'standard',
+    signals:['nigeria','lagos','abuja','kano','port harcourt','ngn','₦','stamp duty'],
+    format:`₦ = NGN (naira nigeriano). Formato "₦4,000.00" (coma = miles, punto = decimal).
+Filas "N x NOMBRE ... ₦TOTAL": el importe de la derecha es el TOTAL DE LA LÍNEA, no el unitario
+("2 x Minnie Burger ₦4,000.00" → precio_unitario=2000, cantidad=2).
+"Stamp Duty" (₦50) es un cargo real: inclúyelo como ítem. "SC (7.5%)" es el cargo de servicio:
+inclúyelo como ítem con el nombre "SC (7.5%)". El "VAT" (7.5%) se SUMA encima del subtotal y NO es ítem:
+el sistema lo agrega al reconciliar con el total. "Beverage Total", "Food Total", "Stamp Duty Total" y
+"Sub Total" son subtotales: ignorarlos (R2). total_referencia = "Total" final.`
+  },
+
+  LK: {
+    name:'Sri Lanka', currency:'LKR', symbol:'LKR', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['taxes','vat','sscl','nbt','tdl'], deposit_kw:[], refund_kw:['refund'],
+    tip_behavior:'mandatory_service_charge', tip_kw:['service charge'],
+    total_kw:['payment','total','amount due'],
+    price_format:'standard',
+    signals:['lkr','rs.','sri lanka','colombo','kandy','galle','cinnamon','vat no','svat','payment'],
+    format:`LKR = rupia de Sri Lanka. Formato "LKR49,200.00" (coma = miles, punto = decimal).
+Filas "QTY NOMBRE  IMPORTE": el importe de la derecha es el TOTAL DE LA LÍNEA, no el unitario
+("2 COCA COLA 1000.00" → precio_unitario=500, cantidad=2).
+"Service Charge" (10% del subtotal) es un cargo real: inclúyelo como ítem "Service Charge".
+"Taxes" (VAT + otros, ~22% de subtotal + servicio) se SUMAN encima y NO son ítem (R2): el sistema los
+agrega al reconciliar con el total. Ignora "Change Due", "Master 4190" y demás líneas de pago.
+total_referencia = "Payment" / "Total" final (subtotal + servicio + taxes), NO el "Subtotal".`
+  },
+
+  AT: {
+    name:'Austria', currency:'EUR', symbol:'€', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['mwst','ust','netto','brutto'], deposit_kw:[], refund_kw:['storno'],
+    tip_behavior:'optional', tip_kw:['trinkgeld','bedienung'],
+    total_kw:['summe','gesamt','total'],
+    price_format:'standard',
+    signals:['uid','atu','mwst','barrechnung','summe','wien','graz','salzburg','innsbruck','klagenfurt','linz'],
+    format:`EUR. Columnas "Anz. Artikel | Preis | Total": Preis = unitario, Total = importe de la línea
+("2 Hirter 4.00 8.00A" → precio_unitario=4.00, cantidad=2). La LETRA pegada al importe (A, B, D) es la
+categoría de IVA, NO es parte del precio. Un "(+1.20)" bajo un ítem son suplementos (Rucola, Parmesan)
+YA INCLUIDOS en el Total de esa línea: no los sumes ni los listes (R21). "SUMME" = total. "Netto",
+"20% MwSt", "10% MwSt" son el desglose del IVA ya incluido: IGNORAR (R2). "Barrechnung" es una cuenta de
+mesa/bar, válida (R15). "Bezahlt mit: Barzahlung" es la forma de pago, no un ítem.`
+  },
+
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
     complexity:'simple',

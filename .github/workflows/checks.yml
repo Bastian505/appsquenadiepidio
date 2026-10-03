@@ -17,6 +17,7 @@ jobs:
       - run: node tests/check-currencies.mjs
       - run: node tests/check-split.mjs
       - run: node tests/check-split-core.mjs
+      - run: node tests/check-reconcile.mjs
 
   sql:
     runs-on: ubuntu-latest

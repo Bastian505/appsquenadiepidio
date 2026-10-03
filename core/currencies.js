@@ -26,6 +26,8 @@
     ILS: { symbol: '₪',   decimals: 2 }, AED: { symbol: 'AED', decimals: 2, suffix: true },
     SAR: { symbol: 'SAR', decimals: 2, suffix: true }, ZAR: { symbol: 'R', decimals: 2 },
     NAD: { symbol: 'N$',  decimals: 2 },
+    NGN: { symbol: '₦',   decimals: 2 },
+    LKR: { symbol: 'LKR', decimals: 2, suffix: true },
     // Asia y Oceanía
     JPY: { symbol: '¥',   decimals: 0 }, CNY: { symbol: '¥',   decimals: 2 },
     KRW: { symbol: '₩',   decimals: 0 }, INR: { symbol: '₹',   decimals: 2 },
