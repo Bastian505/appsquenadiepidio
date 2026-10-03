@@ -18,7 +18,7 @@ create table if not exists public.dc_bills (
   id           uuid primary key default gen_random_uuid(),
   host_id      uuid not null default auth.uid() references auth.users(id) on delete cascade,
   -- Token del link: 22 caracteres base64url (~128 bits). No se puede adivinar.
-  share_token  text not null unique default replace(replace(encode(gen_random_bytes(16), 'base64'), '/', '_'), '+', '-'),
+  share_token  text not null unique default replace(replace(replace(encode(gen_random_bytes(16), 'base64'), '/', '_'), '+', '-'), '=', ''),
   restaurant   text,
   currency     text not null default 'CLP',
   country_code text,

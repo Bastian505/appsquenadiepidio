@@ -467,6 +467,11 @@
         state.share = { role: 'host', token: st.token, billId: st.billId };
         state.myMemberId = me ? me.id : null;
         if (me) me.memberId = st.memberId;
+        // Lo que el anfitrión ya había marcado para sí mismo pasa a la cuenta compartida.
+        if (me) state.items.forEach(function (it) {
+          var a = state.assigns[it.id];
+          if (a && (a.people || []).indexOf(me.id) > -1) SYNC.setClaim(it.id, a.units && a.units[me.id] != null ? a.units[me.id] : null);
+        });
         save(); render(); listen();
         toast('Listo: comparte el link');
       })
@@ -509,11 +514,21 @@
       state.items = (d.bill.items || []).map(function (it) { return { id: it.id, name: it.name, price: Number(it.price) || 0, qty: Number(it.qty) || 1, tr: it.tr || null, confidence: it.confidence }; });
       state.tip = d.bill.tip || null;
     }
+    // Las personas que el anfitrión agregó a mano (sin teléfono) se quedan: la base solo conoce a quienes entraron.
+    var localOnly = state.people.filter(function (p) { return p.memberId == null; });
+    var keepAssigns = {};
+    Object.keys(state.assigns || {}).forEach(function (iid) {
+      var a = state.assigns[iid], lp = (a.people || []).filter(function (pid) { return localOnly.some(function (p) { return p.id === pid; }); });
+      if (!lp.length) return;
+      var u = {}; lp.forEach(function (pid) { if (a.units && a.units[pid] != null) u[pid] = a.units[pid]; });
+      keepAssigns[iid] = { people: lp, units: u };
+    });
     state.people = d.members.map(function (m, i) {
       var prev = state.people.filter(function (p) { return p.memberId === m.id; })[0];
       return { id: prev ? prev.id : (state.nextId++), name: m.name, color: (prev && prev.color) || COLORS[i % COLORS.length], memberId: m.id };
     });
-    var byMember = {}; state.people.forEach(function (p) { byMember[p.memberId] = p.id; });
+    localOnly.forEach(function (p) { state.people.push(p); });
+    var byMember = {}; state.people.forEach(function (p) { if (p.memberId != null) byMember[p.memberId] = p.id; });
     if (mineUser && byMember[mineUser]) state.myMemberId = byMember[mineUser];
     state.assigns = {};
     d.claims.forEach(function (c) {
@@ -522,6 +537,11 @@
       var a = state.assigns[it.id] || (state.assigns[it.id] = { people: [], units: {} });
       if (a.people.indexOf(pid) < 0) a.people.push(pid);
       if (c.units != null) a.units[pid] = c.units;
+    });
+    Object.keys(keepAssigns).forEach(function (iid) {
+      var a = state.assigns[iid] || (state.assigns[iid] = { people: [], units: {} });
+      keepAssigns[iid].people.forEach(function (pid) { if (a.people.indexOf(pid) < 0) a.people.push(pid); });
+      Object.keys(keepAssigns[iid].units).forEach(function (pid) { a.units[pid] = keepAssigns[iid].units[pid]; });
     });
     save();
   }
@@ -579,7 +599,7 @@
   // ¿Llego por un link compartido? (/v2/#token)
   (function start() {
     var token = (location.hash || '').replace(/^#/, '').trim();
-    if (token && /^[A-Za-z0-9_-]{16,64}$/.test(token) && window.DC_SYNC) {
+    if (token && /^[A-Za-z0-9_-]{16,64}={0,2}$/.test(token) && window.DC_SYNC) {
       SYNC = window.DC_SYNC; pendingToken = token;
       history.replaceState(null, '', location.pathname);
       state = fresh(); state.step = 'join'; render(); return;
