@@ -59,7 +59,7 @@ async function wire(page, uid) {
   await page.addInitScript(`window.__uid = ${JSON.stringify(uid)};`);
   await page.exposeFunction('__rpc', async (fn, args) => {
     if (fn === 'dc_create_bill') {
-      const bill = { id: 'b1', host_id: uid, share_token: (Math.random().toString(36) + Math.random().toString(36)).replace(/[^a-z0-9]/g, '').slice(0, 22), currency: args.p_currency, items: [], tip: null, status: 'open', restaurant: null, country_code: null, receipt_total: null };
+      const bill = { id: 'b1', host_id: uid, share_token: (Math.random().toString(36) + Math.random().toString(36) + 'abcdefghijklmnop').replace(/[^a-z0-9]/g, '').slice(0, 22) + '==', currency: args.p_currency, items: [], tip: null, status: 'open', restaurant: null, country_code: null, receipt_total: null };
       db.bills.push(bill);
       const m = { id: 'm-' + uid, bill_id: bill.id, user_id: uid, name: args.p_name };
       db.members.push(m);
@@ -110,21 +110,25 @@ await host.setInputFiles('#photo', IMG);
 await host.waitForSelector('text=Agregar personas', { timeout: 8000 });
 await host.click('text=Agregar personas');
 await host.fill('input[name=name]', 'Rodrigo'); await host.press('input[name=name]', 'Enter');
+await host.fill('input[name=name]', 'Tiano'); await host.press('input[name=name]', 'Enter');
 await host.click('text=Que cada uno marque');
 await host.waitForSelector('text=Cuenta compartida', { timeout: 8000 });
 ok(db.bills.length === 1, 'el anfitrión crea la cuenta compartida');
 ok((db.bills[0].items || []).length === 3, 'la boleta se publica con sus ítems');
 await shot(host, 'shared-1-host.png');
 const token = db.bills[0].share_token;
+ok(token.endsWith('=='), 'el token trae relleno "==" como los reales: ' + token);
 
 // ── Invitado ────────────────────────────────────────────────────────────────
 const ctxB = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'es-CL' });
 const guest = await ctxB.newPage(); const errB = []; guest.on('pageerror', e => errB.push(e.message));
 await wire(guest, 'user-guest');
+// El invitado ya tenía otra cuenta a medias en este navegador: el link debe ganar al borrador.
+await guest.addInitScript("try { if (!localStorage.getItem('dc_probe')) { localStorage.setItem('dc_probe', '1'); localStorage.setItem('dc_v2_draft', JSON.stringify({ step: 'review', items: [{ id: 1, name: 'Otra boleta', price: 6500, qty: 1 }], people: [], assigns: {}, currency: 'KRW', nextId: 5 })); } } catch (e) {}");
 await guest.goto(BASE + '#' + token);
 await guest.waitForSelector('text=Te invitaron', { timeout: 8000 });
 await shot(guest, 'shared-2-invitacion.png');
-await guest.fill('input[name=name]', 'Tiano');
+await guest.fill('input[name=name]', 'Invitada');
 await guest.click('button[type=submit]');
 await guest.waitForTimeout(1500);
 await guest.waitForSelector('text=Marca lo tuyo', { timeout: 8000 });
@@ -144,7 +148,8 @@ await host.click('text=Asignar ítems');
 await host.waitForTimeout(600);
 await host.reload(); await host.waitForTimeout(1200);
 body = await host.innerText('body');
-ok(/Tiano/.test(body), 'el anfitrión ve al invitado en la cuenta');
+ok(/Invitada/.test(body), 'el anfitrión ve al invitado en la cuenta');
+ok(/Tiano/.test(body), 'y no pierde a la persona que agregó a mano (sin teléfono)');
 await shot(host, 'shared-4-host-ve.png');
 
 // ── Un link inválido no deja entrar ─────────────────────────────────────────

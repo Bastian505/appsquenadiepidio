@@ -411,6 +411,18 @@ provisoria) es válida: úsala. Con dos columnas de importe iguales, la última 
 3 Personen" es informativo: ignóralo.`
   },
 
+  MA: {
+    name:'Marruecos', currency:'MAD', symbol:'MAD', has_decimals:true,
+    complexity:'simple',
+    tax_kw:['tva','ht','ttc'], deposit_kw:[], refund_kw:['annulation'],
+    tip_behavior:'optional', tip_kw:['pourboire','service'], total_kw:['total','ttc','net à payer'],
+    price_format:'standard',
+    signals:['mad','dh','dirham','tva','ttc','marrakech','casablanca','rabat','fes','tanger','agadir'],
+    format:`MAD (dírham). Boletas en francés. Línea "N NOMBRE IMPORTE": el importe es el TOTAL de la línea
+("3 COCA LIGHT 90.00" → cantidad 3, precio_unitario 30.00). "HT / TVA / TTC" es el desglose del impuesto: si TVA
+está vacío o HT = TTC, no hay impuesto aparte; TTC = total con impuesto incluido. "10 COUVERT" arriba son los
+comensales, no un ítem. "Clé / Serv. / Caisse / Table" son datos del local. Nombres en francés: transcribir tal cual.`
+  },
   NA: {
     name:'Namibia', currency:'NAD', symbol:'N$', has_decimals:true,
     complexity:'simple',

@@ -50,7 +50,7 @@ begin;
   update dc_bills set items = '[{"id":"1","name":"Pizza","price":100,"qty":2}]'::jsonb where id = get('bill')::uuid;
   select note('anfitrión crea y edita su cuenta',
     (select items->0->>'name' = 'Pizza' from dc_bills where id = get('bill')::uuid));
-  select note('el token tiene al menos 20 caracteres', (select length(get('token')) >= 20));
+  select note('el token son 22 caracteres base64url, sin relleno "="', (select get('token') ~ '^[A-Za-z0-9_-]{22}$'));
   reset role;
 commit;
 
