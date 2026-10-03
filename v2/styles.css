@@ -204,3 +204,8 @@ button { cursor: pointer; }
 
 /* Nombre original + traducción: la traducción va en su propia línea. */
 .tr { display: block; font-weight: 400; font-size: .9em; color: var(--text-2); }
+
+/* Lista de nombres al unirse por link. */
+.person.pick { width: 100%; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+.person.pick[disabled] { opacity: .5; cursor: default; }
+.pbtn[data-locked] { cursor: default; }

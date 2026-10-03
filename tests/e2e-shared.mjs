@@ -65,12 +65,30 @@ async function wire(page, uid) {
       db.members.push(m);
       return [{ out_bill_id: bill.id, out_member_id: m.id, out_share_token: bill.share_token }];
     }
+    if (fn === 'dc_peek_bill') {
+      const bill = db.bills.find(b => b.share_token === args.p_token && b.status === 'open');
+      if (!bill) return [];
+      return [{ out_restaurant: bill.restaurant, out_currency: bill.currency, out_people: bill.people || [],
+                out_taken: db.members.filter(x => x.bill_id === bill.id && x.person_key != null).map(x => x.person_key) }];
+    }
     if (fn === 'dc_join_bill') {
       const bill = db.bills.find(b => b.share_token === args.p_token && b.status === 'open');
       if (!bill) return [];                                   // token inválido → sin filas
+      let name = args.p_name;
+      if (args.p_person != null) {
+        const per = (bill.people || []).find(x => String(x.id) === String(args.p_person));
+        if (!per) throw new Error('PERSON_UNKNOWN');
+        if (db.members.some(x => x.bill_id === bill.id && x.person_key === args.p_person && x.user_id !== uid)) throw new Error('NAME_TAKEN');
+        name = per.name;                                      // el nombre lo pone el servidor
+      }
       let m = db.members.find(x => x.bill_id === bill.id && x.user_id === uid);
-      if (!m) { m = { id: 'm-' + uid, bill_id: bill.id, user_id: uid, name: args.p_name }; db.members.push(m); }
-      else m.name = args.p_name;
+      if (!m) { m = { id: 'm-' + uid, bill_id: bill.id, user_id: uid, name, person_key: args.p_person ?? null }; db.members.push(m); }
+      else { m.name = name; m.person_key = args.p_person ?? null; }
+      if (args.p_person != null && bill.pre_assigns && bill.pre_assigns[args.p_person]) {
+        Object.entries(bill.pre_assigns[args.p_person]).forEach(([iid, u]) => {
+          if (!db.claims.some(c => c.member_id === m.id && c.item_id === iid)) db.claims.push({ bill_id: bill.id, member_id: m.id, item_id: iid, units: u });
+        });
+      }
       return [{ out_bill_id: bill.id, out_member_id: m.id }];
     }
     throw new Error('rpc desconocida: ' + fn);
@@ -115,6 +133,11 @@ await host.click('text=Que cada uno marque');
 await host.waitForSelector('text=Cuenta compartida', { timeout: 8000 });
 ok(db.bills.length === 1, 'el anfitrión crea la cuenta compartida');
 ok((db.bills[0].items || []).length === 3, 'la boleta se publica con sus ítems');
+// Antes de que entre nadie, el anfitrión ya le marcó la pizza a Tiano (esa marca debe pasar a Tiano cuando entre).
+await host.click('text=Asignar ítems');
+await host.locator('.assign', { hasText: 'Pizza' }).locator('.pbtn', { hasText: 'Tiano' }).click();
+await host.waitForTimeout(900);
+ok(Object.keys(db.bills[0].pre_assigns || {}).length === 1, 'las marcas del anfitrión para quien aún no entra se publican');
 await shot(host, 'shared-1-host.png');
 const token = db.bills[0].share_token;
 ok(token.endsWith('=='), 'el token trae relleno "==" como los reales: ' + token);
@@ -127,32 +150,35 @@ await wire(guest, 'user-guest');
 await guest.addInitScript("try { if (!localStorage.getItem('dc_probe')) { localStorage.setItem('dc_probe', '1'); localStorage.setItem('dc_v2_draft', JSON.stringify({ step: 'review', items: [{ id: 1, name: 'Otra boleta', price: 6500, qty: 1 }], people: [], assigns: {}, currency: 'KRW', nextId: 5 })); } } catch (e) {}");
 await guest.goto(BASE + '#' + token);
 await guest.waitForSelector('text=Te invitaron', { timeout: 8000 });
+await guest.waitForTimeout(2100);   // pasa la pantalla de entrada
 await shot(guest, 'shared-2-invitacion.png');
-await guest.fill('input[name=name]', 'Invitada');
-await guest.click('button[type=submit]');
-await guest.waitForTimeout(1500);
+// El invitado ve la lista de nombres que puso el anfitrión y elige el suyo.
+let gb = await guest.innerText('body');
+ok(/Elige tu nombre/.test(gb) && /Tiano/.test(gb), 'el invitado ve la lista de nombres del anfitrión');
+ok(await guest.locator('button.pick', { hasText: 'Rodrigo' }).isDisabled(), 'el nombre del anfitrión aparece como ya tomado');
+await guest.waitForTimeout(2100);   // pasa la pantalla de entrada
+await shot(guest, 'shared-2-invitacion.png');
+await guest.locator('button.pick', { hasText: 'Tiano' }).click();
 await guest.waitForSelector('text=Marca lo tuyo', { timeout: 8000 });
-ok(db.members.length === 2, 'el invitado entra con el link, sin registrarse');
+ok(db.members.length === 2 && db.members[1].name === 'Tiano' && db.members[1].person_key != null, 'el invitado entra con el nombre elegido, sin registrarse');
 let body = await guest.innerText('body');
 ok(/Pizza/.test(body) && /Cerveza/.test(body), 'el invitado ve los ítems de la boleta');
 ok(!/Service Charge/.test(body), 'no le mostramos el cargo de servicio para asignar');
-await guest.locator('.assign', { hasText: 'Pizza' }).locator('.pbtn').click();
-await guest.waitForTimeout(300);
-ok(db.claims.length === 1 && db.claims[0].item_id === '1', 'lo que marca el invitado queda guardado');
-body = await guest.innerText('body');
-ok(/RM11[0-9],/.test(body) || /RM1\d\d,\d\d/.test(body), 'el invitado ve lo que lleva (con servicio repartido): ' + (body.match(/RM[\d.,]+/) || [''])[0]);
+ok(db.claims.length === 1 && db.claims[0].item_id === '1', 'lo que el anfitrión ya le había marcado (Pizza) pasa a Tiano al entrar');
+ok(/RM1\d\d,\d\d/.test(body), 'y ve lo que lleva (con servicio repartido): ' + (body.match(/RM[\d.,]+/) || [''])[0]);
+await guest.locator('.assign', { hasText: 'Cerveza' }).locator('.pbtn').click();
+await guest.waitForTimeout(400);
+ok(db.claims.length === 2, 'lo que marca el invitado queda guardado');
 await shot(guest, 'shared-3-invitado.png');
 
 // El tiempo real puede cortarse: el anfitrión debe enterarse solo (consulta periódica), sin recargar.
-const sawGuest = await host.waitForFunction(() => /Invitada/.test(document.body.innerText), null, { timeout: 9000 }).then(() => true, () => false);
+const sawGuest = await host.waitForFunction(() => /Conectados: Rodrigo, Tiano/.test(document.body.innerText), null, { timeout: 9000 }).then(() => true, () => false);
 ok(sawGuest, 'el anfitrión ve entrar al invitado sin recargar (aunque falle el tiempo real)');
 // ── El anfitrión ve lo que marcó el invitado ────────────────────────────────
-await host.click('text=Asignar ítems');
-await host.waitForFunction(() => /1 de 2 ítems asignados/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve lo que marcó el invitado (1 de 2 ítems) sin recargar'), () => ok(false, 'el anfitrión no ve lo marcado por el invitado'));
+await host.waitForFunction(() => /2 de 2 ítems asignados/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve lo que marcó el invitado (2 de 2 ítems) sin recargar'), () => ok(false, 'el anfitrión no ve lo marcado por el invitado'));
 await host.reload(); await host.waitForTimeout(1200);
 body = await host.innerText('body');
-ok(/Invitada/.test(body), 'el anfitrión ve al invitado en la cuenta');
-ok(/Tiano/.test(body), 'y no pierde a la persona que agregó a mano (sin teléfono)');
+ok(/Tiano/.test(body) && !/Invitada/.test(body), 'el anfitrión ve a Tiano (el nombre elegido) y no aparece duplicado');
 await shot(host, 'shared-4-host-ve.png');
 
 // ── Un link inválido no deja entrar ─────────────────────────────────────────
@@ -160,10 +186,22 @@ const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, l
 const other = await ctxC.newPage(); await wire(other, 'user-otro');
 await other.goto(BASE + '#tokeninventadoabcdefgh');
 await other.waitForSelector('text=Te invitaron', { timeout: 8000 });
-await other.fill('input[name=name]', 'Intruso'); await other.click('button[type=submit]');
 await other.waitForSelector('.banner.danger', { timeout: 8000 });
 ok(/ya no sirve/.test(await other.innerText('body')), 'un link inválido muestra un aviso claro');
+ok(await other.locator('input[name=name]').count() === 0, 'y no ofrece entrar');
 ok(db.members.length === 2, 'y no agrega a nadie a la cuenta');
+
+// Un invitado que no está en la lista escribe su nombre; y un nombre ya tomado se rechaza.
+const ctxD = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-CL' });
+const late = await ctxD.newPage(); await wire(late, 'user-tarde');
+await late.goto(BASE + '#' + token);
+await late.waitForSelector('text=Elige tu nombre', { timeout: 8000 });
+ok(await late.locator('button.pick', { hasText: 'Tiano' }).isDisabled(), 'un nombre ya tomado no se puede elegir');
+await late.click('text=Mi nombre no está en la lista');
+await late.fill('input[name=name]', 'Invitada'); await late.click('button[type=submit]');
+await late.waitForSelector('text=Marca lo tuyo', { timeout: 8000 });
+ok(db.members.length === 3 && db.members[2].name === 'Invitada', 'quien no está en la lista entra escribiendo su nombre');
+await host.waitForFunction(() => /Conectados: Rodrigo, Tiano, Invitada/.test(document.body.innerText) || /Invitada/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve también a quien escribió su nombre'), () => ok(false, 'el anfitrión no ve a la invitada'));
 
 ok(errA.length === 0, 'anfitrión sin errores JS ' + errA.slice(0, 2).join('|'));
 ok(errB.length === 0, 'invitado sin errores JS ' + errB.slice(0, 2).join('|'));

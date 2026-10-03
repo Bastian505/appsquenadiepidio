@@ -38,7 +38,9 @@ create function get(k text) returns text language sql stable as $$ select v from
 insert into auth.users (id) values
   ('11111111-1111-1111-1111-111111111111'),   -- anfitrión
   ('22222222-2222-2222-2222-222222222222'),   -- invitado
-  ('33333333-3333-3333-3333-333333333333');   -- extraño
+  ('33333333-3333-3333-3333-333333333333'),   -- extraño
+  ('55555555-5555-5555-5555-555555555555'),   -- invitado que elige "Tiano" de la lista
+  ('66666666-6666-6666-6666-666666666666');   -- invitada que elige "Ana" de la lista
 
 \echo '── El anfitrión crea su cuenta ──'
 begin;
@@ -130,6 +132,39 @@ begin;
   select as_user('11111111-1111-1111-1111-111111111111');
   select note('anfitrión ve las marcas de todos', (select count(*) = 1 from dc_claims where bill_id = get('bill')::uuid));
   reset role;
+commit;
+
+\echo '── Unirse eligiendo el nombre de la lista ──'
+begin;
+  select as_user('11111111-1111-1111-1111-111111111111');
+  update dc_bills set
+    people = '[{"id":"1","name":"Rodrigo"},{"id":"2","name":"Tiano"},{"id":"3","name":"Ana"}]'::jsonb,
+    pre_assigns = '{"3":{"1":null}}'::jsonb
+    where id = get('bill')::uuid;
+  reset role;
+  select as_user('55555555-5555-5555-5555-555555555555');
+  select note('antes de entrar se ve la lista de nombres (3) sin ser miembro',
+    (select jsonb_array_length(out_people) = 3 from dc_peek_bill(get('token'))));
+  select note('y sin ser miembro no se ve la cuenta', (select count(*) = 0 from dc_bills));
+  select note('un token inventado no muestra nada', (select count(*) = 0 from dc_peek_bill('inventado-xxxxxxxxxxxx')));
+  insert into ctx select 'tiano_member', out_member_id::text from dc_join_bill(get('token'), 'HACKER', '2');
+  select note('el nombre lo pone el servidor, no el cliente',
+    (select name = 'Tiano' from dc_bill_members where id = get('tiano_member')::uuid));
+  reset role;
+  select note('un nombre ya tomado no se puede elegir de nuevo',
+    denied('66666666-6666-6666-6666-666666666666', format($$select dc_join_bill(%L, 'Otro', '2')$$, get('token'))));
+  select note('un nombre que no está en la lista se rechaza',
+    denied('66666666-6666-6666-6666-666666666666', format($$select dc_join_bill(%L, 'Otro', '99')$$, get('token'))));
+  select as_user('66666666-6666-6666-6666-666666666666');
+  insert into ctx select 'ana_member', out_member_id::text from dc_join_bill(get('token'), 'x', '3');
+  select note('lo que el anfitrión ya había marcado para Ana pasa a sus marcas',
+    (select count(*) = 1 from dc_claims where member_id = get('ana_member')::uuid and item_id = '1'));
+  select note('la lista muestra los nombres tomados',
+    (select out_taken @> array['2','3'] from dc_peek_bill(get('token'))));
+  reset role;
+  select note('un miembro no puede quedarse con el nombre de otro cambiando su fila',
+    denied('66666666-6666-6666-6666-666666666666',
+      format($$update dc_bill_members set person_key = '2' where id = %L$$, get('ana_member'))));
 commit;
 
 \echo '── Cuenta cerrada ──'
