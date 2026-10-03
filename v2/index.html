@@ -16,6 +16,13 @@
 <script src="/v2/sync.js" defer></script>
 </head>
 <body>
+<div class="splash" id="splash" aria-hidden="true">
+  <div class="splash-icon">🧾</div>
+  <div class="splash-logo">Divi<em>Cuenta</em></div>
+  <div class="splash-sub">Divide sin drama</div>
+  <div class="splash-dots"><i></i><i></i><i></i></div>
+</div>
+<script>try { if (sessionStorage.getItem('dc_splash')) document.getElementById('splash').className += ' hidden gone'; } catch (e) {}</script>
 <main id="app" aria-live="polite"></main>
 <div id="toast" role="status"></div>
 <script src="/v2/app.js" defer></script>

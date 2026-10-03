@@ -596,6 +596,14 @@
     (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Copiado'); }, function () { toast('No se pudo copiar'); });
   }
 
+  // Pantalla de entrada: se oculta sola a los ~1,6 s; si ya se vio en esta sesión ni aparece.
+  (function hideSplash() {
+    var el = document.getElementById('splash');
+    if (!el || el.className.indexOf('gone') > -1) return;
+    try { sessionStorage.setItem('dc_splash', '1'); } catch (e) {}
+    setTimeout(function () { el.className += ' hidden'; setTimeout(function () { el.className += ' gone'; }, 450); }, 1600);
+  })();
+
   // ¿Llego por un link compartido? (/v2/#token)
   (function start() {
     var token = (location.hash || '').replace(/^#/, '').trim();
