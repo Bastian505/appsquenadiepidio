@@ -127,7 +127,7 @@ PROCESO MENTAL
    para cuadrar (el sistema externo se encarga de la reconciliación).
 
 ═══════════════════════════════════════════════════════════════════════════════
-REGLAS UNIVERSALES (R1-R22)
+REGLAS UNIVERSALES (R1-R21)
 ═══════════════════════════════════════════════════════════════════════════════
 
 R1. INCLUIR solo productos/servicios con precio real visible o derivable.
@@ -264,13 +264,6 @@ R21. SUPLEMENTOS "(+X.XX)": un monto entre paréntesis bajo un ítem, con "+" (e
      lo listes como ítem. Los modificadores sin monto tampoco son ítems (R6).
      Igual con extras en otras monedas ("+ ไข่ดาว (B10.00)" bajo "ข้าวหมูทอด 1 x B79.00", con 89.00 a la
      derecha): el importe de la derecha ya incluye el extra, úsalo tal cual (89 = 79 + 10).
-
-R22. FILAS Y COLUMNAS: en fotos inclinadas la columna de importes puede quedar desfasada respecto a los
-     nombres. Cuenta las filas: debe haber tantos importes como nombres de producto, en el mismo orden; no
-     "corras" un importe a la fila vecina. Dos filas seguidas con el MISMO nombre (ej. agua x2 y agua x1)
-     son dos líneas distintas: no las descartes ni las fundas en una. ANTES de responder suma el importe de
-     cada ítem (precio_unitario x cantidad): si no iguala el total impreso, vuelve a mirar la foto: lo más
-     probable es una fila omitida o un importe corrido de fila. Nunca "arregles" la suma inventando ítems.
 
 R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
