@@ -27,6 +27,11 @@ ok(near(fixed(reconcile([it('platos', 58500), it('SC (7.5%)', 4387.5)], 67275, '
 ok(near(fixed(reconcile([it('platos', 58450), it('SC (7.5%)', 4387.5)], 67275, 'NG')), 4437.5), 'NG: sin Stamp Duty el faltante es 4.437,50');
 // Sri Lanka: impuestos ~22% sobre subtotal + servicio
 ok(near(fixed(reconcile([it('platos', 49200), it('Service Charge', 4920)], 66118.3, 'LK')), 11998.3), 'LK: Taxes 11.998,30');
+// Singapur: GST 7% va encima del subtotal + servicio
+ok(near(fixed(reconcile([it('Adult', 38.8, 6), it('Gin', 68), it('Ume', 10), it('Svc Charge', 31.08)], 365.81, 'SG')), 23.93), 'SG: GST 23,93 sobre servicio listado');
+ok(reconcile([it('platos', 251.2), it('Service Charge', 25.12)], 276.3, 'SG').ok, 'SG: GST 0.00 y redondeo -0,02 → ok sin ruido');
+// Tailandia: sin impuesto inventado
+ok(!reconcile([it('platos', 110)], 110, 'TH').auto_fixed, 'TH: VAT incluido, nada que agregar');
 // Si "Taxes" ya está listado como ítem no se duplica
 const dup = reconcile([it('platos', 49200), it('Service Charge', 4920), it('Taxes', 11998.3)], 66118.3, 'LK');
 ok(!dup.auto_fixed && dup.ok, 'LK: con Taxes ya listado no se agrega otro impuesto');

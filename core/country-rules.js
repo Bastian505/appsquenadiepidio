@@ -199,7 +199,9 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     tax_kw:['부가세'], deposit_kw:[], refund_kw:['환불'],
     tip_behavior:'none', tip_kw:[], total_kw:['합계','총액','결제금액'],
     price_format:'standard', signals:['원','₩','영수증'],
-    format:'KRW = ₩. Sin decimales. IVA 10% incluido. Sin propina.'
+    format:`KRW = ₩. Sin decimales. IVA 10% incluido. Sin propina. "과세금액/순매출" + "부가세" son el desglose del IVA ya
+incluido: IGNORAR. "소계" / "합계" / "매출합계" = total. "봉사료 0" = sin servicio. Líneas "->차슈 추가" (con flecha) son
+extras con su PROPIO precio: ítems aparte (se suman al total). "받을금액/받은금액/신용카드" repiten el total.`
   },
   IN: {
     name:'India', currency:'INR', symbol:'₹', has_decimals:true,
@@ -217,7 +219,11 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     tip_behavior:'service_charge_10', tip_kw:['service charge'],
     total_kw:['total','รวม'],
     price_format:'standard', signals:['thb','฿','บาท'],
-    format:'THB. VAT 7% + service 10%. Usar total.'
+    format:`THB. Importe de la derecha = total de la línea (ya incluye extras "+ ไข่ (B10.00)", R21). Service Charge 10%
+y VAT 7% suelen venir como líneas aparte SUMADAS al subtotal (หมายเหตุ: ยอดรวม + ค่าบริการ + VAT = รวมสุทธิ);
+ábrelas como ítems de cargo. Pero si dice "ราคารวมภาษีมูลค่าเพิ่มแล้ว" / "VATable ... VAT 7.20" bajo el total,
+el VAT ya está INCLUIDO: no lo listes. "Rounding / ปัดเศษ" y "Cash / Change" (efectivo y vuelto) NO son ítems.
+"Take away", número de mesa y contraseñas de WiFi tampoco. Verifica con la aritmética: ítems + cargos = total.`
   },
   SG: {
     name:'Singapur', currency:'SGD', symbol:'S$', has_decimals:true,
@@ -226,7 +232,10 @@ TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real 
     tip_behavior:'service_charge_10', tip_kw:['service charge'],
     total_kw:['total','amount due'],
     price_format:'standard', signals:['gst reg','uen','sgd'],
-    format:'SGD. GST + service 10%. Usar total final.'
+    format:`SGD. "Ser Chg 10%" / "10% Svc Charge" es cargo de servicio (ábrelo como ítem de cargo). "GST 7%" se SUMA
+encima del subtotal + servicio (365.81 = 310.80 + 31.08 + 23.93): ábrelo como cargo. Si imprime "GST 0.00" no hay
+GST. "Round Amt" (-0.02) NO es ítem. Líneas "9.00 @ 6.80" bajo un ítem por peso son el cálculo; el importe es el de la derecha.
+Un "6 Adult @$38.80 232.80" es cantidad 6 a 38.80 (buffet por persona). Usar el total final.`
   },
   AU: {
     name:'Australia', currency:'AUD', symbol:'A$', has_decimals:true,
@@ -395,7 +404,9 @@ total_referencia = "Payment" / "Total" final (subtotal + servicio + taxes), NO e
 categoría de IVA, NO es parte del precio. Un "(+1.20)" bajo un ítem son suplementos (Rucola, Parmesan)
 YA INCLUIDOS en el Total de esa línea: no los sumes ni los listes (R21). "SUMME" = total. "Netto",
 "20% MwSt", "10% MwSt" son el desglose del IVA ya incluido: IGNORAR (R2). "Barrechnung" es una cuenta de
-mesa/bar, válida (R15). "Bezahlt mit: Barzahlung" es la forma de pago, no un ítem.`
+mesa/bar, válida (R15). "Bezahlt mit: Barzahlung" es la forma de pago, no un ítem. "Zwischenrechnung" / "KEINE RECHNUNG" (cuenta
+provisoria) es válida: úsala. Con dos columnas de importe iguales, la última es el Total de la línea. "geteilt durch
+3 Personen" es informativo: ignóralo.`
   },
 
   NA: {
