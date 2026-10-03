@@ -9,7 +9,11 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.h';
+  var BUILD = '2026-10-03.i';
+  // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
+  try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
+  function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
+  function traceFailed() { return trace.some(function (l) { return /✗|⚠|HTTP [45]/.test(l); }); }
   // Registro de cada paso de la lectura de la boleta (se guarda: si el teléfono recarga la página a mitad de camino, queda a la vista).
   var TRACE_KEY = 'dc_v2_trace', trace = [];
   try { trace = JSON.parse(localStorage.getItem(TRACE_KEY)) || []; } catch (e) { trace = []; }
@@ -92,7 +96,7 @@
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
       (ui.error ? '<div class="banner danger" style="margin-top:12px">' + esc(ui.error) + '</div>' : '') +
-      (trace.length ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
+      ((trace.length && (debugOn() || traceFailed())) ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
       (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
       '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>' +
       '<p class="small" style="text-align:center;margin:18px 0 6px;opacity:.6">DiviCuenta v2 · ' + BUILD + '</p>';
@@ -106,7 +110,7 @@
         var cls = k < ui.scanStage ? 'done' : k === ui.scanStage ? 'active' : '';
         return '<div class="stage ' + cls + '"><span class="dot">' + (k < ui.scanStage ? '✓' : '') + '</span>' + l + '</div>';
       }).join('') + '</div><p class="small" style="margin:12px 0 0">Las cuentas largas pueden tardar hasta un minuto.</p></div>' +
-      '<pre class="small" style="white-space:pre-wrap;word-break:break-word;margin:10px 4px 0;opacity:.7">' + esc(trace.slice(-5).join('\n')) + '</pre>' +
+      (debugOn() ? '<pre class="small" style="white-space:pre-wrap;word-break:break-word;margin:10px 4px 0;opacity:.7">' + esc(trace.slice(-5).join('\n')) + '</pre>' : '') +
       (ui.confirm ? confirmCountry() : '');
   }
 
