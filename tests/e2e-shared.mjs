@@ -143,9 +143,12 @@ body = await guest.innerText('body');
 ok(/RM11[0-9],/.test(body) || /RM1\d\d,\d\d/.test(body), 'el invitado ve lo que lleva (con servicio repartido): ' + (body.match(/RM[\d.,]+/) || [''])[0]);
 await shot(guest, 'shared-3-invitado.png');
 
+// El tiempo real puede cortarse: el anfitrión debe enterarse solo (consulta periódica), sin recargar.
+const sawGuest = await host.waitForFunction(() => /Invitada/.test(document.body.innerText), null, { timeout: 9000 }).then(() => true, () => false);
+ok(sawGuest, 'el anfitrión ve entrar al invitado sin recargar (aunque falle el tiempo real)');
 // ── El anfitrión ve lo que marcó el invitado ────────────────────────────────
 await host.click('text=Asignar ítems');
-await host.waitForTimeout(600);
+await host.waitForFunction(() => /1 de 2 ítems asignados/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve lo que marcó el invitado (1 de 2 ítems) sin recargar'), () => ok(false, 'el anfitrión no ve lo marcado por el invitado'));
 await host.reload(); await host.waitForTimeout(1200);
 body = await host.innerText('body');
 ok(/Invitada/.test(body), 'el anfitrión ve al invitado en la cuenta');

@@ -168,7 +168,7 @@
     if (!state.share) return '';
     var joined = state.people.filter(function (p) { return p.memberId; }).length;
     return '<div class="card" style="margin-top:12px"><div class="row"><b style="flex:1">Cuenta compartida</b><span class="badge ok">en vivo</span></div>' +
-      '<p class="muted" style="margin:6px 0 10px">' + (joined > 1 ? joined + ' personas conectadas' : 'Esperando a que entren tus amigos…') + '</p>' +
+      '<p class="muted" style="margin:6px 0 10px">' + (joined > 1 ? 'Conectados: ' + esc(state.people.filter(function (p) { return p.memberId; }).map(function (p) { return p.name; }).join(', ')) : 'Esperando a que entren tus amigos…') + '</p>' +
       '<div class="row"><button class="btn sm" data-action="copy-link">Copiar link</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button><button class="btn sm ghost" data-action="go" data-to="share">Ver QR</button></div></div>';
   }
 
@@ -500,7 +500,33 @@
 
   function memberIdOf(localId) { var p = person(localId); return p ? p.memberId : null; }
 
-  function listen() { if (SYNC) SYNC.subscribe(function (d) { applyRemote(d); render(); }); }
+  // Mantener la cuenta al día. El tiempo real puede cortarse (p. ej. el teléfono suspende la pestaña cuando
+  // el anfitrión se va a WhatsApp a mandar el link), así que además se consulta cada pocos segundos y al volver.
+  var syncSig = '', pollTimer = null;
+  function sigOf(d) {
+    return JSON.stringify([d.bill.updated_at, d.members.map(function (m) { return m.id + m.name; }),
+      d.claims.map(function (c) { return c.member_id + ':' + c.item_id + ':' + c.units; })]);
+  }
+  function pull(force) {
+    if (!SYNC || !state.share) return Promise.resolve();
+    return SYNC.fetchAll().then(function (d) {
+      if (!d) return;
+      var sg = sigOf(d); if (!force && sg === syncSig) return;
+      syncSig = sg; applyRemote(d);
+      var a = document.activeElement;   // no pisar lo que la persona está escribiendo
+      if (!(a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && a.value && document.getElementById('app').contains(a))) render();
+    }).catch(function () {});
+  }
+  function listen() {
+    if (!SYNC) return;
+    SYNC.subscribe(function (d) { syncSig = sigOf(d); applyRemote(d); render(); });
+    if (!pollTimer) {
+      pollTimer = setInterval(function () { if (!document.hidden) pull(false); }, 4000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(true); });
+      window.addEventListener('focus', function () { pull(true); });
+      window.addEventListener('online', function () { pull(true); });
+    }
+  }
 
   // Traduce lo que hay en la base al estado local (ítems, personas y marcas).
   function applyRemote(d) {
