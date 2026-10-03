@@ -165,6 +165,16 @@ async function viaHandler(fx, imgPath) {
   return body;
 }
 
+// ¿Cuadra? Mismo criterio que el aviso naranja de la app (v2/app.js review()): suma de ítems vs total impreso,
+// tolerancia 0,05 (1 en monedas sin decimales). Es lo que ve el usuario; "total OK" solo dice que se leyó bien el total impreso.
+const NO_DEC = new Set(['CLP','JPY','KRW','COP','HUF','ISK','PYG','VND','RSD','IDR','UGX']);
+function cuadra(items, total, moneda) {
+  const sum = (items || []).reduce((a, i) => a + (i.precio_unitario || 0) * (i.cantidad || 1), 0);
+  const diff = (total || 0) - sum;
+  const tol = NO_DEC.has(moneda) ? 1 : 0.05;
+  return { ok: !total || Math.abs(diff) <= tol, diff, sum };
+}
+
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -196,11 +206,13 @@ async function main() {
       const totalDiff = Math.abs((parsed.total_referencia ?? 0) - fx.total_referencia);
       const totalOk = totalDiff <= Math.max(1, fx.total_referencia * 0.02);
       const countryOk = parsed.pais === fx.pais;
+      const cq = cuadra(parsed.items, parsed.total_referencia, parsed.moneda || fx.moneda);
       const currencyOk = parsed.moneda === fx.moneda;
       console.log(
         `items ${itemScore.matched}/${itemScore.total}` +
         `${itemScore.extra ? ` (+${itemScore.extra} de mas)` : ''}` +
         ` · total ${totalOk ? 'OK' : `MAL (${parsed.total_referencia} vs ${fx.total_referencia})`}` +
+        ` · cuadra ${cq.ok ? 'SÍ' : `NO (${cq.diff > 0 ? 'faltan' : 'sobran'} ${Math.abs(cq.diff).toFixed(2)})`}` +
         ` · pais ${countryOk ? 'OK' : `MAL (${parsed.pais})`}` +
         ` · moneda ${currencyOk ? 'OK' : `MAL (${parsed.moneda})`}`
       );
@@ -213,7 +225,7 @@ async function main() {
         for (const n of itemScore.extraNames) console.log(`    + de más: ${n}`);
         if (!totalOk) console.log(`    total leído ${parsed.total_referencia} · esperado ${fx.total_referencia} · suma ítems leídos ${(parsed.items||[]).reduce((a,i)=>a+(i.precio_unitario||0)*(i.cantidad||1),0)}`);
       }
-      results.push({ fixture: fx, ok: true, itemScore, totalOk, countryOk, currencyOk, raw: parsed });
+      results.push({ fixture: fx, ok: true, itemScore, totalOk, countryOk, currencyOk, cuadra: cq.ok, cuadraDiff: cq.diff, raw: parsed });
     } catch (e) {
       console.log(`ERROR: ${e.message}`);
       results.push({ fixture: fx, ok: false, reason: 'api_error', error: e.message });
@@ -224,7 +236,7 @@ async function main() {
   const byCountry = {};
   for (const r of results) {
     const c = r.fixture.pais;
-    byCountry[c] ??= { n: 0, itemsMatched: 0, itemsTotal: 0, totalOk: 0, countryOk: 0, currencyOk: 0, failed: 0 };
+    byCountry[c] ??= { n: 0, itemsMatched: 0, itemsTotal: 0, totalOk: 0, countryOk: 0, currencyOk: 0, cuadra: 0, failed: 0 };
     const b = byCountry[c];
     b.n++;
     if (!r.ok) { b.failed++; continue; }
@@ -233,18 +245,28 @@ async function main() {
     if (r.totalOk) b.totalOk++;
     if (r.countryOk) b.countryOk++;
     if (r.currencyOk) b.currencyOk++;
+    if (r.cuadra) b.cuadra++;
   }
 
   console.log('\n── Resumen por pais ──');
-  console.log('pais  n  items     total  pais  moneda');
+  console.log('pais  n  items     total  cuadra pais  moneda');
   for (const [c, b] of Object.entries(byCountry).sort()) {
     const itemsPct = b.itemsTotal ? Math.round(100 * b.itemsMatched / b.itemsTotal) : 0;
     console.log(
       `${c.padEnd(5)} ${String(b.n).padEnd(2)} ${String(itemsPct + '%').padEnd(9)} ` +
-      `${String(b.totalOk + '/' + b.n).padEnd(5)} ${String(b.countryOk + '/' + b.n).padEnd(5)} ${b.currencyOk + '/' + b.n}` +
+      `${String(b.totalOk + '/' + b.n).padEnd(5)} ${String(b.cuadra + '/' + b.n).padEnd(6)} ${String(b.countryOk + '/' + b.n).padEnd(5)} ${b.currencyOk + '/' + b.n}` +
       (b.failed ? `  (${b.failed} fallidas)` : '')
     );
   }
+
+  const ok_ = results.filter(r => r.ok), N = results.length;
+  const sum_ = k => ok_.filter(r => r[k]).length;
+  console.log(`\n── TOTAL (${N} boletas${PIPELINE ? ', flujo completo de la app' : ', lectura cruda'}) ──`);
+  console.log(`respondió: ${ok_.length}/${N} · total impreso bien leído: ${sum_('totalOk')}/${N} · LA SUMA CUADRA: ${sum_('cuadra')}/${N} (${Math.round(100 * sum_('cuadra') / N)}%) · país: ${sum_('countryOk')}/${N} · moneda: ${sum_('currencyOk')}/${N}`);
+  const im = ok_.reduce((a, r) => a + r.itemScore.matched, 0), it = ok_.reduce((a, r) => a + r.itemScore.total, 0);
+  console.log(`ítems correctos (nombre+precio+cantidad): ${im}/${it} (${it ? Math.round(100 * im / it) : 0}%)`);
+  const nq = ok_.filter(r => !r.cuadra).sort((a, b) => Math.abs(b.cuadraDiff) / (b.fixture.total_referencia || 1) - Math.abs(a.cuadraDiff) / (a.fixture.total_referencia || 1));
+  if (nq.length) { console.log('\nBoletas que NO cuadran (de la más lejana a la más cercana):'); for (const r of nq) console.log(`  ${r.fixture.id}: ${r.cuadraDiff > 0 ? 'faltan' : 'sobran'} ${Math.abs(r.cuadraDiff).toFixed(2)} ${r.fixture.moneda} de ${r.fixture.total_referencia} (${(100 * Math.abs(r.cuadraDiff) / (r.fixture.total_referencia || 1)).toFixed(1)}%)`); }
 
   fs.writeFileSync(
     path.join(__dirname, `results.${MODEL}.${Date.now()}.json`),
