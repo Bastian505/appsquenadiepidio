@@ -1060,7 +1060,7 @@
     {
       "id": "AR/comprobante-39-30",
       "pais": "AR",
-      "moneda": "EUR",
+      "moneda": "ARS",
       "restaurante": "Comprobante (Mesa 1)",
       "items": [
         {
@@ -1085,7 +1085,7 @@
         }
       ],
       "total_referencia": 39.3,
-      "notas": "Restaurante argentino en el extranjero (euros). 'Cola Zero' x2 y 'Panqueque' salen a 0,00 (cortesía/menú): no aportan. Suma 39,30 = total a pagar."
+      "notas": "Sin símbolo de moneda (precios con decimales chicos: podría ser un restaurante argentino fuera del país); se toma ARS por el país. 'Cola Zero' x2 y 'Panqueque' salen a 0,00 (cortesía/menú): no aportan. Suma 39,30 = total a pagar."
     },
     {
       "id": "AR/palermo-inclinada-9320",
