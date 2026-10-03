@@ -9,7 +9,10 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
+  var BUILD = '2026-10-03.d';
   var state = load() || fresh();
+  // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
+  if (state.step === 'scanning') state.step = 'home';
   var ui = { unitsOpen: {}, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
 
   function fresh() {
@@ -69,7 +72,9 @@
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
       (ui.error ? '<div class="banner danger" style="margin-top:12px">' + esc(ui.error) + '</div>' : '') +
-      '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>';
+      (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
+      '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>' +
+      '<p class="small" style="text-align:center;margin:18px 0 6px;opacity:.6">DiviCuenta v2 · ' + BUILD + '</p>';
   }
 
   function scanning() {
@@ -376,11 +381,15 @@
   // ── lectura de la boleta ───────────────────────────────────────────────────
   var pending = null;
   function startScan(file) {
-    ui.error = null; ui.confirm = null; ui.scanStage = 0;
+    ui.error = null; ui.confirm = null; ui.scanStage = 0; ui.photo = null;
+    // Reacciona al instante: la pantalla de lectura aparece antes de procesar la foto (fotos grandes tardan).
+    state.step = 'scanning'; render();
+    var done = false, guard = setTimeout(function () { if (!done) { done = true; fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
     compress(file, function (b64, dataUrl) {
+      if (done) return; done = true; clearTimeout(guard);
       ui.photo = dataUrl; pending = b64; state.step = 'scanning'; render();
       send({ image_base64: b64, media_type: 'image/jpeg' });
-    });
+    }, function (msg) { if (done) return; done = true; clearTimeout(guard); fail(msg); });
   }
   function rescan(code) { ui.confirm = null; ui.scanStage = 1; render(); send({ image_base64: pending, media_type: 'image/jpeg', country_hint: code, is_confirmation: true }); }
 
@@ -439,7 +448,7 @@
       .then(function () { state.items.forEach(function (it) { it.needsTr = false; }); ui.translating = false; save(); render(); });
   }
 
-  function compress(file, cb) {
+  function compress(file, cb, onFail) {
     var reader = new FileReader();
     reader.onload = function (ev) {
       var img = new Image();
@@ -449,9 +458,10 @@
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         var url = cv.toDataURL('image/jpeg', 0.85); cb(url.split(',')[1], url);
       };
-      img.onerror = function () { fail('No pudimos abrir esa imagen.'); };
+      img.onerror = function () { (onFail || fail)('No pudimos abrir esa imagen. Si es una foto HEIC, prueba sacándola de nuevo o con una captura.'); };
       img.src = ev.target.result;
     };
+    reader.onerror = function () { (onFail || fail)('No pudimos leer el archivo de la foto.'); };
     reader.readAsDataURL(file);
   }
 
