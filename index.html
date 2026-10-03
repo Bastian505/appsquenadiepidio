@@ -1994,7 +1994,7 @@ function rnd(v){var d=decPlaces();return d?Math.round(v*100)/100:Math.round(v);}
 // Impuesto / cargos de servicio impresos en la boleta (o agregados por el reconciliador):
 // NO se asignan a una persona, se reparten proporcional al consumo de cada uno (como la
 // propina). Se detectan por nombre para que anfitrión e invitados calculen igual.
-var EXTRA_RE=/^\s*(impuesto|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|fbr pos charges?|sc|stamp duty|cargo (por )?servicio)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
+var EXTRA_RE=/^\s*(impuesto|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|fbr pos charges?|sc|stamp duty|card surcharge|credit card (fee|surcharge)|card fee|cargo (por )?servicio)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
 function isExtraItem(it){return EXTRA_RE.test((it&&it.name)||'');}
 function activeItems(){return items.filter(function(i){return i.selected&&!isExtraItem(i);});}
 function extrasSum(){return items.filter(function(i){return i.selected&&isExtraItem(i);}).reduce(function(s,i){return s+i.total;},0);}

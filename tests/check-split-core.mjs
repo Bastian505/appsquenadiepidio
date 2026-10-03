@@ -41,8 +41,8 @@ r = S.compute({ currency: 'PKR', people: P.slice(0, 2), items: [{ id: 1, name: '
 ok(near(r.perPerson[0].amount, 9085) && near(r.perPerson[1].amount, 115), `impuesto proporcional: ${r.perPerson.map(p => p.amount)}`);
 
 // 6) Detección de extras sin confundir platos
-for (const t of ['Impuesto', 'Service Charges', 'Sales Tax 5%', 'GST', 'SST', 'FBR POS CHARGES', 'Propina']) ok(S.isExtra({ name: t }), `"${t}" es extra`);
-for (const t of ['Tax Free Water', 'Tipsy Cake', 'Servicio de mesa especial', 'Chicken Tikka']) ok(!S.isExtra({ name: t }), `"${t}" no es extra`);
+for (const t of ['Impuesto', 'Service Charges', 'Sales Tax 5%', 'GST', 'SST', 'FBR POS CHARGES', 'Propina', 'Card surcharge', 'Credit Card Fee']) ok(S.isExtra({ name: t }), `"${t}" es extra`);
+for (const t of ['Tax Free Water', 'Tipsy Cake', 'Card holder platter', 'Servicio de mesa especial', 'Chicken Tikka']) ok(!S.isExtra({ name: t }), `"${t}" no es extra`);
 
 // 7) HUF sin decimales
 r = S.compute({ currency: 'HUF', people: P.slice(0, 2), tip: { pct: 10 }, items: [{ id: 1, name: 'Gulyás', price: 3290, qty: 1 }], assigns: { 1: { people: ['a', 'b'] } } });

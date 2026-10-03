@@ -151,8 +151,10 @@ Nombres en 2 líneas = UN SOLO ítem. Decimal con coma: "1,80"→1.80.`
 FORMATO: "N..NOMBRE TOTAL" → precio_unitario=TOTAL÷N. Ej: "3 Coffee $12.00" → {precio_unitario:4.00, cantidad:3}.
 IGNORAR líneas sin precio: "Over Easy,Brown Bread", "Poached Medium", "Any Style", etc.
 INCLUIR: "Health Ins (X%)" como item. Service charge como item.
-TOTAL: si imprime "CASH TOTAL" y debajo "TOTAL" MAYOR (precio con tarjeta: Items + Tax = Cash Total, y Total = Cash Total
-+ recargo de tarjeta, ej. 95.10 vs 98.43), total_referencia = el "TOTAL" (precio tarjeta) y menciona el "Cash Total" en notas.
+IMPUESTO: la línea "Tax 6.22" va como ítem de cargo llamado "Tax" (no es consumo; se reparte proporcional).
+DUAL PRICING (precio efectivo vs. tarjeta): si imprime "CASH TOTAL" y debajo un "TOTAL" MAYOR (Items + Tax = Cash Total,
+y Total = Cash Total + recargo de tarjeta, ej. 95.10 vs 98.43), agrega un ítem "Card surcharge" = TOTAL - CASH TOTAL
+(98.43 - 95.10 = 3.33) y total_referencia = el "TOTAL". Así ítems + Tax + Card surcharge = TOTAL.
 Si solo hay "Cash Total", úsalo (sin propina). Las "Suggested gratuities" al pie nunca son ítems ni parte del total.`
   },
   CA: {
