@@ -108,8 +108,12 @@ function scoreItems(expected, actual) {
 }
 
 async function callClaude(apiKey, imagePath, system) {
-  const imageBase64 = fs.readFileSync(imagePath).toString('base64');
-  const mediaType = imagePath.endsWith('.png') ? 'image/png' : 'image/jpeg';
+  const buf = fs.readFileSync(imagePath);
+  const imageBase64 = buf.toString('base64');
+  // El tipo se detecta por los primeros bytes, no por la extensión (hay .jpg que en realidad son PNG).
+  const mediaType = buf[0] === 0x89 && buf[1] === 0x50 ? 'image/png'
+    : buf[0] === 0x52 && buf[1] === 0x49 ? 'image/webp'
+    : buf[0] === 0x47 && buf[1] === 0x49 ? 'image/gif' : 'image/jpeg';
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
