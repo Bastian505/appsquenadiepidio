@@ -169,6 +169,12 @@ ok(/RM1\d\d,\d\d/.test(body), 'y ve lo que lleva (con servicio repartido): ' + (
 await guest.locator('.assign', { hasText: 'Cerveza' }).locator('.pbtn').click();
 await guest.waitForTimeout(400);
 ok(db.claims.length === 2, 'lo que marca el invitado queda guardado');
+const beer = () => db.claims.find(c => c.item_id === '2');
+ok(beer() && beer().units === 1, 'en una línea de 2 unidades parte con 1 unidad marcada');
+ok(/¿Cuántas tomaste\?/.test(await guest.innerText('body')), 'y le ofrece elegir cuántas tomó');
+await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').click();
+await guest.waitForTimeout(500);
+ok(beer() && beer().units === 2, 'el invitado sube a 2 unidades y se guarda');
 await shot(guest, 'shared-3-invitado.png');
 
 // El tiempo real puede cortarse: el anfitrión debe enterarse solo (consulta periódica), sin recargar.
@@ -180,6 +186,24 @@ await host.reload(); await host.waitForTimeout(1200);
 body = await host.innerText('body');
 ok(/Tiano/.test(body) && !/Invitada/.test(body), 'el anfitrión ve a Tiano (el nombre elegido) y no aparece duplicado');
 await shot(host, 'shared-4-host-ve.png');
+
+// ── El anfitrión también marca lo suyo y el invitado lo ve en vivo ──────────
+await host.click('text=Asignar ítems').catch(() => {});
+const hostAssign = (name) => host.locator('.assign', { hasText: name });
+await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
+await host.waitForTimeout(700);
+ok(db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'lo que el anfitrión marca para sí llega a la base');
+await guest.waitForFunction(() => /También: Rodrigo/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el invitado ve en vivo lo que marcó el anfitrión'), () => ok(false, 'el invitado ve en vivo lo que marcó el anfitrión'));
+await host.waitForTimeout(4500);   // pasa una consulta periódica: la marca del anfitrión no se pierde
+ok(await hostAssign('Pizza').locator('.pbtn.on', { hasText: 'Rodrigo' }).count() === 1, 'la marca del anfitrión sigue ahí tras actualizar');
+const before = db.claims.length;
+await hostAssign('Cerveza').locator('.pbtn', { hasText: 'Tiano' }).click();
+await host.waitForTimeout(300);
+ok(db.claims.length === before, 'el anfitrión no puede marcar por alguien conectado (lo hace esa persona)');
+ok(/Tiano marca lo suyo/.test(await host.innerText('body')), 'y se le explica con el nombre');
+await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
+await host.waitForTimeout(700);
+ok(!db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'si el anfitrión desmarca, también se quita en la base');
 
 // ── Un link inválido no deja entrar ─────────────────────────────────────────
 const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-CL' });
