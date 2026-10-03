@@ -8,7 +8,7 @@ function fn(name) {
   const i = src.indexOf('function ' + name + '('); let d = 0, j = src.indexOf('{', i);
   for (let k = j; k < src.length; k++) { if (src[k] === '{') d++; if (src[k] === '}' && --d === 0) return src.slice(i, k + 1); }
 }
-const reconcile = new Function(['TAX_COUNTRIES','TAX_ON_TOP_HIGH','SERVICE_CHARGE_COUNTRIES','TIP_COUNTRIES'].map(line).join('\n') + '\n' + fn('reconcile') + '\nreturn reconcile;')();
+const reconcile = new Function(['TAX_COUNTRIES','CA_TAX_RATES','TAX_ON_TOP_HIGH','SERVICE_CHARGE_COUNTRIES','TIP_COUNTRIES'].map(line).join('\n') + '\n' + fn('reconcile') + '\nreturn reconcile;')();
 
 let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log('✗ ' + m); } };
@@ -32,6 +32,14 @@ ok(near(fixed(reconcile([it('Adult', 38.8, 6), it('Gin', 68), it('Ume', 10), it(
 ok(reconcile([it('platos', 251.2), it('Service Charge', 25.12)], 276.3, 'SG').ok, 'SG: GST 0.00 y redondeo -0,02 → ok sin ruido');
 // Tailandia: sin impuesto inventado
 ok(!reconcile([it('platos', 110)], 110, 'TH').auto_fixed, 'TH: VAT incluido, nada que agregar');
+// Canadá: impuesto provincial reconocido por su tasa exacta sobre la suma
+ok(near(fixed(reconcile([it('platos', 414)], 476, 'CA')), 62), 'CA Quebec 14,975%: 414 → 476 (Château Frontenac)');
+ok(near(fixed(reconcile([it('platos', 76.3)], 87.73, 'CA')), 11.43), 'CA Quebec: 76,30 → 87,73 (Keung Kee)');
+ok(near(fixed(reconcile([it('platos', 100)], 113, 'CA')), 13), 'CA Ontario HST 13%');
+ok(near(fixed(reconcile([it('platos', 100)], 105, 'CA')), 5), 'CA GST 5%');
+ok(!reconcile([it('platos', 100)], 110, 'CA').auto_fixed, 'CA: 10% no es una tasa provincial → no inventa impuesto');
+ok(!reconcile([it('platos', 414)], 476, 'ES').auto_fixed, 'la misma diferencia en otro país no se toma por impuesto');
+ok(!reconcile([it('platos', 100), it('TPS', 5), it('TVQ', 9.975)], 129.95, 'CA').auto_fixed, 'CA: con impuestos ya listados no agrega otro');
 // Si "Taxes" ya está listado como ítem no se duplica
 const dup = reconcile([it('platos', 49200), it('Service Charge', 4920), it('Taxes', 11998.3)], 66118.3, 'LK');
 ok(!dup.auto_fixed && dup.ok, 'LK: con Taxes ya listado no se agrega otro impuesto');

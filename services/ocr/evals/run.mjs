@@ -171,7 +171,7 @@ const NO_DEC = new Set(['CLP','JPY','KRW','COP','HUF','ISK','PYG','VND','RSD','I
 function cuadra(items, total, moneda) {
   const sum = (items || []).reduce((a, i) => a + (i.precio_unitario || 0) * (i.cantidad || 1), 0);
   const diff = (total || 0) - sum;
-  const tol = NO_DEC.has(moneda) ? 1 : 0.05;
+  const tol = NO_DEC.has(moneda) ? 1 : Math.max(0.05, (total || 0) * 0.0015);   // igual que review() en v2/app.js
   return { ok: !total || Math.abs(diff) <= tol, diff, sum };
 }
 
