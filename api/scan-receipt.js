@@ -127,7 +127,7 @@ PROCESO MENTAL
    para cuadrar (el sistema externo se encarga de la reconciliación).
 
 ═══════════════════════════════════════════════════════════════════════════════
-REGLAS UNIVERSALES (R1-R22)
+REGLAS UNIVERSALES (R1-R21)
 ═══════════════════════════════════════════════════════════════════════════════
 
 R1. INCLUIR solo productos/servicios con precio real visible o derivable.
@@ -264,13 +264,6 @@ R21. SUPLEMENTOS "(+X.XX)": un monto entre paréntesis bajo un ítem, con "+" (e
      lo listes como ítem. Los modificadores sin monto tampoco son ítems (R6).
      Igual con extras en otras monedas ("+ ไข่ดาว (B10.00)" bajo "ข้าวหมูทอด 1 x B79.00", con 89.00 a la
      derecha): el importe de la derecha ya incluye el extra, úsalo tal cual (89 = 79 + 10).
-
-R22. FILAS Y COLUMNAS: en fotos inclinadas la columna de importes puede quedar desfasada respecto a los
-     nombres. Cuenta las filas: debe haber tantos importes como nombres de producto, en el mismo orden; no
-     "corras" un importe a la fila vecina. Dos filas seguidas con el MISMO nombre (ej. agua x2 y agua x1)
-     son dos líneas distintas: no las descartes ni las fundas en una. ANTES de responder suma el importe de
-     cada ítem (precio_unitario x cantidad): si no iguala el total impreso, vuelve a mirar la foto: lo más
-     probable es una fila omitida o un importe corrido de fila. Nunca "arregles" la suma inventando ítems.
 
 R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
@@ -702,8 +695,37 @@ export default async function handler(req, res) {
     }
 
     // Normalizar ítems (incluye auto-created si reconcile los agrega)
-    const normalizedBase = normalizeItems(parsed.items || [], currency);
-    const recon          = reconcile(normalizedBase, parsed.total_referencia || 0, finalCountry);
+    let normalizedBase = normalizeItems(parsed.items || [], currency);
+    let recon          = reconcile(normalizedBase, parsed.total_referencia || 0, finalCountry);
+
+    // Segunda lectura SOLO cuando la suma no cuadra con el total impreso (≈ 1 de cada 10 boletas): se le dice al
+    // modelo cuánto falta y qué suele causarlo (importe corrido de fila en fotos inclinadas, fila repetida omitida).
+    // Se queda con la segunda solo si la acerca claramente al total; si falla o tarda, se conserva la primera.
+    let reintento = { usado:false, mejoro:false };
+    const reintentable = !recon.auto_fixed && recon.total > 0 && recon.ratio >= 0.03 && recon.ratio <= 0.35
+      && Date.now() - startMs < 28000 && !is_confirmation;
+    if (reintentable) {
+      reintento.usado = true;
+      try {
+        const lista = normalizedBase.map(it => `- ${it.nombre} | ${it.cantidad} x ${it.precio_unitario}`).join('\n');
+        const aviso = `Revisión: la suma de los ítems de tu lectura anterior es ${recon.sum.toFixed(2)} y el total impreso es ${recon.total} ` +
+          `(${recon.diff > 0 ? 'faltan' : 'sobran'} ${Math.abs(recon.diff).toFixed(2)}). Tu lectura anterior:\n${lista}\n\n` +
+          'Vuelve a mirar la foto fila por fila. Causas frecuentes: un importe corrido a la fila vecina (foto inclinada), ' +
+          'una fila omitida (incluso si repite el nombre de otra), o una cantidad mal leída. Corrige SOLO lo que veas mal en la foto; ' +
+          'no inventes ni agregues ítems para cuadrar la suma. Devuelve el JSON completo con el mismo formato.';
+        const raw2 = await callClaude(apiKey, image_base64, media_type, system, aviso, model);
+        const p2 = parseJSON(raw2);
+        if (p2?.items?.length && !(p2.ok === false && p2.reason)) {
+          const nb2 = normalizeItems(p2.items, currency);
+          const total2 = p2.total_referencia || parsed.total_referencia || 0;
+          const r2 = reconcile(nb2, total2, finalCountry);
+          if (Math.abs(r2.diff) <= Math.abs(recon.diff) * 0.5) {
+            normalizedBase = nb2; recon = r2; parsed.items = p2.items; parsed.total_referencia = total2;
+            reintento.mejoro = true;
+          }
+        }
+      } catch (e) { console.warn('Reintento omitido:', e.message); }
+    }
 
     // Aplicar auto-fix (siempre marcado, nunca silencioso)
     let finalItems = normalizedBase;
@@ -784,7 +806,8 @@ export default async function handler(req, res) {
         auto_fixed:        recon.auto_fixed || false,
         auto_fix_type:     recon.auto_fix_type || null,
         user_action_required: recon.user_action_required || false,
-        user_message:      recon.user_message || null
+        user_message:      recon.user_message || null,
+        reintento:         reintento
       },
       warnings
     });
