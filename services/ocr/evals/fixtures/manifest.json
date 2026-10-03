@@ -224,21 +224,7 @@
       "notas": "'2 KID'S MEAL 10.00' -> unit=5.00, qty=2. Sales Tax 2.81 se ignora (R2)."
     },
 
-    { "id": "US/keltic-kitchen-yarmouth", "pais": "US", "moneda": "USD", "restaurante": "Keltic Kitchen",
-      "items": [
-        {"nombre": "Rasher Benny", "precio_unitario": 14.99, "cantidad": 2},
-        {"nombre": "Lemon Ricotta", "precio_unitario": 12.99, "cantidad": 1},
-        {"nombre": "Brisket", "precio_unitario": 15.98, "cantidad": 1},
-        {"nombre": "Coffee", "precio_unitario": 3.49, "cantidad": 1},
-        {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1},
-        {"nombre": "LG Fresh OJ", "precio_unitario": 5.99, "cantidad": 1},
-        {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1},
-        {"nombre": "Two Eggs", "precio_unitario": 10.48, "cantidad": 1},
-        {"nombre": "Side Hollandaise", "precio_unitario": 2.99, "cantidad": 1}
-      ],
-      "total_referencia": 98.43,
-      "notas": "'Over Easy, Brown Bread' y 'Poached Medium, Brown Bread' son modificadores sin monto bajo 'Brisket' y 'Two Eggs' -> ignorar (R6), no son items. 'Suggested gratuities' al pie se ignora (R9, no esta en el total)."
-    },
+    {"id": "US/keltic-kitchen-yarmouth", "pais": "US", "moneda": "USD", "restaurante": "Keltic Kitchen", "items": [{"nombre": "Rasher Benny", "precio_unitario": 14.99, "cantidad": 2}, {"nombre": "Lemon Ricotta", "precio_unitario": 12.99, "cantidad": 1}, {"nombre": "Brisket", "precio_unitario": 15.98, "cantidad": 1}, {"nombre": "Coffee", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "LG Fresh OJ", "precio_unitario": 5.99, "cantidad": 1}, {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "Two Eggs", "precio_unitario": 10.48, "cantidad": 1}, {"nombre": "Side Hollandaise", "precio_unitario": 2.99, "cantidad": 1}, {"nombre": "Tax", "precio_unitario": 6.22, "cantidad": 1}, {"nombre": "Card surcharge", "precio_unitario": 3.33, "cantidad": 1}], "total_referencia": 98.43, "notas": "'Over Easy, Brown Bread' y 'Poached Medium, Brown Bread' son modificadores sin monto bajo 'Brisket' y 'Two Eggs' -> ignorar (R6), no son items. 'Suggested gratuities' al pie se ignora (R9, no esta en el total). Convención: 'Tax 6.22' va como ítem de cargo y la diferencia TOTAL (98.43, tarjeta) - CASH TOTAL (95.10) = 3.33 como 'Card surcharge'; ítems + Tax + recargo = 98.43. Prueba real en v2: sin estos ítems no cuadraba (faltaban 9,55)."},
 
     { "id": "US/foreign-domestic-austin", "pais": "US", "moneda": "USD", "restaurante": "Foreign & Domestic",
       "items": [
