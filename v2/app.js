@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.i';
+  var BUILD = '2026-10-03.j';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -268,10 +268,12 @@
       '<div class="list">' + base.map(function (it) {
         var a = state.assigns[it.id] || { people: [], units: {} };
         var mineOn = (a.people || []).indexOf(mine) > -1;
-        var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name : ''; }).filter(Boolean);
+        var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name + (it.qty > 1 && a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : '') : ''; }).filter(Boolean);
+        var myU = (a.units && a.units[mine]) || 0;
+        var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">¿Cuántas tomaste?</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="Más"' + (myU >= it.qty ? ' disabled' : '') + '>+</button></div></div>' : '';
         return '<div class="assign' + (mineOn ? ' done' : '') + '">' +
           '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
-          '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' +
+          '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' + stepper +
           '<div class="state">' + (others.length ? 'También: ' + esc(others.join(', ')) : 'Nadie más lo marcó') + '</div></div>';
       }).join('') + '</div>' +
       footer('<button class="btn primary" data-action="go" data-to="summary">Ver el total →</button>');
@@ -296,7 +298,7 @@
       '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
       '<div class="who">' + state.people.map(function (p) {
         var on = who.indexOf(p.id) > -1;
-        return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '"' + (lockedPerson(p.id) ? ' data-locked="1"' : '') + '>' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
+        return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '"' + (lockedPerson(p.id) ? ' data-locked="1"' : '') + '>' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span>' + (lockedPerson(p.id) ? '<span class="small" title="Marca desde su teléfono"> 📱</span>' : '') + '</button>';
       }).join('') + '</div>' +
       (it.qty > 1 && who.length > 1 && !unitsOpen ? '<button class="linkbtn" data-action="units-open" data-item="' + it.id + '">Repartir por unidades (ej. 2 y 3)</button>' : '') +
       (it.qty > 1 && who.length > 1 && unitsOpen ? '<div class="units">' + who.map(function (pid) {
@@ -343,11 +345,11 @@
       case 'tip': ui.customTip = false; state.tip = Number(el.dataset.pct) ? { pct: Number(el.dataset.pct) } : null; save(); render(); break;
       case 'tip-custom': ui.customTip = true; render(); break;
       case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
-      case 'toggle': if (lockedPerson(pid)) { toast('Cada persona conectada marca lo suyo desde su teléfono'); break; } togglePerson(itemId, pid); save(); render(); break;
-      case 'toggle-all': toggleAll(itemId); save(); render(); break;
+      case 'toggle': if (lockedPerson(pid)) { var lp = person(pid); toast((lp ? lp.name : 'Esa persona') + ' marca lo suyo desde su teléfono'); break; } togglePerson(itemId, pid); save(); render(); syncMine([itemId]); break;
+      case 'toggle-all': toggleAll(itemId); save(); render(); syncMine([itemId]); break;
       case 'units-open': ui.unitsOpen[itemId] = true; render(); break;
-      case 'unit': changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); break;
-      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.filter(function (p) { return !lockedPerson(p.id); }).map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); break;
+      case 'unit': if (lockedPerson(pid)) { toast('Esas unidades las marca la persona desde su teléfono'); break; } changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); syncMine([itemId]); break;
+      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.filter(function (p) { return !lockedPerson(p.id); }).map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); syncMine(baseItems().map(function (it) { return it.id; })); break;
       case 'country': rescan(el.dataset.code); break;
       case 'share-bill': startSharing(); break;
       case 'pick-person': { var pk = el.dataset.key, pp = ui.invite && ui.invite.people.filter(function (x) { return String(x.id) === pk; })[0]; if (pp) { ui.joinName = pp.name; doJoin(pendingToken, pp.name, pk); } break; }
@@ -356,6 +358,7 @@
       case 'copy-link': copyText(shareLink()); break;
       case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
       case 'claim': toggleClaim(itemId); break;
+      case 'claim-unit': claimUnits(itemId, Number(el.dataset.d)); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
     }
@@ -643,12 +646,40 @@
     save();
   }
 
+  // Envía a la base lo que este teléfono marcó y vuelve a leer: así lo ven los demás al instante y lo nuestro no se pisa.
+  function pushClaims(promises) {
+    if (!SYNC) return;
+    Promise.all(promises).then(function () { return SYNC.fetchAll(); }).then(function (d) { applyRemote(d); render(); });
+  }
+  function claimCall(itemId) {
+    var a = state.assigns[itemId], mine = state.myMemberId, it = item(itemId);
+    if (!a || (a.people || []).indexOf(mine) < 0) return SYNC.clearClaim(itemId);
+    var u = a.units && a.units[mine];
+    return SYNC.setClaim(itemId, it && it.qty > 1 && u ? u : null);
+  }
+  // El anfitrión también es un miembro: lo que marca para sí mismo tiene que llegar a la base (si no, se pierde y los invitados no lo ven).
+  function syncMine(ids) {
+    if (!SYNC || !state.share || state.share.role !== 'host' || state.myMemberId == null) return;
+    pushClaims(ids.map(claimCall));
+  }
+
   function toggleClaim(itemId) {
-    var a = state.assigns[itemId] || { people: [] };
-    var mine = state.myMemberId, on = (a.people || []).indexOf(mine) > -1;
+    var mine = state.myMemberId, it = item(itemId);
     // Optimista: se ve al instante y la base confirma (o corrige) por tiempo real.
-    togglePerson(itemId, mine); save(); render();
-    if (SYNC) (on ? SYNC.clearClaim(itemId) : SYNC.setClaim(itemId, null)).then(function () { return SYNC.fetchAll(); }).then(function (d) { applyRemote(d); render(); });
+    togglePerson(itemId, mine);
+    var a = state.assigns[itemId];
+    if (it && it.qty > 1 && a && a.people.indexOf(mine) > -1) a.units[mine] = 1;   // en líneas con varias unidades, parte con 1 y ajusta con − / +
+    save(); render();
+    pushClaims([claimCall(itemId)]);
+  }
+  function claimUnits(itemId, d) {
+    var mine = state.myMemberId, it = item(itemId), a = state.assigns[itemId];
+    if (!it || !a || a.people.indexOf(mine) < 0) return;
+    var next = Math.max(0, Math.min(it.qty, (a.units[mine] || 0) + d));
+    if (next === 0) { togglePerson(itemId, mine); }
+    else a.units[mine] = next;
+    save(); render();
+    pushClaims([claimCall(itemId)]);
   }
 
   // El anfitrión publica los cambios de la boleta (ítems, propina) para que los invitados los vean.
