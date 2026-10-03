@@ -22,7 +22,8 @@
     tax_kw:['iva','impuesto','percepciones'], deposit_kw:[], refund_kw:[],
     tip_behavior:'none', tip_kw:[], total_kw:['total','importe total','a pagar'],
     price_format:'standard', signals:['cuit','afip','factura a','factura b'],
-    format:'$ = ARS siempre. Precios altos por inflación son normales.'
+    format:`$ = ARS siempre. Precios altos por inflación son normales.
+"Gentileza", "Bonificación" o "Descuento" con importe NEGATIVO (ej. "Gentileza -375,00") es un DESCUENTO real: inclúyelo como ítem con precio_unitario NEGATIVO y cantidad 1. "Importe Neto" / "Total" = suma de ítems menos ese descuento (1850 - 375 = 1475).`
   },
   MX: {
     name:'México', currency:'MXN', symbol:'$', has_decimals:true,
@@ -39,7 +40,7 @@
     tip_behavior:'optional_explicit', tip_kw:['propina','servicio voluntario'],
     total_kw:['total','subtotal','valor total','a pagar'],
     price_format:'standard', signals:['nit','dian','cufe','ipc','colombia','bogota','cali','medellin'],
-    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IPC/IVA/impoconsumo = impuestos ya incluidos en los precios, IGNORAR como ítems (si hay una línea "Valor"/"Subtotal antes de IPC" es un desglose informativo). Cargos de vajilla/cristalería = incluir como ítem real. PROPINA / SERVICIO VOLUNTARIO: si el cliente la aceptó y está SUMADA en el total final cobrado ("TOTAL CON PROPINA", "Servicio voluntario 10%" dentro del Total), inclúyela como ítem "Propina" y total_referencia = ese total FINAL (con propina). Si es solo una sugerencia que no está en el total (ej. "ADVERTENCIA PROPINA", "propina sugerida" bajo el total), NO la incluyas y el total es el impreso. Decide con la aritmética (R19): subtotal de ítems + propina = total.'
+    format:'$ = COP (pesos colombianos). Precios SIN decimales, punto = separador de miles: "$6.700" = 6700 COP. IVA/IPC/impoconsumo: si es solo un DESGLOSE de un impuesto ya incluido en los precios (la suma de los ítems ya iguala el total, o hay una línea "Valor"/"Subtotal antes de IPC"), IGNÓRALO. Pero si el IPC (8 %) aparece como línea SUMADA al subtotal (subtotal + IPC (+ propina) = TOTAL, ej. 5.449.536 + IPC 427.404 + propina 534.254 = 6.304.194), inclúyelo como ítem "Impuesto" (se reparte proporcional). Cargos de vajilla/cristalería = incluir como ítem real. PROPINA / SERVICIO VOLUNTARIO: si el cliente la aceptó y está SUMADA en el total final cobrado ("TOTAL CON PROPINA", "Servicio voluntario 10%" dentro del Total), inclúyela como ítem "Propina" y total_referencia = ese total FINAL (con propina). Si es solo una sugerencia que no está en el total (ej. "ADVERTENCIA PROPINA", "propina sugerida" bajo el total), NO la incluyas y el total es el impreso. Decide con la aritmética (R19): subtotal de ítems + propina = total.'
   },
   PE: {
     name:'Perú', currency:'PEN', symbol:'S/', has_decimals:true,
@@ -68,7 +69,8 @@
     tip_behavior:'rounding', tip_kw:['trinkgeld'],
     total_kw:['zu zahlen','summe','gesamt','brutto'],
     price_format:'unit_x_qty_equals_total', signals:['mwst','ust-idnr'],
-    format:'EUR. Pfand = depósito retornable, incluir POSITIVO. Pfandrückgabe = devolución, incluir NEGATIVO. MWST = impuesto, IGNORAR. Formato "0,29 x 6 = 1,74" → precio_unitario=1.74, cantidad=1.'
+    format:`EUR. Pfand = depósito retornable, incluir POSITIVO. MWST = impuesto, IGNORAR. Formato "0,29 x 6   1,74" (precio x cantidad, importe a la derecha) → precio_unitario=0.29, cantidad=6.
+PFANDRÜCKGABE (devolución de envases) = línea NEGATIVA que SIEMPRE se incluye: el nombre va en una línea con el importe negativo a la derecha ("Pfandrückgabe ... -1,50") y debajo "-6 x 0,25" → {nombre:"Pfandrückgabe", precio_unitario:-0.25, cantidad:6}. Si hay dos ("-6 x 0,25" y "-8 x 0,25") son dos líneas. Sin ellas la suma no cuadra: "zu zahlen" = suma de TODAS las líneas, devoluciones incluidas.`
   },
   ES: {
     name:'España', currency:'EUR', symbol:'€', has_decimals:true,

@@ -277,18 +277,7 @@
       "notas": "CASO CLAVE Colombia: 'Servicio Voluntario 10%' (10.602) esta incluido en el total final. El 'Total' impreso en la boleta tiene un error de imprenta real (se lee '8.481', que es en realidad el campo IMPC de la tabla de impuestos, no el total) -> total_referencia aca es el calculado (suma de items, que sí es internamente consistente: 114.500 en comida/bebida + 10.602 de servicio = 125.102), no el numero mal impreso."
     },
 
-    { "id": "CO/hardeleva", "pais": "CO", "moneda": "COP", "restaurante": "Mardeleva Restaurante Bar",
-      "items": [
-        {"nombre": "Carbonara con", "precio_unitario": 37870, "cantidad": 1},
-        {"nombre": "Coca Cola Original", "precio_unitario": 8000, "cantidad": 1},
-        {"nombre": "Cristaleria y Vajilla", "precio_unitario": 5250000, "cantidad": 1},
-        {"nombre": "Pasta Alfredo con", "precio_unitario": 38796, "cantidad": 1},
-        {"nombre": "Soda", "precio_unitario": 7870, "cantidad": 1},
-        {"nombre": "Propina", "precio_unitario": 534254, "cantidad": 1}
-      ],
-      "total_referencia": 6304194,
-      "notas": "CASO EXTREMO: 'Cristaleria y Vajilla' por $5.250.000 COP (vajilla rota, cobro real por daño) hace que el total sea enorme -> probar que el modelo no lo descarta como anomalia ni lo confunde con impuesto. IPC 8% (427.404) se IGNORA (R2, es un impuesto especifico de Colombia). Propina 534.254 SI esta en 'TOTAL CON PROPINA' -> incluir."
-    },
+    {"id": "CO/hardeleva", "pais": "CO", "moneda": "COP", "restaurante": "Mardeleva Restaurante Bar", "items": [{"nombre": "Carbonara con", "precio_unitario": 37870, "cantidad": 1}, {"nombre": "Coca Cola Original", "precio_unitario": 8000, "cantidad": 1}, {"nombre": "Cristaleria y Vajilla", "precio_unitario": 5250000, "cantidad": 1}, {"nombre": "Pasta Alfredo con", "precio_unitario": 38796, "cantidad": 1}, {"nombre": "Soda", "precio_unitario": 7870, "cantidad": 1}, {"nombre": "Propina", "precio_unitario": 534254, "cantidad": 1}, {"nombre": "Impuesto IPC", "precio_unitario": 427404, "cantidad": 1}], "total_referencia": 6304194, "notas": "CASO EXTREMO: 'Cristaleria y Vajilla' por $5.250.000 COP (vajilla rota, cobro real por daño) hace que el total sea enorme -> probar que el modelo no lo descarta como anomalia ni lo confunde con impuesto. IPC 8% (427.404) viene SUMADO al total (5.449.536 + 427.404 + 534.254 propina = 6.304.194): se lista como ítem 'Impuesto' (proporcional); si se ignora la suma no cuadra (hallazgo de la medición con el flujo de la app). Propina 534.254 SI esta en 'TOTAL CON PROPINA' -> incluir."},
 
     { "id": "CO/santa-fe-macarena-bogota", "pais": "CO", "moneda": "COP", "restaurante": "Santa Fe Restaurante Macarena",
       "items": [
