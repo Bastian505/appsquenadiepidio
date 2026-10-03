@@ -13,6 +13,10 @@ on:
         description: "Modelo"
         required: false
         default: "claude-sonnet-4-6"
+      retry_model:
+        description: "Modelo de la segunda lectura en modo pipeline (vacío = el mismo)"
+        required: false
+        default: ""
       pipeline:
         description: "true = pasar por el mismo flujo de la app (reconciliación y segunda lectura incluidas)"
         required: false
@@ -33,6 +37,8 @@ jobs:
           COUNTRY: ${{ inputs.country }}
           MODEL: ${{ inputs.model }}
           PIPELINE: ${{ inputs.pipeline }}
+          OCR_RETRY_MODEL: ${{ inputs.retry_model }}
+          OCR_RETRY: ${{ inputs.pipeline == 'true' && '1' || '0' }}
         run: |
           set -o pipefail
           ARGS="--model=$MODEL"

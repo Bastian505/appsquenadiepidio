@@ -702,7 +702,8 @@ export default async function handler(req, res) {
     // modelo cuánto falta y qué suele causarlo (importe corrido de fila en fotos inclinadas, fila repetida omitida).
     // Se queda con la segunda solo si la acerca claramente al total; si falla o tarda, se conserva la primera.
     let reintento = { usado:false, mejoro:false };
-    const reintentable = !recon.auto_fixed && recon.total > 0 && recon.ratio >= 0.03 && recon.ratio <= 0.35
+    // APAGADO por defecto (OCR_RETRY=1 para activarlo): en las pruebas con la boleta griega no mejoró la lectura; ver docs/DECISIONES.md.
+    const reintentable = process.env.OCR_RETRY === '1' && !recon.auto_fixed && recon.total > 0 && recon.ratio >= 0.03 && recon.ratio <= 0.35
       && Date.now() - startMs < 28000 && !is_confirmation;
     if (reintentable) {
       reintento.usado = true;
@@ -713,7 +714,8 @@ export default async function handler(req, res) {
           'Vuelve a mirar la foto fila por fila. Causas frecuentes: un importe corrido a la fila vecina (foto inclinada), ' +
           'una fila omitida (incluso si repite el nombre de otra), o una cantidad mal leída. Corrige SOLO lo que veas mal en la foto; ' +
           'no inventes ni agregues ítems para cuadrar la suma. Devuelve el JSON completo con el mismo formato.';
-        const raw2 = await callClaude(apiKey, image_base64, media_type, system, aviso, model);
+        const retryModel = process.env.OCR_RETRY_MODEL || model;   // opcional: un modelo más potente solo para la segunda lectura
+        const raw2 = await callClaude(apiKey, image_base64, media_type, system, aviso, retryModel);
         const p2 = parseJSON(raw2);
         if (p2?.items?.length && !(p2.ok === false && p2.reason)) {
           const nb2 = normalizeItems(p2.items, currency);

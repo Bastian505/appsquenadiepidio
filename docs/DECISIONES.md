@@ -18,3 +18,21 @@
 | 2026-10-02 | Con ítems sin asignar el sello dice "Cuentas + sin asignar = total" | "Las cuentas suman el total" junto a "Falta asignar" se contradecía |
 | 2026-10-02 | El invitado ve una pantalla propia ("Marca lo tuyo"), no la del anfitrión | Solo decide lo suyo; evita que toque los ítems o las marcas de otros |
 | 2026-10-02 | Al recargar, la app reconecta con `DC_SYNC.resume()` usando el borrador guardado | Sin eso el anfitrión perdía la conexión en vivo tras recargar (lo detectó la prueba de dos teléfonos) |
+
+## 2026-10-03 · Segunda lectura cuando la suma no cuadra: implementada, APAGADA
+
+**Problema (boleta real, Grecia, foto inclinada):** la columna de importes quedó corrida de fila (Varvagiannis 7,00 en vez de 6,00; Tono 2,00 en vez de 7,00) y se omitió una fila con nombre repetido: suma 100,84 vs 105,84 impreso. La app avisó "faltan €5,00", no engañó, pero la lectura estaba mal.
+
+**Intentos medidos (fixture `GR/aimani-columnas-desfasadas`, Sonnet 4.6, 20 ítems):**
+| Cambio | Ítems correctos |
+|---|---|
+| Línea base (sin cambios) | 7/20, 7/20 |
+| Regla R22 (contar filas, no fundir repetidas, sumar antes de responder) | 7/20, 7/20 y una respuesta inválida (`parse_error`) → **revertida** |
+| Segunda lectura con aviso de cuánto falta (mismo modelo) | 7/20 (se activó en 1 de 4 corridas; en las otras la suma inicial ya caía cerca del total) |
+| Segunda lectura con Opus 5.5 | no se llegó a activar en las corridas (1 de 3 corridas hizo el intento; sin mejora medible) |
+
+**Decisión:** el código de la segunda lectura queda (`OCR_RETRY=1` la enciende, `OCR_RETRY_MODEL` elige el modelo, probada sin red en `tests/check-retry.mjs`) pero **apagado por defecto**: cuesta una llamada extra y ~20 s en las boletas que no cuadran sin evidencia de mejora. Reactivar solo con evidencia en una corrida completa con `pipeline=true`.
+
+**Qué queda por probar:** un modelo más potente para toda la lectura de fotos difíciles, o pedir al usuario una foto más recta cuando la suma no cuadra (ya se muestra el aviso en rojo y los ítems dudosos).
+
+Las evals ahora pueden pasar cada boleta por el mismo flujo de la app (`--pipeline`), con lo que miden reconciliación y segunda lectura, no solo la lectura cruda.
