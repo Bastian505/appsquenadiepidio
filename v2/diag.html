@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diagnóstico DiviCuenta</title>
+<style>
+  body { font: 16px/1.4 -apple-system, system-ui, sans-serif; margin: 0; padding: 16px; background: #0b0d12; color: #f2f4f8; }
+  h1 { font-size: 20px; margin: 0 0 8px; }
+  .box { background: #14171f; border: 1px solid #262b37; border-radius: 12px; padding: 12px; margin: 12px 0; }
+  label.btn, button { display: block; width: 100%; box-sizing: border-box; text-align: center; padding: 14px; border-radius: 12px; border: 0; background: #5b8cff; color: #fff; font-size: 16px; font-weight: 600; margin: 8px 0; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  pre { white-space: pre-wrap; word-break: break-word; font-size: 12px; margin: 0; }
+  small { color: #a7adbb; }
+</style>
+</head>
+<body>
+<h1>Diagnóstico de DiviCuenta</h1>
+<small>Haz cada prueba y mándame un pantallazo de esta página completa.</small>
+
+<div class="box"><b>Prueba 1 · botón igual al de la app</b>
+  <label class="btn" for="f1">📷 Escanear boleta (igual a la app)</label>
+  <input id="f1" class="sr" type="file" accept="image/*">
+</div>
+
+<div class="box"><b>Prueba 2 · selector normal visible</b>
+  <input id="f2" type="file" accept="image/*" style="width:100%">
+</div>
+
+<div class="box"><b>Prueba 3 · cualquier imagen o archivo</b>
+  <input id="f3" type="file" style="width:100%">
+</div>
+
+<div class="box"><b>Prueba 4 · conexión</b>
+  <button id="net">Probar conexión</button>
+</div>
+
+<div class="box"><b>Registro</b><pre id="log"></pre></div>
+
+<script>
+  var log = document.getElementById('log'), t0 = Date.now();
+  function say(m) { log.textContent += '[' + ((Date.now() - t0) / 1000).toFixed(1) + 's] ' + m + '\n'; }
+  say('navegador: ' + navigator.userAgent);
+  say('pantalla: ' + innerWidth + 'x' + innerHeight + ' · idioma: ' + navigator.language);
+  window.addEventListener('error', function (e) { say('ERROR JS: ' + e.message); });
+  ['f1', 'f2', 'f3'].forEach(function (id, i) {
+    var el = document.getElementById(id);
+    el.addEventListener('click', function () { say('prueba ' + (i + 1) + ': toque recibido (se debería abrir el selector)'); });
+    el.addEventListener('change', function () {
+      var f = el.files && el.files[0];
+      say('prueba ' + (i + 1) + ': eligió ' + (f ? f.name + ' · ' + f.type + ' · ' + Math.round(f.size / 1024) + ' KB' : 'nada'));
+      if (!f) return;
+      var r = new FileReader();
+      r.onload = function () { say('prueba ' + (i + 1) + ': archivo leído OK (' + Math.round(String(r.result).length / 1024) + ' KB en memoria)'); };
+      r.onerror = function () { say('prueba ' + (i + 1) + ': NO se pudo leer el archivo'); };
+      r.readAsDataURL(f);
+    });
+  });
+  document.addEventListener('visibilitychange', function () { say('la página quedó ' + (document.hidden ? 'oculta' : 'visible')); });
+  document.getElementById('net').addEventListener('click', function () {
+    function ping(name, url, opt) {
+      var t = Date.now();
+      fetch(url, opt).then(function (r) { say(name + ': HTTP ' + r.status + ' en ' + (Date.now() - t) + ' ms'); })
+        .catch(function (e) { say(name + ': FALLÓ (' + e.message + ')'); });
+    }
+    ping('app.js', '/v2/app.js', { cache: 'no-store' });
+    ping('escaneo (api)', '/api/scan-receipt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    ping('supabase (CDN)', 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js', { mode: 'no-cors' });
+  });
+  fetch('/v2/app.js', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+    var m = t.match(/BUILD = '([^']+)'/); say('versión de la app publicada: ' + (m ? m[1] : 'no encontrada'));
+  }).catch(function () { say('no pude leer app.js'); });
+</script>
+</body>
+</html>
