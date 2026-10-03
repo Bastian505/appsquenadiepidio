@@ -9,7 +9,17 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.f';
+  var BUILD = '2026-10-03.g';
+  // Registro de cada paso de la lectura de la boleta (se guarda: si el teléfono recarga la página a mitad de camino, queda a la vista).
+  var TRACE_KEY = 'dc_v2_trace', trace = [];
+  try { trace = JSON.parse(localStorage.getItem(TRACE_KEY)) || []; } catch (e) { trace = []; }
+  function tlog(msg) {
+    var d = new Date(), hh = ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+    trace.push(hh + ' ' + msg); trace = trace.slice(-25);
+    try { localStorage.setItem(TRACE_KEY, JSON.stringify(trace)); } catch (e) {}
+  }
+  if (trace.length && /foto elegida/.test(trace[trace.length - 1])) tlog('⚠ la página se recargó después de elegir la foto (el teléfono la cerró)');
+  else if (trace.length) tlog('página abierta');
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
@@ -72,6 +82,7 @@
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
       (ui.error ? '<div class="banner danger" style="margin-top:12px">' + esc(ui.error) + '</div>' : '') +
+      (trace.length ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
       (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
       '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>' +
       '<p class="small" style="text-align:center;margin:18px 0 6px;opacity:.6">DiviCuenta v2 · ' + BUILD + '</p>';
@@ -85,6 +96,7 @@
         var cls = k < ui.scanStage ? 'done' : k === ui.scanStage ? 'active' : '';
         return '<div class="stage ' + cls + '"><span class="dot">' + (k < ui.scanStage ? '✓' : '') + '</span>' + l + '</div>';
       }).join('') + '</div><p class="small" style="margin:12px 0 0">Las cuentas largas pueden tardar hasta un minuto.</p></div>' +
+      '<pre class="small" style="white-space:pre-wrap;word-break:break-word;margin:10px 4px 0;opacity:.7">' + esc(trace.slice(-5).join('\n')) + '</pre>' +
       (ui.confirm ? confirmCountry() : '');
   }
 
@@ -325,6 +337,7 @@
       case 'share-bill': startSharing(); break;
       case 'pick-person': { var pk = el.dataset.key, pp = ui.invite && ui.invite.people.filter(function (x) { return String(x.id) === pk; })[0]; if (pp) { ui.joinName = pp.name; doJoin(pendingToken, pp.name, pk); } break; }
       case 'join-free': ui.joinFree = true; render(); break;
+      case 'clear-trace': trace = []; try { localStorage.removeItem(TRACE_KEY); } catch (x) {} render(); break;
       case 'copy-link': copyText(shareLink()); break;
       case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
       case 'claim': toggleClaim(itemId); break;
@@ -334,7 +347,7 @@
   });
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
-    if (a === 'photo' && el.files && el.files[0]) startScan(el.files[0]);
+    if (a === 'photo' && el.files && el.files[0]) { var pf = el.files[0]; trace = []; tlog('foto elegida: ' + (pf.name || 'sin nombre') + ' · ' + (pf.type || 'tipo desconocido') + ' · ' + Math.round(pf.size / 1024) + ' KB'); startScan(pf); }
     else if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
@@ -398,7 +411,7 @@
   function startScan(file) {
     ui.error = null; ui.confirm = null; ui.scanStage = 0; ui.photo = null;
     toast('Procesando la foto…');
-    var done = false, guard = setTimeout(function () { if (!done) { done = true; fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
+    var done = false, guard = setTimeout(function () { if (!done) { done = true; tlog('✗ la foto no terminó de procesarse en 25 s'); fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
     compress(file, function (b64, dataUrl) {
       if (done) return; done = true; clearTimeout(guard);
       ui.photo = dataUrl; pending = b64; state.step = 'scanning'; render();
@@ -412,20 +425,20 @@
   function send(payload) {
     clearInterval(ui.scanTimer);
     ui.scanStage = Math.max(ui.scanStage, 0);
-    var t0 = Date.now();
+    var t0 = Date.now(); tlog('enviando al servidor…');
     ui.scanTimer = setInterval(function () { var s = (Date.now() - t0) / 1000; var st = s < 2 ? 0 : s < 14 ? 1 : 2; if (st !== ui.scanStage && state.step === 'scanning' && !ui.confirm) { ui.scanStage = st; render(); } }, 500);
     var ctrl = new AbortController(), timeout = setTimeout(function () { ctrl.abort(); }, 75000);
     fetch(CFG.SCAN_URL, { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json', 'X-App-Secret': CFG.APP_SHARED_SECRET }, body: JSON.stringify(payload) })
       .then(function (res) { return res.json().catch(function () { return {}; }).then(function (d) { return { res: res, d: d }; }); })
       .then(function (x) {
         clearTimeout(timeout); clearInterval(ui.scanTimer);
-        var d = x.d;
+        var d = x.d; tlog('respuesta del servidor: HTTP ' + x.res.status + ' en ' + Math.round((Date.now() - t0) / 100) / 10 + ' s' + (d && d.code ? ' · ' + d.code : '') + (x.res.ok ? '' : ' · ' + String((d && (d.error || d.message)) || '').slice(0, 80)));
         if (!x.res.ok) return fail(d.error || (x.res.status === 429 ? 'Demasiados escaneos seguidos. Espera un minuto.' : 'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.'));
         if (d.needs_confirmation) { ui.confirm = d; render(); return; }
         if (!d.ok || !d.items || !d.items.length) return fail(d.message || d.error || 'No encontramos ítems. Prueba con una foto más nítida y con la boleta completa.');
         loadReceipt(d);
       })
-      .catch(function (err) { clearTimeout(timeout); clearInterval(ui.scanTimer); fail(err && err.name === 'AbortError' ? 'La lectura tardó demasiado. Intenta de nuevo.' : 'Sin conexión. Revisa tu internet e intenta de nuevo.'); });
+      .catch(function (err) { clearTimeout(timeout); clearInterval(ui.scanTimer); tlog('✗ error de red: ' + (err && (err.name + ' ' + err.message))); fail(err && err.name === 'AbortError' ? 'La lectura tardó demasiado. Intenta de nuevo.' : 'Sin conexión. Revisa tu internet e intenta de nuevo.'); });
   }
   function fail(msg) { ui.error = msg; state.step = 'home'; save(); render(); }
 
@@ -467,18 +480,19 @@
   function compress(file, cb, onFail, onRead) {
     var reader = new FileReader();
     reader.onload = function (ev) {
-      if (onRead) onRead();
+      tlog('archivo leído en memoria'); if (onRead) onRead();
       var img = new Image();
       img.onload = function () {
         var MAX = 1600, w = img.width, h = img.height, r = Math.min(1, MAX / Math.max(w, h));
+        tlog('imagen decodificada ' + w + 'x' + h);
         var cv = document.createElement('canvas'); cv.width = Math.round(w * r); cv.height = Math.round(h * r);
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        var url = cv.toDataURL('image/jpeg', 0.85); cb(url.split(',')[1], url);
+        var url = cv.toDataURL('image/jpeg', 0.85); tlog('foto reducida a ' + cv.width + 'x' + cv.height + ' · ' + Math.round(url.length / 1024) + ' KB'); cb(url.split(',')[1], url);
       };
-      img.onerror = function () { (onFail || fail)('No pudimos abrir esa imagen. Si es una foto HEIC, prueba sacándola de nuevo o con una captura.'); };
+      img.onerror = function () { tlog('✗ no se pudo decodificar la imagen'); (onFail || fail)('No pudimos abrir esa imagen. Si es una foto HEIC, prueba sacándola de nuevo o con una captura.'); };
       img.src = ev.target.result;
     };
-    reader.onerror = function () { (onFail || fail)('No pudimos leer el archivo de la foto.'); };
+    reader.onerror = function () { tlog('✗ no se pudo leer el archivo'); (onFail || fail)('No pudimos leer el archivo de la foto.'); };
     reader.readAsDataURL(file);
   }
 
