@@ -23,7 +23,8 @@
     tip_behavior:'none', tip_kw:[], total_kw:['total','importe total','a pagar'],
     price_format:'standard', signals:['cuit','afip','factura a','factura b'],
     format:`$ = ARS siempre. Precios altos por inflación son normales.
-"Gentileza", "Bonificación" o "Descuento" con importe NEGATIVO (ej. "Gentileza -375,00") es un DESCUENTO real: inclúyelo como ítem con precio_unitario NEGATIVO y cantidad 1. "Importe Neto" / "Total" = suma de ítems menos ese descuento (1850 - 375 = 1475).`
+"Gentileza", "Bonificación" o "Descuento" con importe NEGATIVO (ej. "Gentileza -375,00") es un DESCUENTO real: inclúyelo como ítem con precio_unitario NEGATIVO y cantidad 1. "Importe Neto" / "Total" = suma de ítems menos ese descuento (1850 - 375 = 1475).
+Tickets "Control de mesa"/"Comprobante" de matriz: la ÚLTIMA columna (Importe/Precio) es el total de la LÍNEA ("2 FILET 410,00" = 410 por las 2 unidades, no 820). Si hay dos columnas (P.Unit e Importe), usa la última y precio_unitario = importe / cantidad. Cada línea se lee con SU importe de la misma fila: en fotos curvas o inclinadas no desplaces la columna; comprueba que la suma de los importes iguale el Subtotal/Total impreso y, si no, vuelve a alinear fila por fila. "CUBIERTO" y "SERVICIO DE MESA" con importe son ítems reales; con importe vacío o 0,00 ("5 COMENSALES 0.00", "SERV.DE MESA" sin precio) NO son ítems. Líneas a 0,00 (cortesías) se omiten. Números pegados como "685.001370.00" son dos columnas: 685.00 (unitario) y 1370.00 (importe).`
   },
   MX: {
     name:'México', currency:'MXN', symbol:'$', has_decimals:true,
