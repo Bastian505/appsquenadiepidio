@@ -56,20 +56,66 @@
   }
 
   // El anfitrión manda la boleta completa (ítems, propina, moneda). Los invitados no pueden.
+  // Si la base aún no tiene las columnas nuevas (migración 20261004 sin correr), se publica sin ellas y todo sigue funcionando.
+  var extrasOk = true;
   function pushBill(bill) {
     if (!sb || !state.billId || state.role !== 'host') return Promise.resolve();
-    return sb.from('dc_bills').update({
+    var base = {
       restaurant: bill.restaurant || null, currency: bill.currency, country_code: bill.countryCode || null,
       items: bill.items || [], tip: bill.tip || null, receipt_total: bill.receiptTotal || null
-    }).eq('id', state.billId).then(function (r) { if (r.error) console.warn('pushBill:', r.error.message); });
+    };
+    function send(withExtras) {
+      var row = base;
+      if (withExtras) row = Object.assign({}, base, {
+        // La lista de nombres (para que el invitado elija el suyo) y lo que ya se marcó a quienes aún no entran.
+        people: (bill.people || []).map(function (p) { return { id: String(p.id), name: p.name }; }),
+        pre_assigns: preAssigns(bill)
+      });
+      return sb.from('dc_bills').update(row).eq('id', state.billId);
+    }
+    return send(extrasOk).then(function (r) {
+      if (r.error && extrasOk && /people|pre_assigns|column/i.test(r.error.message)) { extrasOk = false; return send(false); }
+      return r;
+    }).then(function (r) { if (r && r.error) console.warn('pushBill:', r.error.message); });
   }
 
-  function joinBill(token, name) {
+  // Marcas del anfitrión para personas que todavía no entran: {idPersona: {idÍtem: unidades|null}}.
+  function preAssigns(bill) {
+    var out = {};
+    (bill.people || []).forEach(function (p) {
+      if (p.memberId) return;
+      var m = {};
+      Object.keys(bill.assigns || {}).forEach(function (iid) {
+        var a = bill.assigns[iid];
+        if ((a.people || []).indexOf(p.id) > -1) m[iid] = (a.units && a.units[p.id] != null) ? a.units[p.id] : null;
+      });
+      if (Object.keys(m).length) out[String(p.id)] = m;
+    });
+    return out;
+  }
+
+  // Antes de entrar: con solo el link, trae el nombre del lugar y la lista de nombres (y cuáles ya están tomados).
+  function peekBill(token) {
     return init().then(function (c) {
       if (!c) throw new Error('SIN_CONEXION');
-      return c.rpc('dc_join_bill', { p_token: token, p_name: name });
+      return c.rpc('dc_peek_bill', { p_token: token });
     }).then(function (r) {
       if (r.error) throw new Error(r.error.message === 'TOO_MANY_ATTEMPTS' ? 'DEMASIADOS_INTENTOS' : r.error.message);
+      if (!r.data || !r.data.length) throw new Error('LINK_INVALIDO');
+      var row = r.data[0];
+      return { restaurant: row.out_restaurant, currency: row.out_currency, people: row.out_people || [], taken: row.out_taken || [] };
+    });
+  }
+
+  function joinBill(token, name, personId) {
+    return init().then(function (c) {
+      if (!c) throw new Error('SIN_CONEXION');
+      var args = { p_token: token, p_name: name };
+      if (personId != null) args.p_person = String(personId);   // sin persona elegida se usa la firma de siempre
+      return c.rpc('dc_join_bill', args);
+    }).then(function (r) {
+      if (r.error) throw new Error(r.error.message === 'TOO_MANY_ATTEMPTS' ? 'DEMASIADOS_INTENTOS'
+        : /NAME_TAKEN/.test(r.error.message) ? 'NOMBRE_TOMADO' : r.error.message);
       if (!r.data || !r.data.length) throw new Error('LINK_INVALIDO');   // token malo, cuenta cerrada o expirada
       state = { billId: r.data[0].out_bill_id, memberId: r.data[0].out_member_id, token: token, role: 'guest' };
       return state;
@@ -120,9 +166,21 @@
       .eq('bill_id', state.billId).eq('member_id', state.memberId).eq('item_id', String(itemId))
       .then(function (r) { if (r.error) console.warn('clearClaim:', r.error.message); });
   }
+  // El anfitrión marca cuál de la lista es él; y puede sacar a alguien de la cuenta.
+  function setPersonKey(key) {
+    if (!sb || !state.memberId) return Promise.resolve();
+    // OJO: las consultas de supabase-js no se envían hasta el .then().
+    return sb.from('dc_bill_members').update({ person_key: String(key) }).eq('id', state.memberId)
+      .then(function (r) { if (r.error) console.warn('setPersonKey:', r.error.message); });
+  }
+  function removeMember(memberId) {
+    if (!sb || !memberId || state.role !== 'host') return Promise.resolve();
+    return sb.from('dc_bill_members').delete().eq('id', memberId)
+      .then(function (r) { if (r.error) console.warn('removeMember:', r.error.message); });
+  }
   function closeBill() {
     if (!sb || !state.billId || state.role !== 'host') return Promise.resolve();
-    return sb.from('dc_bills').update({ status: 'closed' }).eq('id', state.billId);
+    return sb.from('dc_bills').update({ status: 'closed' }).eq('id', state.billId).then(function () {});
   }
 
   // Al recargar la página se pierde el estado de este módulo: lo restauramos desde el borrador.
@@ -142,7 +200,7 @@
   }
 
   root.DC_SYNC = {
-    ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, joinBill: joinBill,
+    ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
     setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill,
     get state() { return state; },

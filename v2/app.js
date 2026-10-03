@@ -205,11 +205,19 @@
   }
 
   function join() {
+    var inv = ui.invite, free = !inv || !inv.people.length || ui.joinFree;
+    var chips = inv && inv.people.length ? '<p class="small" style="margin:0 4px 8px">¿Quién eres? Toca tu nombre:</p><div class="list">' + inv.people.map(function (p) {
+      var taken = inv.taken.indexOf(String(p.id)) > -1;
+      return '<button class="person pick" data-action="pick-person" data-key="' + esc(p.id) + '"' + (taken || ui.joining ? ' disabled' : '') + '>' +
+        avatar({ name: p.name, color: COLORS[(Number(p.id) || 0) % COLORS.length] }) + '<span style="flex:1;font-weight:600;text-align:left">' + esc(p.name) + '</span>' +
+        (taken ? '<span class="small">ya entró</span>' : '<span class="small">Soy yo →</span>') + '</button>';
+    }).join('') + '</div>' + (ui.joinFree ? '' : '<button class="linkbtn" data-action="join-free" style="margin-top:10px">Mi nombre no está en la lista</button>') : '';
     return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
-      '<section class="hero"><h1 style="font-size:26px">Te invitaron a dividir una cuenta</h1>' +
-      '<p>Escribe tu nombre y marca lo que consumiste. No necesitas registrarte.</p></section>' +
+      '<section class="hero"><h1 style="font-size:26px">Te invitaron a dividir una cuenta' + (inv && inv.restaurant ? ' en ' + esc(inv.restaurant) : '') + '</h1>' +
+      '<p>' + (inv && inv.people.length ? 'Elige tu nombre y marca lo que consumiste. No necesitas registrarte.' : 'Escribe tu nombre y marca lo que consumiste. No necesitas registrarte.') + '</p></section>' +
       (ui.joinError ? '<div class="banner danger">' + esc(ui.joinError) + '</div>' : '') +
-      '<form class="field" data-action="do-join"><input name="name" placeholder="Tu nombre" maxlength="24" value="' + esc(ui.joinName) + '" data-autofocus aria-label="Tu nombre"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? 'Entrando…' : 'Entrar') + '</button></form>';
+      (ui.invalid ? '' : ui.inviteLoading ? '<p class="muted" style="text-align:center">Cargando la invitación…</p>' : chips +
+        (free ? '<form class="field" data-action="do-join" style="margin-top:12px"><input name="name" placeholder="Tu nombre" maxlength="24" value="' + esc(ui.joinName) + '" ' + (ui.joinFree || !(inv && inv.people.length) ? 'data-autofocus ' : '') + 'aria-label="Tu nombre"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? 'Entrando…' : 'Entrar') + '</button></form>' : ''));
   }
 
   function assign() {
@@ -261,7 +269,7 @@
       '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
       '<div class="who">' + state.people.map(function (p) {
         var on = who.indexOf(p.id) > -1;
-        return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
+        return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '"' + (lockedPerson(p.id) ? ' data-locked="1"' : '') + '>' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
       }).join('') + '</div>' +
       (it.qty > 1 && who.length > 1 && !unitsOpen ? '<button class="linkbtn" data-action="units-open" data-item="' + it.id + '">Repartir por unidades (ej. 2 y 3)</button>' : '') +
       (it.qty > 1 && who.length > 1 && unitsOpen ? '<div class="units">' + who.map(function (pid) {
@@ -307,14 +315,16 @@
       case 'del-item': state.items = state.items.filter(function (i) { return i.id !== id; }); delete state.assigns[id]; save(); render(); break;
       case 'tip': ui.customTip = false; state.tip = Number(el.dataset.pct) ? { pct: Number(el.dataset.pct) } : null; save(); render(); break;
       case 'tip-custom': ui.customTip = true; render(); break;
-      case 'del-person': removePerson(id); save(); render(); break;
-      case 'toggle': togglePerson(itemId, pid); save(); render(); break;
+      case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
+      case 'toggle': if (lockedPerson(pid)) { toast('Cada persona conectada marca lo suyo desde su teléfono'); break; } togglePerson(itemId, pid); save(); render(); break;
       case 'toggle-all': toggleAll(itemId); save(); render(); break;
       case 'units-open': ui.unitsOpen[itemId] = true; render(); break;
       case 'unit': changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); break;
-      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); break;
+      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.filter(function (p) { return !lockedPerson(p.id); }).map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); break;
       case 'country': rescan(el.dataset.code); break;
       case 'share-bill': startSharing(); break;
+      case 'pick-person': { var pk = el.dataset.key, pp = ui.invite && ui.invite.people.filter(function (x) { return String(x.id) === pk; })[0]; if (pp) { ui.joinName = pp.name; doJoin(pendingToken, pp.name, pk); } break; }
+      case 'join-free': ui.joinFree = true; render(); break;
       case 'copy-link': copyText(shareLink()); break;
       case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
       case 'claim': toggleClaim(itemId); break;
@@ -332,7 +342,7 @@
   document.addEventListener('submit', function (e) {
     if (e.target.dataset.action === 'do-join') {
       e.preventDefault(); var n = e.target.elements.name.value.trim();
-      if (!n) return; ui.joinName = n; doJoin(pendingToken, n); return;
+      if (!n) return; ui.joinName = n; doJoin(pendingToken, n, null); return;
     }
     if (e.target.dataset.action !== 'add-person') return;
     e.preventDefault(); var input = e.target.elements.name, n = input.value.trim(); if (!n) return;
@@ -356,6 +366,8 @@
     if (field === 'qty') { it.qty = Math.max(1, Math.round(parseNum(value)) || 1); var a = state.assigns[id]; if (a) a.units = {}; }
     it.confidence = null; save(); render();
   }
+  // Quien ya entró desde su teléfono marca lo suyo allí; el anfitrión no lo cambia por él.
+  function lockedPerson(pid) { var p = person(pid); return !!(state.share && state.share.role === 'host' && p && p.memberId && p.id !== state.myMemberId); }
   function removePerson(id) {
     state.people = state.people.filter(function (p) { return p.id !== id; });
     Object.keys(state.assigns).forEach(function (k) { var a = state.assigns[k]; a.people = a.people.filter(function (p) { return p !== id; }); if (a.units) delete a.units[id]; });
@@ -367,8 +379,9 @@
     var it = item(itemId); if (it && it.qty > 1 && a.people.length === 1) a.units = {};
   }
   function toggleAll(itemId) {
-    var a = state.assigns[itemId], all = a && a.people.length === state.people.length;
-    state.assigns[itemId] = { people: all ? [] : state.people.map(function (p) { return p.id; }), units: {} };
+    var ids = state.people.filter(function (p) { return !lockedPerson(p.id); }).map(function (p) { return p.id; });
+    var a = state.assigns[itemId], all = !!(a && ids.length && ids.every(function (id) { return a.people.indexOf(id) > -1; }));
+    state.assigns[itemId] = { people: all ? [] : ids, units: {} };
   }
   function changeUnit(itemId, pid, d) {
     var it = item(itemId), a = state.assigns[itemId]; if (!it || !a) return;
@@ -476,7 +489,7 @@
       .then(function (st) {
         state.share = { role: 'host', token: st.token, billId: st.billId };
         state.myMemberId = me ? me.id : null;
-        if (me) me.memberId = st.memberId;
+        if (me) { me.memberId = st.memberId; SYNC.setPersonKey(me.id); }
         // Lo que el anfitrión ya había marcado para sí mismo pasa a la cuenta compartida.
         if (me) state.items.forEach(function (it) {
           var a = state.assigns[it.id];
@@ -488,10 +501,21 @@
       .catch(function (e) { toast(e.message === 'SIN_CONEXION' ? 'No se pudo conectar. Sigue en este teléfono.' : 'No se pudo compartir'); });
   }
 
-  function doJoin(token, name) {
+  function loadInvite(token) {
+    ui.inviteLoading = true; ui.invalid = false; render();
+    return SYNC.peekBill(token).then(function (inv) { ui.invite = inv; ui.inviteLoading = false; render(); })
+      .catch(function (e) {
+        ui.inviteLoading = false; ui.invite = null;
+        if (e.message === 'LINK_INVALIDO') { ui.invalid = true; ui.joinError = 'Ese link ya no sirve: la cuenta se cerró o venció.'; }
+        else if (e.message === 'DEMASIADOS_INTENTOS') { ui.invalid = true; ui.joinError = 'Demasiados intentos. Espera unos minutos.'; }
+        render();   // sin conexión a la lista: igual se puede entrar escribiendo el nombre
+      });
+  }
+
+  function doJoin(token, name, personKey) {
     if (!SYNC || !token) return;
     ui.joining = true; ui.joinError = null; render();
-    SYNC.joinBill(token, name)
+    SYNC.joinBill(token, name, personKey)
       .then(function (st) {
         state = fresh();
         state.share = { role: 'guest', token: token, billId: st.billId };
@@ -501,6 +525,7 @@
       })
       .catch(function (e) {
         ui.joining = false;
+        if (e.message === 'NOMBRE_TOMADO') { ui.joinError = 'Ese nombre ya lo eligió otra persona. Elige otro.'; loadInvite(token); return; }
         ui.joinError = e.message === 'LINK_INVALIDO' ? 'Ese link ya no sirve: la cuenta se cerró o venció.'
           : e.message === 'DEMASIADOS_INTENTOS' ? 'Demasiados intentos. Espera unos minutos.'
           : 'No se pudo entrar. Revisa tu conexión.';
@@ -550,8 +575,16 @@
       state.items = (d.bill.items || []).map(function (it) { return { id: it.id, name: it.name, price: Number(it.price) || 0, qty: Number(it.qty) || 1, tr: it.tr || null, confidence: it.confidence }; });
       state.tip = d.bill.tip || null;
     }
-    // Las personas que el anfitrión agregó a mano (sin teléfono) se quedan: la base solo conoce a quienes entraron.
-    var localOnly = state.people.filter(function (p) { return p.memberId == null; });
+    // Une a cada miembro con su persona de la lista del anfitrión (por el nombre que eligió al entrar o por el vínculo previo).
+    // Las personas que aún no entran se quedan: la base solo conoce a quienes ya se conectaron.
+    var prev = state.people.slice(), linked = [];
+    d.members.forEach(function (m, i) {
+      var p = prev.filter(function (x) { return x.memberId === m.id; })[0] ||
+        prev.filter(function (x) { return x.memberId == null && m.person_key != null && String(x.id) === String(m.person_key); })[0];
+      if (p) { p.memberId = m.id; linked.push(p); }
+      else linked.push({ id: state.nextId++, name: m.name, color: COLORS[i % COLORS.length], memberId: m.id });
+    });
+    var localOnly = prev.filter(function (p) { return p.memberId == null && linked.indexOf(p) < 0; });
     var keepAssigns = {};
     Object.keys(state.assigns || {}).forEach(function (iid) {
       var a = state.assigns[iid], lp = (a.people || []).filter(function (pid) { return localOnly.some(function (p) { return p.id === pid; }); });
@@ -559,10 +592,7 @@
       var u = {}; lp.forEach(function (pid) { if (a.units && a.units[pid] != null) u[pid] = a.units[pid]; });
       keepAssigns[iid] = { people: lp, units: u };
     });
-    state.people = d.members.map(function (m, i) {
-      var prev = state.people.filter(function (p) { return p.memberId === m.id; })[0];
-      return { id: prev ? prev.id : (state.nextId++), name: m.name, color: (prev && prev.color) || COLORS[i % COLORS.length], memberId: m.id };
-    });
+    state.people = linked;
     localOnly.forEach(function (p) { state.people.push(p); });
     var byMember = {}; state.people.forEach(function (p) { if (p.memberId != null) byMember[p.memberId] = p.id; });
     if (mineUser && byMember[mineUser]) state.myMemberId = byMember[mineUser];
@@ -646,7 +676,7 @@
     if (token && /^[A-Za-z0-9_-]{16,64}={0,2}$/.test(token) && window.DC_SYNC) {
       SYNC = window.DC_SYNC; pendingToken = token;
       history.replaceState(null, '', location.pathname);
-      state = fresh(); state.step = 'join'; render(); return;
+      state = fresh(); state.step = 'join'; render(); loadInvite(token); return;
     }
     if (!SYNC && window.DC_SYNC) SYNC = window.DC_SYNC;
     render();

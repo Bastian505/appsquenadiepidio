@@ -46,3 +46,13 @@ Las políticas RLS también aplican a Realtime, así que nadie recibe cambios de
   es aceptable; si pasa, se ve en pantalla al instante.
 - El anfitrión pierde el teléfono: la cuenta queda sin dueño (se podrá transferir más adelante).
 - Historial entre dispositivos: necesita cuenta real (Google), que viene después.
+
+## Unirse eligiendo tu nombre (migración 20261004)
+
+El anfitrión arma la lista de personas; al abrir el link, el invitado ve esa lista y toca su nombre ("Soy yo"). Quien no está en la lista escribe el suyo.
+
+- `dc_bills.people` guarda la lista (solo la escribe el anfitrión) y `dc_bills.pre_assigns` lo que el anfitrión ya marcó a quienes aún no entran.
+- `dc_peek_bill(token)` deja ver la lista y los nombres ya tomados **sin** ser miembro (comparte el freno de fuerza bruta con `dc_join_bill`).
+- `dc_join_bill(token, nombre, persona)` con `persona`: el nombre lo pone el servidor, un nombre solo lo toma una persona (`NAME_TAKEN`) y las marcas previas del anfitrión pasan a las marcas del invitado.
+- Quien ya entró marca lo suyo desde su teléfono; el anfitrión no lo cambia por él.
+- El teléfono consulta la cuenta cada 4 s y al volver a la pestaña, porque el tiempo real se corta cuando el teléfono suspende la página.
