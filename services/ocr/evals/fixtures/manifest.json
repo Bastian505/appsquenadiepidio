@@ -1,925 +1,4375 @@
 {
   "_readme": "Ground truth para el harness de evals del motor de OCR. Cada entrada corresponde a una imagen en fixtures/<pais>/<id>.jpg. 'items' es lo que el modelo DEBERIA extraer (nombre, precio_unitario, cantidad) despues de aplicar las reglas R1-R15 del prompt (ignorar impuestos/subtotales, sumar modificadores al item padre, etc). 'total_referencia' es el total que aparece en la boleta. Todas estas boletas fueron transcritas a mano leyendo la imagen real, no generadas por el modelo.",
   "fixtures": [
-
-    { "id": "CL/la-cocina-spa", "pais": "CL", "moneda": "CLP", "restaurante": "La Cocina Spa",
+    {
+      "id": "CL/la-cocina-spa",
+      "pais": "CL",
+      "moneda": "CLP",
+      "restaurante": "La Cocina Spa",
       "items": [
-        {"nombre": "Michelada Estrella Damm", "precio_unitario": 6600, "cantidad": 1},
-        {"nombre": "Base Sal", "precio_unitario": 0, "cantidad": 1},
-        {"nombre": "Limonada Jengibre Menta", "precio_unitario": 5900, "cantidad": 1},
-        {"nombre": "Quesadillas Mixtas", "precio_unitario": 22000, "cantidad": 1},
-        {"nombre": "Limonada Jengibre Menta", "precio_unitario": 5900, "cantidad": 1},
-        {"nombre": "Shop Estrella damm", "precio_unitario": 5600, "cantidad": 1}
+        {
+          "nombre": "Michelada Estrella Damm",
+          "precio_unitario": 6600,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Base Sal",
+          "precio_unitario": 0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Limonada Jengibre Menta",
+          "precio_unitario": 5900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Quesadillas Mixtas",
+          "precio_unitario": 22000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Limonada Jengibre Menta",
+          "precio_unitario": 5900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Shop Estrella damm",
+          "precio_unitario": 5600,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 46000,
       "notas": "Base Sal es $0 -> R1 dice excluir items con precio 0. Propina sugerida 4.600 NO esta en el total a pagar (46.000) -> no incluir como item."
     },
-
-    { "id": "CL/calabria-restobar", "pais": "CL", "moneda": "CLP", "restaurante": "Calabria Restobar",
+    {
+      "id": "CL/calabria-restobar",
+      "pais": "CL",
+      "moneda": "CLP",
+      "restaurante": "Calabria Restobar",
       "items": [
-        {"nombre": "Schop royal HH", "precio_unitario": 1990, "cantidad": 1},
-        {"nombre": "Chelado grande", "precio_unitario": 1000, "cantidad": 1},
-        {"nombre": "Heineken 0 HH", "precio_unitario": 2000, "cantidad": 1},
-        {"nombre": "Promo sandwich", "precio_unitario": 9990, "cantidad": 1},
-        {"nombre": "Propina Sugerida", "precio_unitario": 1498, "cantidad": 1}
+        {
+          "nombre": "Schop royal HH",
+          "precio_unitario": 1990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chelado grande",
+          "precio_unitario": 1000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Heineken 0 HH",
+          "precio_unitario": 2000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Promo sandwich",
+          "precio_unitario": 9990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Propina Sugerida",
+          "precio_unitario": 1498,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 16478,
       "notas": "CASO CLAVE: aca la propina sugerida (10%) SI esta incluida en el 'Total' final (16.478), a diferencia de la boleta de La Cocina Spa. R9 dice incluir solo si forma parte del total final cobrado -> aqui corresponde incluirla."
     },
-
-    { "id": "CL/delivery-kombucha", "pais": "CL", "moneda": "CLP", "restaurante": null,
+    {
+      "id": "CL/delivery-kombucha",
+      "pais": "CL",
+      "moneda": "CLP",
+      "restaurante": null,
       "items": [
-        {"nombre": "Te", "precio_unitario": 990, "cantidad": 1},
-        {"nombre": "Limon", "precio_unitario": 0, "cantidad": 1},
-        {"nombre": "Kombucha de Flores", "precio_unitario": 1800, "cantidad": 1},
-        {"nombre": "Budin Carrot", "precio_unitario": 1500, "cantidad": 1}
+        {
+          "nombre": "Te",
+          "precio_unitario": 990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Limon",
+          "precio_unitario": 0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kombucha de Flores",
+          "precio_unitario": 1800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Budin Carrot",
+          "precio_unitario": 1500,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 4290,
       "notas": "'Cubierto BAR', 'Sale con cocina', 'Sale con cafe' son $0 e instrucciones de cocina, no items reales -> excluir (R1 y R6)."
     },
-
-    { "id": "DE/edeka-berlin", "pais": "DE", "moneda": "EUR", "restaurante": "EDEKA Fil. 5498",
+    {
+      "id": "DE/edeka-berlin",
+      "pais": "DE",
+      "moneda": "EUR",
+      "restaurante": "EDEKA Fil. 5498",
       "items": [
-        {"nombre": "G&G Tortelloni", "precio_unitario": 1.89, "cantidad": 1},
-        {"nombre": "G&G Spin.Ricot.Tor", "precio_unitario": 1.89, "cantidad": 1},
-        {"nombre": "E.Org.Pesto", "precio_unitario": 1.79, "cantidad": 1},
-        {"nombre": "G&G Zitronen", "precio_unitario": 0.99, "cantidad": 1},
-        {"nombre": "Chiems.Hell 0", "precio_unitario": 1.29, "cantidad": 2},
-        {"nombre": "Pfand", "precio_unitario": 0.08, "cantidad": 2}
+        {
+          "nombre": "G&G Tortelloni",
+          "precio_unitario": 1.89,
+          "cantidad": 1
+        },
+        {
+          "nombre": "G&G Spin.Ricot.Tor",
+          "precio_unitario": 1.89,
+          "cantidad": 1
+        },
+        {
+          "nombre": "E.Org.Pesto",
+          "precio_unitario": 1.79,
+          "cantidad": 1
+        },
+        {
+          "nombre": "G&G Zitronen",
+          "precio_unitario": 0.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chiems.Hell 0",
+          "precio_unitario": 1.29,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Pfand",
+          "precio_unitario": 0.08,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 9.30,
+      "total_referencia": 9.3,
       "notas": "CASO CLAVE formato Alemania: 'Pfand' es deposito retornable, R3 dice incluirlo POSITIVO como item real, no es un impuesto a ignorar."
     },
-
-    { "id": "DE/lidl-berlin-pfand", "pais": "DE", "moneda": "EUR", "restaurante": "LIDL",
+    {
+      "id": "DE/lidl-berlin-pfand",
+      "pais": "DE",
+      "moneda": "EUR",
+      "restaurante": "LIDL",
       "items": [
-        {"nombre": "Wasser medium", "precio_unitario": 0.29, "cantidad": 6},
-        {"nombre": "Pfand 0,25 EM", "precio_unitario": 0.25, "cantidad": 6},
-        {"nombre": "Mineralwasser still", "precio_unitario": 1.29, "cantidad": 2},
-        {"nombre": "Pfand 2,25 EM", "precio_unitario": 2.25, "cantidad": 2},
-        {"nombre": "Pfandruckgabe", "precio_unitario": -0.25, "cantidad": 6},
-        {"nombre": "Pfandruckgabe", "precio_unitario": -0.25, "cantidad": 8}
+        {
+          "nombre": "Wasser medium",
+          "precio_unitario": 0.29,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Pfand 0,25 EM",
+          "precio_unitario": 0.25,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Mineralwasser still",
+          "precio_unitario": 1.29,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Pfand 2,25 EM",
+          "precio_unitario": 2.25,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Pfandruckgabe",
+          "precio_unitario": -0.25,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Pfandruckgabe",
+          "precio_unitario": -0.25,
+          "cantidad": 8
+        }
       ],
       "total_referencia": 6.82,
       "notas": "CASO CLAVE: tiene Pfand (deposito, positivo) Y Pfandruckgabe (devolucion de depositos de una compra anterior, NEGATIVO) en la misma boleta. R3+R4 combinadas. Es el test mas duro de Alemania."
     },
-
-    { "id": "ES/fukuya-barcelona", "pais": "ES", "moneda": "EUR", "restaurante": "Restaurant Japones Fukuya-8",
+    {
+      "id": "ES/fukuya-barcelona",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Restaurant Japones Fukuya-8",
       "items": [
-        {"nombre": "A/SIN", "precio_unitario": 2.15, "cantidad": 2},
-        {"nombre": "Refresco", "precio_unitario": 2.25, "cantidad": 1},
-        {"nombre": "C/Libre Noche Festivo", "precio_unitario": 14.80, "cantidad": 3}
+        {
+          "nombre": "A/SIN",
+          "precio_unitario": 2.15,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Refresco",
+          "precio_unitario": 2.25,
+          "cantidad": 1
+        },
+        {
+          "nombre": "C/Libre Noche Festivo",
+          "precio_unitario": 14.8,
+          "cantidad": 3
+        }
       ],
       "total_referencia": 50.95,
       "notas": "Formato F2 (cant x precio): '2x 2.15 A/SIN' -> precio_unitario=2.15, cantidad=2 (ya viene como unitario, no hay que dividir)."
     },
-
-    { "id": "ES/monumental-albacete", "pais": "ES", "moneda": "EUR", "restaurante": "Monumental",
+    {
+      "id": "ES/monumental-albacete",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Monumental",
       "items": [
-        {"nombre": "Pan", "precio_unitario": 1.00, "cantidad": 2},
-        {"nombre": "Ensalada de Jamon Ibe", "precio_unitario": 7.90, "cantidad": 1},
-        {"nombre": "Canelon Relleno con C", "precio_unitario": 7.90, "cantidad": 1},
-        {"nombre": "Pluma Iberica de Bell Punto", "precio_unitario": 14.90, "cantidad": 1},
-        {"nombre": "Milanesa de Angus", "precio_unitario": 11.90, "cantidad": 1},
-        {"nombre": "Copa Cosechero Blanco", "precio_unitario": 2.10, "cantidad": 2},
-        {"nombre": "Agua 1/2L VR", "precio_unitario": 1.65, "cantidad": 1},
-        {"nombre": "Torrija", "precio_unitario": 4.90, "cantidad": 1},
-        {"nombre": "Nuestra Tarta de Manz", "precio_unitario": 4.90, "cantidad": 1}
+        {
+          "nombre": "Pan",
+          "precio_unitario": 1.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Ensalada de Jamon Ibe",
+          "precio_unitario": 7.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Canelon Relleno con C",
+          "precio_unitario": 7.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pluma Iberica de Bell Punto",
+          "precio_unitario": 14.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Milanesa de Angus",
+          "precio_unitario": 11.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Copa Cosechero Blanco",
+          "precio_unitario": 2.1,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Agua 1/2L VR",
+          "precio_unitario": 1.65,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Torrija",
+          "precio_unitario": 4.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Nuestra Tarta de Manz",
+          "precio_unitario": 4.9,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 60.25,
       "notas": "Es un 'PREFACTURA' (precuenta) -> R15 dice que es valida igual."
     },
-
-    { "id": "ES/braseria-lo-pont", "pais": "ES", "moneda": "EUR", "restaurante": "Braseria Lo Pont",
+    {
+      "id": "ES/braseria-lo-pont",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Braseria Lo Pont",
       "items": [
-        {"nombre": "Menu Festiu", "precio_unitario": 18.00, "cantidad": 4},
-        {"nombre": "Cocacola", "precio_unitario": 1.70, "cantidad": 1},
-        {"nombre": "Varis", "precio_unitario": 1.00, "cantidad": 1}
+        {
+          "nombre": "Menu Festiu",
+          "precio_unitario": 18.0,
+          "cantidad": 4
+        },
+        {
+          "nombre": "Cocacola",
+          "precio_unitario": 1.7,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Varis",
+          "precio_unitario": 1.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 74.70,
+      "total_referencia": 74.7,
       "notas": "Catalan ('GRACIES PER LA VISITA'). 'Varis' tiene una anotacion a mano 'Super' -> sigue siendo un item valido, precio visible."
     },
-
-    { "id": "ES/meshico-denia", "pais": "ES", "moneda": "EUR", "restaurante": "Meshico",
+    {
+      "id": "ES/meshico-denia",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Meshico",
       "items": [
-        {"nombre": "agua", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Cocacola zero", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Nachos Meshico", "precio_unitario": 16.50, "cantidad": 1},
-        {"nombre": "Tacos Cochinita", "precio_unitario": 8.90, "cantidad": 1},
-        {"nombre": "Sawayaka 4 piezas", "precio_unitario": 7.00, "cantidad": 1},
-        {"nombre": "Atunut 4 piezas", "precio_unitario": 8.50, "cantidad": 1},
-        {"nombre": "Nigiri de Anguila Ahumada", "precio_unitario": 8.80, "cantidad": 1}
+        {
+          "nombre": "agua",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cocacola zero",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Nachos Meshico",
+          "precio_unitario": 16.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tacos Cochinita",
+          "precio_unitario": 8.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sawayaka 4 piezas",
+          "precio_unitario": 7.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Atunut 4 piezas",
+          "precio_unitario": 8.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Nigiri de Anguila Ahumada",
+          "precio_unitario": 8.8,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 54.70,
+      "total_referencia": 54.7,
       "notas": "Caso trampa: nombre 'Meshico' (fusion mexicano-japonesa) pero el pais es España (IVA 10%, direccion Denia) -> no confundir con MX."
     },
-
-    { "id": "ES/mentidero-malaga", "pais": "ES", "moneda": "EUR", "restaurante": "Mentidero",
+    {
+      "id": "ES/mentidero-malaga",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Mentidero",
       "items": [
-        {"nombre": "Pan Mentidero", "precio_unitario": 1.00, "cantidad": 6},
-        {"nombre": "Espeto de Sardina", "precio_unitario": 6.00, "cantidad": 2},
-        {"nombre": "Unidad Tortillita", "precio_unitario": 3.00, "cantidad": 4},
-        {"nombre": "Tapa Croquetas Case", "precio_unitario": 6.00, "cantidad": 1},
-        {"nombre": "Cazon Adobo MT", "precio_unitario": 10.00, "cantidad": 1},
-        {"nombre": "Fritura Mixta", "precio_unitario": 24.00, "cantidad": 1},
-        {"nombre": "Botella Mitarte Rob", "precio_unitario": 18.00, "cantidad": 1},
-        {"nombre": "Pulpito Frito MT", "precio_unitario": 12.00, "cantidad": 1},
-        {"nombre": "Clara", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Agua MT", "precio_unitario": 2.50, "cantidad": 2},
-        {"nombre": "Botella Botella MIT", "precio_unitario": 18.00, "cantidad": 1}
+        {
+          "nombre": "Pan Mentidero",
+          "precio_unitario": 1.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Espeto de Sardina",
+          "precio_unitario": 6.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Unidad Tortillita",
+          "precio_unitario": 3.0,
+          "cantidad": 4
+        },
+        {
+          "nombre": "Tapa Croquetas Case",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cazon Adobo MT",
+          "precio_unitario": 10.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fritura Mixta",
+          "precio_unitario": 24.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Botella Mitarte Rob",
+          "precio_unitario": 18.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pulpito Frito MT",
+          "precio_unitario": 12.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Clara",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Agua MT",
+          "precio_unitario": 2.5,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Botella Botella MIT",
+          "precio_unitario": 18.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 125.50,
+      "total_referencia": 125.5,
       "notas": "Formato F4 (unidades pegadas al nombre): '6,00PAN MENTIDERO' -> cantidad=6, nombre='Pan Mentidero'. Ojo: hay dos lineas de 'BOTELLA...' distintas, no fusionar."
     },
-
-    { "id": "ES/hesperia-cartagena", "pais": "ES", "moneda": "EUR", "restaurante": "Hesperia",
+    {
+      "id": "ES/hesperia-cartagena",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Hesperia",
       "items": [
-        {"nombre": "Gambas al Ajillo", "precio_unitario": 24.00, "cantidad": 1},
-        {"nombre": "Pan con ajo", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Lomo de atun rojo", "precio_unitario": 27.00, "cantidad": 1},
-        {"nombre": "Lomo de atun rojo", "precio_unitario": 27.00, "cantidad": 1},
-        {"nombre": "Marq. Riscal Bl", "precio_unitario": 27.00, "cantidad": 1},
-        {"nombre": "Agua Mineral 0,5", "precio_unitario": 3.50, "cantidad": 2}
+        {
+          "nombre": "Gambas al Ajillo",
+          "precio_unitario": 24.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pan con ajo",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lomo de atun rojo",
+          "precio_unitario": 27.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lomo de atun rojo",
+          "precio_unitario": 27.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Marq. Riscal Bl",
+          "precio_unitario": 27.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Agua Mineral 0,5",
+          "precio_unitario": 3.5,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 114.50,
+      "total_referencia": 114.5,
       "notas": "CASO TRAMPA: hotel con campos 'Tips/Propina:' y 'Room/Habitacion:' en blanco al pie -> son campos para llenar a mano, NO son items ni importes, hay que ignorarlos (lineas sin precio)."
     },
-
-    { "id": "ES/noi-madrid", "pais": "ES", "moneda": "EUR", "restaurante": "NOI",
+    {
+      "id": "ES/noi-madrid",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "NOI",
       "items": [
-        {"nombre": "Menu Degustacion", "precio_unitario": 70.00, "cantidad": 3},
-        {"nombre": "San Pelegrino", "precio_unitario": 3.50, "cantidad": 1},
-        {"nombre": "Barolo Ornato", "precio_unitario": 82.00, "cantidad": 1},
-        {"nombre": "Barolo Clerico", "precio_unitario": 80.00, "cantidad": 1},
-        {"nombre": "Le Serre Nuove Dell'Ornel", "precio_unitario": 85.00, "cantidad": 1}
+        {
+          "nombre": "Menu Degustacion",
+          "precio_unitario": 70.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "San Pelegrino",
+          "precio_unitario": 3.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Barolo Ornato",
+          "precio_unitario": 82.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Barolo Clerico",
+          "precio_unitario": 80.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Le Serre Nuove Dell'Ornel",
+          "precio_unitario": 85.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 460.50,
+      "total_referencia": 460.5,
       "notas": "'3 MENU DEGUSTACION 210,00' -> formato R7 total/N: unit=70.00, qty=3. Es 'FACTURA PROFORMA', restaurante italiano en Madrid (pais=ES por IVA/ubicacion, no IT)."
     },
-
-    { "id": "ES/casa-esteban-sevilla", "pais": "ES", "moneda": "EUR", "restaurante": "Meson Casa Esteban",
+    {
+      "id": "ES/casa-esteban-sevilla",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Meson Casa Esteban",
       "items": [
-        {"nombre": "Pan", "precio_unitario": 1.10, "cantidad": 1},
-        {"nombre": "Coca Cola Zero", "precio_unitario": 1.60, "cantidad": 1},
-        {"nombre": "Coca Cola", "precio_unitario": 1.60, "cantidad": 1},
-        {"nombre": "Acuarius Naranja", "precio_unitario": 1.80, "cantidad": 1},
-        {"nombre": "Cerveza Grande", "precio_unitario": 2.30, "cantidad": 1},
-        {"nombre": "Revuelto Bacalao", "precio_unitario": 9.00, "cantidad": 1},
-        {"nombre": "Tapa P Tomate 1 Huevo", "precio_unitario": 3.40, "cantidad": 3},
-        {"nombre": "Plato Pechugas Bechamel", "precio_unitario": 7.40, "cantidad": 1},
-        {"nombre": "Huevos Bechamel", "precio_unitario": 2.00, "cantidad": 1},
-        {"nombre": "Coca Cola", "precio_unitario": 1.60, "cantidad": 1},
-        {"nombre": "Cerveza", "precio_unitario": 1.20, "cantidad": 1},
-        {"nombre": "Zumo Piña", "precio_unitario": 1.50, "cantidad": 1},
-        {"nombre": "Tapa Lomo Merluza", "precio_unitario": 3.50, "cantidad": 1}
+        {
+          "nombre": "Pan",
+          "precio_unitario": 1.1,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola Zero",
+          "precio_unitario": 1.6,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola",
+          "precio_unitario": 1.6,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Acuarius Naranja",
+          "precio_unitario": 1.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cerveza Grande",
+          "precio_unitario": 2.3,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Revuelto Bacalao",
+          "precio_unitario": 9.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tapa P Tomate 1 Huevo",
+          "precio_unitario": 3.4,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Plato Pechugas Bechamel",
+          "precio_unitario": 7.4,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Huevos Bechamel",
+          "precio_unitario": 2.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola",
+          "precio_unitario": 1.6,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cerveza",
+          "precio_unitario": 1.2,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Zumo Piña",
+          "precio_unitario": 1.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tapa Lomo Merluza",
+          "precio_unitario": 3.5,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 44.80,
+      "total_referencia": 44.8,
       "notas": "Hay items repetidos con el mismo nombre (Coca Cola x3 lineas) -> son lineas separadas, no fusionar en una sola con cantidad 3."
     },
-
-    { "id": "ES/tomare-tapas", "pais": "ES", "moneda": "EUR", "restaurante": "Tomare tapas",
+    {
+      "id": "ES/tomare-tapas",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Tomare tapas",
       "items": [
-        {"nombre": "Botella de Agua", "precio_unitario": 1.80, "cantidad": 1},
-        {"nombre": "Tinto Verano Blanc", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Ribera", "precio_unitario": 3.50, "cantidad": 1},
-        {"nombre": "Media Albondigas C", "precio_unitario": 8.50, "cantidad": 1},
-        {"nombre": "Croq Ibericas", "precio_unitario": 3.50, "cantidad": 1},
-        {"nombre": "Bacalao Pisto", "precio_unitario": 5.00, "cantidad": 1},
-        {"nombre": "Pan y Picos", "precio_unitario": 1.50, "cantidad": 2}
+        {
+          "nombre": "Botella de Agua",
+          "precio_unitario": 1.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tinto Verano Blanc",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ribera",
+          "precio_unitario": 3.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Media Albondigas C",
+          "precio_unitario": 8.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Croq Ibericas",
+          "precio_unitario": 3.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bacalao Pisto",
+          "precio_unitario": 5.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pan y Picos",
+          "precio_unitario": 1.5,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 27.80,
+      "total_referencia": 27.8,
       "notas": "Dice 'PENDIENTE DE COBRO' -> precuenta valida (R15)."
     },
-
-    { "id": "MX/el-dorado-tulum", "pais": "MX", "moneda": "MXN", "restaurante": "Cockteleria El Dorado",
+    {
+      "id": "MX/el-dorado-tulum",
+      "pais": "MX",
+      "moneda": "MXN",
+      "restaurante": "Cockteleria El Dorado",
       "items": [
-        {"nombre": "Tostada Camaron Mojo", "precio_unitario": 75.00, "cantidad": 2},
-        {"nombre": "Empanada Camaron Nat", "precio_unitario": 45.00, "cantidad": 2},
-        {"nombre": "Victoria Media", "precio_unitario": 50.00, "cantidad": 2}
+        {
+          "nombre": "Tostada Camaron Mojo",
+          "precio_unitario": 75.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Empanada Camaron Nat",
+          "precio_unitario": 45.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Victoria Media",
+          "precio_unitario": 50.0,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 340.00,
+      "total_referencia": 340.0,
       "notas": "'2 TOSTADA CAMARON MOJO 150.00' -> el 150.00 ya es el importe de linea para 2 unidades: unit=75.00, qty=2. Dice 'PROPINA NO INCLUIDA' explicitamente -> no agregar propina."
     },
-
-    { "id": "AR/farmacia-nacion-salta", "pais": "AR", "moneda": "ARS", "restaurante": "Farmacia Nacion",
+    {
+      "id": "AR/farmacia-nacion-salta",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Farmacia Nacion",
       "items": [
-        {"nombre": "Barbijo Quirurg con Elastico", "precio_unitario": 100.00, "cantidad": 6},
-        {"nombre": "Hketorolac 20 MG X 1", "precio_unitario": 125.00, "cantidad": 10},
-        {"nombre": "Gentileza", "precio_unitario": -375.00, "cantidad": 1}
+        {
+          "nombre": "Barbijo Quirurg con Elastico",
+          "precio_unitario": 100.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Hketorolac 20 MG X 1",
+          "precio_unitario": 125.0,
+          "cantidad": 10
+        },
+        {
+          "nombre": "Gentileza",
+          "precio_unitario": -375.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 1475.00,
+      "total_referencia": 1475.0,
       "notas": "NO es un restaurante, es una farmacia -> buen caso para probar que el pipeline no rechaza boletas de comercio general. 'Gentileza -375.00' es un descuento real (R4, negativo) que hay que incluir como item para que la suma cuadre con 'Importe Neto' (1850 - 375 = 1475)."
     },
-
-    { "id": "US/pho-ca-dao-sandiego", "pais": "US", "moneda": "USD", "restaurante": "Pho Ca Dao",
+    {
+      "id": "US/pho-ca-dao-sandiego",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "Pho Ca Dao",
       "items": [
-        {"nombre": "P1. Xelua Dac Biet", "precio_unitario": 7.29, "cantidad": 1},
-        {"nombre": "P4. C N G G S", "precio_unitario": 6.29, "cantidad": 1},
-        {"nombre": "Kid's Meal", "precio_unitario": 5.00, "cantidad": 2},
-        {"nombre": "K1. Cha Gio", "precio_unitario": 6.29, "cantidad": 1},
-        {"nombre": "T6. Tra Thai Tran Chau", "precio_unitario": 3.29, "cantidad": 1},
-        {"nombre": "G4. Cafe Sua Da", "precio_unitario": 2.99, "cantidad": 1}
+        {
+          "nombre": "P1. Xelua Dac Biet",
+          "precio_unitario": 7.29,
+          "cantidad": 1
+        },
+        {
+          "nombre": "P4. C N G G S",
+          "precio_unitario": 6.29,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kid's Meal",
+          "precio_unitario": 5.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "K1. Cha Gio",
+          "precio_unitario": 6.29,
+          "cantidad": 1
+        },
+        {
+          "nombre": "T6. Tra Thai Tran Chau",
+          "precio_unitario": 3.29,
+          "cantidad": 1
+        },
+        {
+          "nombre": "G4. Cafe Sua Da",
+          "precio_unitario": 2.99,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 38.96,
       "notas": "'2 KID'S MEAL 10.00' -> unit=5.00, qty=2. Sales Tax 2.81 se ignora (R2)."
     },
-
-    {"id": "US/keltic-kitchen-yarmouth", "pais": "US", "moneda": "USD", "restaurante": "Keltic Kitchen", "items": [{"nombre": "Rasher Benny", "precio_unitario": 14.99, "cantidad": 2}, {"nombre": "Lemon Ricotta", "precio_unitario": 12.99, "cantidad": 1}, {"nombre": "Brisket", "precio_unitario": 15.98, "cantidad": 1}, {"nombre": "Coffee", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "LG Fresh OJ", "precio_unitario": 5.99, "cantidad": 1}, {"nombre": "Tea", "precio_unitario": 3.49, "cantidad": 1}, {"nombre": "Two Eggs", "precio_unitario": 10.48, "cantidad": 1}, {"nombre": "Side Hollandaise", "precio_unitario": 2.99, "cantidad": 1}, {"nombre": "Tax", "precio_unitario": 6.22, "cantidad": 1}, {"nombre": "Card surcharge", "precio_unitario": 3.33, "cantidad": 1}], "total_referencia": 98.43, "notas": "'Over Easy, Brown Bread' y 'Poached Medium, Brown Bread' son modificadores sin monto bajo 'Brisket' y 'Two Eggs' -> ignorar (R6), no son items. 'Suggested gratuities' al pie se ignora (R9, no esta en el total). Convención: 'Tax 6.22' va como ítem de cargo y la diferencia TOTAL (98.43, tarjeta) - CASH TOTAL (95.10) = 3.33 como 'Card surcharge'; ítems + Tax + recargo = 98.43. Prueba real en v2: sin estos ítems no cuadraba (faltaban 9,55)."},
-
-    { "id": "US/foreign-domestic-austin", "pais": "US", "moneda": "USD", "restaurante": "Foreign & Domestic",
+    {
+      "id": "US/keltic-kitchen-yarmouth",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "Keltic Kitchen",
       "items": [
-        {"nombre": "Popovers", "precio_unitario": 8.00, "cantidad": 3},
-        {"nombre": "Drip Coffee", "precio_unitario": 4.00, "cantidad": 3},
-        {"nombre": "Organic Black Iced Tea", "precio_unitario": 4.00, "cantidad": 1},
-        {"nombre": "Cast Iron Frittata", "precio_unitario": 14.00, "cantidad": 2},
-        {"nombre": "Two Eggs, Any Style", "precio_unitario": 15.00, "cantidad": 2},
-        {"nombre": "Omelet Sandwich", "precio_unitario": 16.00, "cantidad": 1},
-        {"nombre": "Double Pancake", "precio_unitario": 10.00, "cantidad": 1},
-        {"nombre": "Health Ins", "precio_unitario": 3.72, "cantidad": 1}
+        {
+          "nombre": "Rasher Benny",
+          "precio_unitario": 14.99,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Lemon Ricotta",
+          "precio_unitario": 12.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Brisket",
+          "precio_unitario": 15.98,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coffee",
+          "precio_unitario": 3.49,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tea",
+          "precio_unitario": 3.49,
+          "cantidad": 1
+        },
+        {
+          "nombre": "LG Fresh OJ",
+          "precio_unitario": 5.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tea",
+          "precio_unitario": 3.49,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Two Eggs",
+          "precio_unitario": 10.48,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Side Hollandaise",
+          "precio_unitario": 2.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 6.22,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Card surcharge",
+          "precio_unitario": 3.33,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 98.43,
+      "notas": "'Over Easy, Brown Bread' y 'Poached Medium, Brown Bread' son modificadores sin monto bajo 'Brisket' y 'Two Eggs' -> ignorar (R6), no son items. 'Suggested gratuities' al pie se ignora (R9, no esta en el total). Convención: 'Tax 6.22' va como ítem de cargo y la diferencia TOTAL (98.43, tarjeta) - CASH TOTAL (95.10) = 3.33 como 'Card surcharge'; ítems + Tax + recargo = 98.43. Prueba real en v2: sin estos ítems no cuadraba (faltaban 9,55)."
+    },
+    {
+      "id": "US/foreign-domestic-austin",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "Foreign & Domestic",
+      "items": [
+        {
+          "nombre": "Popovers",
+          "precio_unitario": 8.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Drip Coffee",
+          "precio_unitario": 4.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Organic Black Iced Tea",
+          "precio_unitario": 4.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cast Iron Frittata",
+          "precio_unitario": 14.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Two Eggs, Any Style",
+          "precio_unitario": 15.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Omelet Sandwich",
+          "precio_unitario": 16.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Double Pancake",
+          "precio_unitario": 10.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Health Ins",
+          "precio_unitario": 3.72,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 138.28,
       "notas": "CASO RARO: 'Health Ins (3.00%)' es un cargo real cobrado (no es tax ni tip, es un recargo del restaurante para seguro de salud de empleados, cada vez mas comun en USA) -> SI incluir como item, no es un impuesto estandar de R2 ni una propina de R9."
     },
-
-    { "id": "NL/madame-thai-rotterdam", "pais": "NL", "moneda": "EUR", "restaurante": "Madame Thai Streetfood",
+    {
+      "id": "NL/madame-thai-rotterdam",
+      "pais": "NL",
+      "moneda": "EUR",
+      "restaurante": "Madame Thai Streetfood",
       "items": [
-        {"nombre": "Look Chin Tod", "precio_unitario": 8.00, "cantidad": 1},
-        {"nombre": "Phad Thai Devil Beef", "precio_unitario": 19.80, "cantidad": 1},
-        {"nombre": "Kauw Niew Mamuang (Mango St)", "precio_unitario": 11.00, "cantidad": 1},
-        {"nombre": "Singha Beer", "precio_unitario": 5.50, "cantidad": 2}
+        {
+          "nombre": "Look Chin Tod",
+          "precio_unitario": 8.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Phad Thai Devil Beef",
+          "precio_unitario": 19.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kauw Niew Mamuang (Mango St)",
+          "precio_unitario": 11.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Singha Beer",
+          "precio_unitario": 5.5,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 49.80,
+      "total_referencia": 49.8,
       "notas": "BTW (IVA holandes) desglosado al pie se ignora (R2)."
     },
-
-    { "id": "CH/steinerhof-urdorf", "pais": "CH", "moneda": "CHF", "restaurante": "Steinerhof",
+    {
+      "id": "CH/steinerhof-urdorf",
+      "pais": "CH",
+      "moneda": "CHF",
+      "restaurante": "Steinerhof",
       "items": [
-        {"nombre": "T. Wasser ohne", "precio_unitario": 8.60, "cantidad": 2},
-        {"nombre": "Wiener-schnitzel", "precio_unitario": 39.50, "cantidad": 1},
-        {"nombre": "Gemuse", "precio_unitario": 37.50, "cantidad": 1}
+        {
+          "nombre": "T. Wasser ohne",
+          "precio_unitario": 8.6,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Wiener-schnitzel",
+          "precio_unitario": 39.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gemuse",
+          "precio_unitario": 37.5,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 94.20,
+      "total_referencia": 94.2,
       "notas": "CASO TRAMPA: 'Ohne' y 'Kuchen' aparecen como lineas sueltas SIN precio propio -> son parte/modificador de 'Wiener-schnitzel' y 'Gemuse' respectivamente (no platos aparte). Suiza usa CHF aunque el ticket tambien muestre un total convertido 'Euro 85.64' -> la moneda real es CHF, no EUR."
     },
-
-    { "id": "CO/tortelli-cali", "pais": "CO", "moneda": "COP", "restaurante": "Restaurante Tortelli SAS",
+    {
+      "id": "CO/tortelli-cali",
+      "pais": "CO",
+      "moneda": "COP",
+      "restaurante": "Restaurante Tortelli SAS",
       "items": [
-        {"nombre": "Ensalada Tagl", "precio_unitario": 24000, "cantidad": 1},
-        {"nombre": "Gaseosa Coca Col", "precio_unitario": 4500, "cantidad": 1},
-        {"nombre": "Pasta Carbona", "precio_unitario": 24000, "cantidad": 1},
-        {"nombre": "Medallon B", "precio_unitario": 42000, "cantidad": 1},
-        {"nombre": "Jugo de Mango", "precio_unitario": 6000, "cantidad": 1},
-        {"nombre": "Limonada de C", "precio_unitario": 10000, "cantidad": 1},
-        {"nombre": "Infusion de F", "precio_unitario": 4000, "cantidad": 1},
-        {"nombre": "Servicio Voluntario", "precio_unitario": 10602, "cantidad": 1}
+        {
+          "nombre": "Ensalada Tagl",
+          "precio_unitario": 24000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gaseosa Coca Col",
+          "precio_unitario": 4500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pasta Carbona",
+          "precio_unitario": 24000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Medallon B",
+          "precio_unitario": 42000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Jugo de Mango",
+          "precio_unitario": 6000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Limonada de C",
+          "precio_unitario": 10000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Infusion de F",
+          "precio_unitario": 4000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Servicio Voluntario",
+          "precio_unitario": 10602,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 125102,
       "notas": "CASO CLAVE Colombia: 'Servicio Voluntario 10%' (10.602) esta incluido en el total final. El 'Total' impreso en la boleta tiene un error de imprenta real (se lee '8.481', que es en realidad el campo IMPC de la tabla de impuestos, no el total) -> total_referencia aca es el calculado (suma de items, que sí es internamente consistente: 114.500 en comida/bebida + 10.602 de servicio = 125.102), no el numero mal impreso."
     },
-
-    {"id": "CO/hardeleva", "pais": "CO", "moneda": "COP", "restaurante": "Mardeleva Restaurante Bar", "items": [{"nombre": "Carbonara con", "precio_unitario": 37870, "cantidad": 1}, {"nombre": "Coca Cola Original", "precio_unitario": 8000, "cantidad": 1}, {"nombre": "Cristaleria y Vajilla", "precio_unitario": 5250000, "cantidad": 1}, {"nombre": "Pasta Alfredo con", "precio_unitario": 38796, "cantidad": 1}, {"nombre": "Soda", "precio_unitario": 7870, "cantidad": 1}, {"nombre": "Propina", "precio_unitario": 534254, "cantidad": 1}, {"nombre": "Impuesto IPC", "precio_unitario": 427404, "cantidad": 1}], "total_referencia": 6304194, "notas": "CASO EXTREMO: 'Cristaleria y Vajilla' por $5.250.000 COP (vajilla rota, cobro real por daño) hace que el total sea enorme -> probar que el modelo no lo descarta como anomalia ni lo confunde con impuesto. IPC 8% (427.404) viene SUMADO al total (5.449.536 + 427.404 + 534.254 propina = 6.304.194): se lista como ítem 'Impuesto' (proporcional); si se ignora la suma no cuadra (hallazgo de la medición con el flujo de la app). Propina 534.254 SI esta en 'TOTAL CON PROPINA' -> incluir."},
-
-    { "id": "CO/santa-fe-macarena-bogota", "pais": "CO", "moneda": "COP", "restaurante": "Santa Fe Restaurante Macarena",
+    {
+      "id": "CO/hardeleva",
+      "pais": "CO",
+      "moneda": "COP",
+      "restaurante": "Mardeleva Restaurante Bar",
       "items": [
-        {"nombre": "Jugo De Limon y Cereza", "precio_unitario": 6700, "cantidad": 1},
-        {"nombre": "Cerdo Al Rocio De Jerez", "precio_unitario": 35400, "cantidad": 1},
-        {"nombre": "Pernil De Pavo Confit", "precio_unitario": 32800, "cantidad": 1},
-        {"nombre": "Papas Richi Chorriadas", "precio_unitario": 6700, "cantidad": 1},
-        {"nombre": "Tartines De Arequipe", "precio_unitario": 9300, "cantidad": 1},
-        {"nombre": "Cerveza Apostol Helles", "precio_unitario": 8200, "cantidad": 1},
-        {"nombre": "Mistela Colombiana Copa 2oz", "precio_unitario": 9400, "cantidad": 1},
-        {"nombre": "Bombones de Pollo en Perfume De Mandarina", "precio_unitario": 11800, "cantidad": 1},
-        {"nombre": "Tinto Campesino", "precio_unitario": 4900, "cantidad": 1},
-        {"nombre": "Propina (10%)", "precio_unitario": 12520, "cantidad": 1}
+        {
+          "nombre": "Carbonara con",
+          "precio_unitario": 37870,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola Original",
+          "precio_unitario": 8000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cristaleria y Vajilla",
+          "precio_unitario": 5250000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pasta Alfredo con",
+          "precio_unitario": 38796,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Soda",
+          "precio_unitario": 7870,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Propina",
+          "precio_unitario": 534254,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Impuesto IPC",
+          "precio_unitario": 427404,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 6304194,
+      "notas": "CASO EXTREMO: 'Cristaleria y Vajilla' por $5.250.000 COP (vajilla rota, cobro real por daño) hace que el total sea enorme -> probar que el modelo no lo descarta como anomalia ni lo confunde con impuesto. IPC 8% (427.404) viene SUMADO al total (5.449.536 + 427.404 + 534.254 propina = 6.304.194): se lista como ítem 'Impuesto' (proporcional); si se ignora la suma no cuadra (hallazgo de la medición con el flujo de la app). Propina 534.254 SI esta en 'TOTAL CON PROPINA' -> incluir."
+    },
+    {
+      "id": "CO/santa-fe-macarena-bogota",
+      "pais": "CO",
+      "moneda": "COP",
+      "restaurante": "Santa Fe Restaurante Macarena",
+      "items": [
+        {
+          "nombre": "Jugo De Limon y Cereza",
+          "precio_unitario": 6700,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cerdo Al Rocio De Jerez",
+          "precio_unitario": 35400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pernil De Pavo Confit",
+          "precio_unitario": 32800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Papas Richi Chorriadas",
+          "precio_unitario": 6700,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tartines De Arequipe",
+          "precio_unitario": 9300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cerveza Apostol Helles",
+          "precio_unitario": 8200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mistela Colombiana Copa 2oz",
+          "precio_unitario": 9400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bombones de Pollo en Perfume De Mandarina",
+          "precio_unitario": 11800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tinto Campesino",
+          "precio_unitario": 4900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Propina (10%)",
+          "precio_unitario": 12520,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 137720,
       "notas": "CASO CLAVE: la boleta trae subtotales POR CATEGORIA ('Alimentos Total', 'Alcohol Total', 'Bebidas Total') antes del Sub Total general -> R2 dice ignorar subtotales de categoria, no son items. Propina (10%) 12.520 SI esta en el Total final -> incluir."
     },
-
-    { "id": "IL/tel-aviv-cafe", "pais": "IL", "moneda": "ILS", "restaurante": null,
+    {
+      "id": "IL/tel-aviv-cafe",
+      "pais": "IL",
+      "moneda": "ILS",
+      "restaurante": null,
       "items": [
-        {"nombre": "ארוחת בוקר טל ביג", "precio_unitario": 72.00, "cantidad": 1},
-        {"nombre": "פריט חיוב כללי", "precio_unitario": 20.00, "cantidad": 1},
-        {"nombre": "תוספת הגדלת קפה", "precio_unitario": 3.00, "cantidad": 1}
+        {
+          "nombre": "ארוחת בוקר טל ביג",
+          "precio_unitario": 72.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "פריט חיוב כללי",
+          "precio_unitario": 20.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "תוספת הגדלת קפה",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 95.00,
+      "total_referencia": 95.0,
       "notas": "CASO CLAVE: hebreo, texto RTL, columnas invertidas respecto a un ticket occidental (precio a la IZQUIERDA, nombre a la derecha). R12 dice no traducir los nombres. מע\"מ 17% (IVA) se ignora (R2)."
     },
-
-    { "id": "JP/hatena-osaka", "pais": "JP", "moneda": "JPY", "restaurante": "HATENA",
+    {
+      "id": "JP/hatena-osaka",
+      "pais": "JP",
+      "moneda": "JPY",
+      "restaurante": "HATENA",
       "items": [
-        {"nombre": "GRAPEFRUITS JUICE", "precio_unitario": 440, "cantidad": 1},
-        {"nombre": "MANGO JUICE", "precio_unitario": 500, "cantidad": 1},
-        {"nombre": "PADTHAI", "precio_unitario": 1280, "cantidad": 1},
-        {"nombre": "KAO GRAPAO GAI", "precio_unitario": 1280, "cantidad": 1},
-        {"nombre": "HELL HOT", "precio_unitario": 120, "cantidad": 1}
+        {
+          "nombre": "GRAPEFRUITS JUICE",
+          "precio_unitario": 440,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MANGO JUICE",
+          "precio_unitario": 500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "PADTHAI",
+          "precio_unitario": 1280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "KAO GRAPAO GAI",
+          "precio_unitario": 1280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "HELL HOT",
+          "precio_unitario": 120,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 3620,
       "notas": "JPY sin decimales. El 10% de consumo tax mostrado ya esta incluido en los precios (boleta dice '10%標準対象 ¥3,620' = base imponible, no un cargo adicional) -> no sumar de nuevo."
     },
-
-    { "id": "JP/skytree-dutyfree", "pais": "JP", "moneda": "JPY", "restaurante": null,
+    {
+      "id": "JP/skytree-dutyfree",
+      "pais": "JP",
+      "moneda": "JPY",
+      "restaurante": null,
       "items": [
-        {"nombre": "シアークロップド丈ドロス", "precio_unitario": 5000, "cantidad": 1}
+        {
+          "nombre": "シアークロップド丈ドロス",
+          "precio_unitario": 5000,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 5000,
       "notas": "Tienda duty-free (免税 = libre de impuestos), no es gastronomia pero es una boleta real valida. 消費税 (consumption tax) = ¥0 porque es venta libre de impuestos."
     },
-
-    { "id": "KR/myeongdong-cafe", "pais": "KR", "moneda": "KRW", "restaurante": null,
+    {
+      "id": "KR/myeongdong-cafe",
+      "pais": "KR",
+      "moneda": "KRW",
+      "restaurante": null,
       "items": [
-        {"nombre": "생 수박 주스R", "precio_unitario": 6500, "cantidad": 1},
-        {"nombre": "페스토햄치즈파니니", "precio_unitario": 6900, "cantidad": 1},
-        {"nombre": "애플망고 빙수", "precio_unitario": 14500, "cantidad": 1}
+        {
+          "nombre": "생 수박 주스R",
+          "precio_unitario": 6500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "페스토햄치즈파니니",
+          "precio_unitario": 6900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "애플망고 빙수",
+          "precio_unitario": 14500,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 27900,
       "notas": "KRW sin decimales. 부가세 (IVA) 2.536 ya esta incluido en el total, se ignora como linea separada (R2)."
     },
-
-    { "id": "KR/namsan-cablecar", "pais": "KR", "moneda": "KRW", "restaurante": null,
+    {
+      "id": "KR/namsan-cablecar",
+      "pais": "KR",
+      "moneda": "KRW",
+      "restaurante": null,
       "items": [
-        {"nombre": "JT-330 케이블카", "precio_unitario": 15000, "cantidad": 1}
+        {
+          "nombre": "JT-330 케이블카",
+          "precio_unitario": 15000,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 15000,
       "notas": "No es gastronomia (boleto de telecabina/cable car), pero es un comprobante de compra valido -> no deberia ser rechazado por REFUSAR 2 (eso es solo para menus/tarjetas, no para cualquier compra no-restaurante)."
     },
-
-    { "id": "KR/pocari-sweat", "pais": "KR", "moneda": "KRW", "restaurante": null,
+    {
+      "id": "KR/pocari-sweat",
+      "pais": "KR",
+      "moneda": "KRW",
+      "restaurante": null,
       "items": [
-        {"nombre": "포카리스웨트 500ml", "precio_unitario": 2200, "cantidad": 2}
+        {
+          "nombre": "포카리스웨트 500ml",
+          "precio_unitario": 2200,
+          "cantidad": 2
+        }
       ],
       "total_referencia": 4400,
       "notas": "Tienda de conveniencia, un solo producto x2 unidades."
     },
-
-    { "id": "GB/aperol-service-charge", "pais": "GB", "moneda": "GBP", "restaurante": null,
+    {
+      "id": "GB/aperol-service-charge",
+      "pais": "GB",
+      "moneda": "GBP",
+      "restaurante": null,
       "items": [
-        {"nombre": "Nocellare olives", "precio_unitario": 4.90, "cantidad": 1},
-        {"nombre": "Taralli Pugliesi", "precio_unitario": 4.90, "cantidad": 1},
-        {"nombre": "Aperol Spritz", "precio_unitario": 15.00, "cantidad": 1},
-        {"nombre": "Metodo classico, Ferrari", "precio_unitario": 17.00, "cantidad": 1},
-        {"nombre": "Service charge", "precio_unitario": 5.23, "cantidad": 1}
+        {
+          "nombre": "Nocellare olives",
+          "precio_unitario": 4.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Taralli Pugliesi",
+          "precio_unitario": 4.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Aperol Spritz",
+          "precio_unitario": 15.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Metodo classico, Ferrari",
+          "precio_unitario": 17.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Service charge",
+          "precio_unitario": 5.23,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 47.03,
       "notas": "CASO CLAVE UK: 'Service charge 12.5%' es OBLIGATORIO (R3/tip_behavior mandatory_service_charge) -> SIEMPRE incluir como item 'Servicio', no es opcional como una suggested tip. Nota: 'Perle glass' en la imagen es el tipo de copa, no un item con precio (no tiene monto propio)."
     },
-
-    { "id": "CA/bff-bar-grill", "pais": "CA", "moneda": "CAD", "restaurante": "BFF Bar & Grill",
+    {
+      "id": "CA/bff-bar-grill",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "BFF Bar & Grill",
       "items": [
-        {"nombre": "Pop", "precio_unitario": 3.99, "cantidad": 3},
-        {"nombre": "Peach Lemonade", "precio_unitario": 7.99, "cantidad": 1},
-        {"nombre": "Pulled Pork Sandwich", "precio_unitario": 20.99, "cantidad": 1},
-        {"nombre": "Classic Chicken BLT", "precio_unitario": 35.99, "cantidad": 1},
-        {"nombre": "Whiskey BBQ Burger", "precio_unitario": 28.99, "cantidad": 1},
-        {"nombre": "Classic Chicken BLT", "precio_unitario": 22.99, "cantidad": 1},
-        {"nombre": "Open Food Item", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Open Food Item", "precio_unitario": 3.00, "cantidad": 1},
-        {"nombre": "French Vanilla Ice Cream", "precio_unitario": 6.49, "cantidad": 1},
-        {"nombre": "Sticky Toffee Pudding", "precio_unitario": 11.99, "cantidad": 2}
+        {
+          "nombre": "Pop",
+          "precio_unitario": 3.99,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Peach Lemonade",
+          "precio_unitario": 7.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pulled Pork Sandwich",
+          "precio_unitario": 20.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Classic Chicken BLT",
+          "precio_unitario": 35.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Whiskey BBQ Burger",
+          "precio_unitario": 28.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Classic Chicken BLT",
+          "precio_unitario": 22.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food Item",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food Item",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "French Vanilla Ice Cream",
+          "precio_unitario": 6.49,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sticky Toffee Pudding",
+          "precio_unitario": 11.99,
+          "cantidad": 2
+        }
       ],
       "total_referencia": 165.08,
       "notas": "CASO DE LIBRO (es el ejemplo literal escrito en R5 del prompt): 'Classic Chicken BLT $29.49' con '+ $4.00: Add Mushrooms' y '+ $2.50: Add avocado' debajo -> sumar al padre: 22.99 base + 4.00 + 2.50 = 29.49 (el precio ya mostrado en la linea del item es el que incluye los modificadores, confirmar que el modelo no los separa en items aparte). Igual con 'Whiskey BBQ Burger $26.49' + '$2.50: Add Regular mayo' = pero ojo, el precio de linea $26.49 que aparece YA es sin ese extra sumado visualmente en esta captura -> ground truth usa 26.49+2.50=28.99 como el precio final correcto a cobrar. Tip Guide al pie se ignora (R9)."
     },
-
-    { "id": "IT/nannarella-roma", "pais": "IT", "moneda": "EUR", "restaurante": "Nannarella",
+    {
+      "id": "IT/nannarella-roma",
+      "pais": "IT",
+      "moneda": "EUR",
+      "restaurante": "Nannarella",
       "items": [
-        {"nombre": "Acqua Naturale", "precio_unitario": 2.00, "cantidad": 1},
-        {"nombre": "Lasagna", "precio_unitario": 14.00, "cantidad": 1},
-        {"nombre": "Calice Rosso Casa", "precio_unitario": 6.00, "cantidad": 1},
-        {"nombre": "Focaccia", "precio_unitario": 6.50, "cantidad": 1},
-        {"nombre": "Servizio/Mancia", "precio_unitario": 1.50, "cantidad": 1}
+        {
+          "nombre": "Acqua Naturale",
+          "precio_unitario": 2.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lasagna",
+          "precio_unitario": 14.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Calice Rosso Casa",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Focaccia",
+          "precio_unitario": 6.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Servizio/Mancia",
+          "precio_unitario": 1.5,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 30.00,
+      "total_referencia": 30.0,
       "notas": "'Coperti 1' (sin precio visible en esta boleta especifica, el coperto esta diluido en el 5% Serv/Mancia) -> el 5% Serv/Mancia de 1.50 SI se incluye como item 'Servicio' (R3, coperto/servicio italiano obligatorio)."
     },
-
-    { "id": "IT/non-fiscale-coperto", "pais": "IT", "moneda": "EUR", "restaurante": null,
+    {
+      "id": "IT/non-fiscale-coperto",
+      "pais": "IT",
+      "moneda": "EUR",
+      "restaurante": null,
       "items": [
-        {"nombre": "Ristorante", "precio_unitario": 6.00, "cantidad": 1},
-        {"nombre": "Insalata Polpo", "precio_unitario": 10.00, "cantidad": 1},
-        {"nombre": "Margherita", "precio_unitario": 6.00, "cantidad": 1},
-        {"nombre": "Romana", "precio_unitario": 8.00, "cantidad": 1},
-        {"nombre": "Acqua 1 Litro", "precio_unitario": 2.00, "cantidad": 1},
-        {"nombre": "Coperto", "precio_unitario": 1.50, "cantidad": 1},
-        {"nombre": "Coperto", "precio_unitario": 1.50, "cantidad": 1}
+        {
+          "nombre": "Ristorante",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Insalata Polpo",
+          "precio_unitario": 10.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Margherita",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Romana",
+          "precio_unitario": 8.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Acqua 1 Litro",
+          "precio_unitario": 2.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coperto",
+          "precio_unitario": 1.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coperto",
+          "precio_unitario": 1.5,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 35.00,
+      "total_referencia": 35.0,
       "notas": "CASO DE LIBRO (post de Reddit preguntando justamente por este cargo): DOS lineas de 'Coperto' por separado (una por comensal) -> R3 dice incluir coperto como item real positivo; aqui son DOS items distintos, no fusionar en 'Coperto x2'. Dice 'NON FISCALE' / 'PRECONTO' -> precuenta valida (R15). 'Ristorante 6,00' SI es un item real con precio (verificado por la suma, que solo cuadra incluyendolo) -- no es un encabezado de categoria como parecia a primera vista, probablemente un cargo de mesa/local."
     },
-
-    { "id": "TR/lahmacun-masa5", "pais": "TR", "moneda": "TRY", "restaurante": null,
+    {
+      "id": "TR/lahmacun-masa5",
+      "pais": "TR",
+      "moneda": "TRY",
+      "restaurante": null,
       "items": [
-        {"nombre": "Acili Lahmacun", "precio_unitario": 100.00, "cantidad": 2},
-        {"nombre": "Acisiz Lahmacun", "precio_unitario": 100.00, "cantidad": 2},
-        {"nombre": "Beyti Kebap", "precio_unitario": 240.00, "cantidad": 1},
-        {"nombre": "Tombul Ayran", "precio_unitario": 25.00, "cantidad": 2}
+        {
+          "nombre": "Acili Lahmacun",
+          "precio_unitario": 100.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Acisiz Lahmacun",
+          "precio_unitario": 100.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Beyti Kebap",
+          "precio_unitario": 240.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tombul Ayran",
+          "precio_unitario": 25.0,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 690.00,
+      "total_referencia": 690.0,
       "notas": "La columna 'Tutar' es el TOTAL de la linea, no el precio unitario -> precio_unitario = Tutar / Ad(cantidad). Suma verificada exacta: 200+200+240+50=690."
     },
-
-    { "id": "TR/abdurrahman-masa12", "pais": "TR", "moneda": "TRY", "restaurante": "Abdurrahman Kucuk",
+    {
+      "id": "TR/abdurrahman-masa12",
+      "pais": "TR",
+      "moneda": "TRY",
+      "restaurante": "Abdurrahman Kucuk",
       "items": [
-        {"nombre": "Porsiyon Kuzu Tandir", "precio_unitario": 695.00, "cantidad": 8},
-        {"nombre": "Testi Kebabi", "precio_unitario": 595.00, "cantidad": 1},
-        {"nombre": "Kola", "precio_unitario": 79.00, "cantidad": 3},
-        {"nombre": "Salgam Acisiz", "precio_unitario": 79.00, "cantidad": 1},
-        {"nombre": "Yayik Ayran", "precio_unitario": 79.00, "cantidad": 5},
-        {"nombre": "Tek Kisilik Balkabaginda Sut Helvasi", "precio_unitario": 255.00, "cantidad": 3},
-        {"nombre": "Incir Dolmasi Kaymakli", "precio_unitario": 195.00, "cantidad": 1},
-        {"nombre": "Su", "precio_unitario": 25.00, "cantidad": 1}
+        {
+          "nombre": "Porsiyon Kuzu Tandir",
+          "precio_unitario": 695.0,
+          "cantidad": 8
+        },
+        {
+          "nombre": "Testi Kebabi",
+          "precio_unitario": 595.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kola",
+          "precio_unitario": 79.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Salgam Acisiz",
+          "precio_unitario": 79.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Yayik Ayran",
+          "precio_unitario": 79.0,
+          "cantidad": 5
+        },
+        {
+          "nombre": "Tek Kisilik Balkabaginda Sut Helvasi",
+          "precio_unitario": 255.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Incir Dolmasi Kaymakli",
+          "precio_unitario": 195.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Su",
+          "precio_unitario": 25.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 7851.00,
+      "total_referencia": 7851.0,
       "notas": "CASO CLAVE: la boleta trae su PROPIA tabla de split ('Hesabi Bol': 2/3/4/9 kisi) -> esto NO son items, son sugerencias de division que el modelo debe IGNORAR por completo (la app hace su propia division). KDV (IVA turco) tambien se ignora (R2)."
     },
-
-    { "id": "TR/abdurrahman-banko8", "pais": "TR", "moneda": "TRY", "restaurante": "Abdurrahman Kucuk",
+    {
+      "id": "TR/abdurrahman-banko8",
+      "pais": "TR",
+      "moneda": "TRY",
+      "restaurante": "Abdurrahman Kucuk",
       "items": [
-        {"nombre": "Tavuk Menu", "precio_unitario": 990.00, "cantidad": 1},
-        {"nombre": "Dana Menu", "precio_unitario": 1290.00, "cantidad": 2},
-        {"nombre": "Kadinbudu Kofte (Adet)", "precio_unitario": 155.00, "cantidad": 1},
-        {"nombre": "Lahmacun Acili", "precio_unitario": 245.00, "cantidad": 1},
-        {"nombre": "Lahmacun Acisiz", "precio_unitario": 245.00, "cantidad": 1}
+        {
+          "nombre": "Tavuk Menu",
+          "precio_unitario": 990.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dana Menu",
+          "precio_unitario": 1290.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Kadinbudu Kofte (Adet)",
+          "precio_unitario": 155.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lahmacun Acili",
+          "precio_unitario": 245.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lahmacun Acisiz",
+          "precio_unitario": 245.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 4215.00,
+      "total_referencia": 4215.0,
       "notas": "Mismo caso que el anterior: 'Hesabi Bol' con 2/3/4 kisi se ignora. '2 DANA MENU 2.580,00' -> unit=1290.00, qty=2 (punto como separador de miles, como en Colombia/Alemania)."
     },
-
-    { "id": "TR/ankara-seafood", "pais": "TR", "moneda": "TRY", "restaurante": null,
+    {
+      "id": "TR/ankara-seafood",
+      "pais": "TR",
+      "moneda": "TRY",
+      "restaurante": null,
       "items": [
-        {"nombre": "Kuver", "precio_unitario": 8.00, "cantidad": 2},
-        {"nombre": "Deniz Borulcesi", "precio_unitario": 9.00, "cantidad": 2},
-        {"nombre": "Ahtopot Sogus", "precio_unitario": 13.00, "cantidad": 2},
-        {"nombre": "Sultan Ezme", "precio_unitario": 8.00, "cantidad": 2},
-        {"nombre": "Cipura", "precio_unitario": 110.00, "cantidad": 1},
-        {"nombre": "Acisiz Salgam Suyu", "precio_unitario": 8.00, "cantidad": 1}
+        {
+          "nombre": "Kuver",
+          "precio_unitario": 8.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Deniz Borulcesi",
+          "precio_unitario": 9.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Ahtopot Sogus",
+          "precio_unitario": 13.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Sultan Ezme",
+          "precio_unitario": 8.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Cipura",
+          "precio_unitario": 110.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Acisiz Salgam Suyu",
+          "precio_unitario": 8.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 194.00,
+      "total_referencia": 194.0,
       "notas": "'Kuver' es el coperto turco (cargo por cubierto) -> R3, incluir como item real igual que el coperto italiano."
     },
-
-    { "id": "AL/krasniqja", "pais": "AL", "moneda": "ALL", "restaurante": "Krasniqja Bar Restaurant",
+    {
+      "id": "AL/krasniqja",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Krasniqja Bar Restaurant",
       "items": [
-        {"nombre": "Buk Misri", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "kafe ekspreso", "precio_unitario": 50, "cantidad": 2},
-        {"nombre": "Mish Qingjli", "precio_unitario": 900, "cantidad": 1},
-        {"nombre": "Mish Vici", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Patate madhe", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Sallate shope madhe", "precio_unitario": 300, "cantidad": 1},
-        {"nombre": "Tirana e madhe", "precio_unitario": 240, "cantidad": 1}
+        {
+          "nombre": "Buk Misri",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "kafe ekspreso",
+          "precio_unitario": 50,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Mish Qingjli",
+          "precio_unitario": 900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mish Vici",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Patate madhe",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sallate shope madhe",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tirana e madhe",
+          "precio_unitario": 240,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 2740,
       "notas": "Suma verificada exacta contra el total impreso (2.740 Lek). 'TVSH' desglosado al pie se ignora (R2)."
     },
-
-    { "id": "AL/shqiponja", "pais": "AL", "moneda": "ALL", "restaurante": "Bar-Restorant SHQIPONJA",
+    {
+      "id": "AL/shqiponja",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Bar-Restorant SHQIPONJA",
       "items": [
-        {"nombre": "Pepsi", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Jje tonik", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Jje i gazuar i vogel", "precio_unitario": 100, "cantidad": 2},
-        {"nombre": "Biftek Skenderbeg", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Eskallop Pule Pane k", "precio_unitario": 650, "cantidad": 1},
-        {"nombre": "Mini Fica Kapricoze", "precio_unitario": 350, "cantidad": 2}
+        {
+          "nombre": "Pepsi",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Jje tonik",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Jje i gazuar i vogel",
+          "precio_unitario": 100,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Biftek Skenderbeg",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Eskallop Pule Pane k",
+          "precio_unitario": 650,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mini Fica Kapricoze",
+          "precio_unitario": 350,
+          "cantidad": 2
+        }
       ],
       "total_referencia": 2650,
       "notas": "Trae equivalente en EUR (20.38) y USD (24.09) al pie -> son solo referencia, la moneda real cobrada es ALL (Leke)."
     },
-
-    { "id": "AL/runway35", "pais": "AL", "moneda": "ALL", "restaurante": "Runway 35",
+    {
+      "id": "AL/runway35",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Runway 35",
       "items": [
-        {"nombre": "Espresso", "precio_unitario": 220, "cantidad": 1},
-        {"nombre": "Coca Cola 0.33l", "precio_unitario": 440, "cantidad": 1}
+        {
+          "nombre": "Espresso",
+          "precio_unitario": 220,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola 0.33l",
+          "precio_unitario": 440,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 660,
       "notas": "Formato 'FATURE TATIMORE SHITJE' con columnas TVSH% | Sasia | Çmim | Pa TVSH | Total — usar la columna 'Çmim' (con IVA) como precio_unitario, no 'Pa TVSH'."
     },
-
-    { "id": "AL/conarch", "pais": "AL", "moneda": "ALL", "restaurante": "Conarch shpk",
+    {
+      "id": "AL/conarch",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Conarch shpk",
       "items": [
-        {"nombre": "Leng Portokall", "precio_unitario": 300, "cantidad": 1},
-        {"nombre": "Eggs Benedict", "precio_unitario": 770, "cantidad": 1}
+        {
+          "nombre": "Leng Portokall",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Eggs Benedict",
+          "precio_unitario": 770,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 1070,
       "notas": "Mismo formato 'Fature Tatimore Shitje' que Runway 35."
     },
-
-    { "id": "AL/te-fabio-vlore", "pais": "AL", "moneda": "ALL", "restaurante": "Te Fabio",
+    {
+      "id": "AL/te-fabio-vlore",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Te Fabio",
       "items": [
-        {"nombre": "Bravo", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Oran Soda", "precio_unitario": 130, "cantidad": 1},
-        {"nombre": "Koka Kola", "precio_unitario": 130, "cantidad": 1},
-        {"nombre": "Vere e Hapur", "precio_unitario": 700, "cantidad": 2.5},
-        {"nombre": "Perime te Ziera", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Djath i Bardhe", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Pasta me Kima", "precio_unitario": 400, "cantidad": 1},
-        {"nombre": "Rizoto me Perime", "precio_unitario": 250, "cantidad": 1},
-        {"nombre": "Zoq Fshati me Vidhe", "precio_unitario": 1200, "cantidad": 1},
-        {"nombre": "Koce 300gr", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Ullinj+Limon", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Pasta me Perime", "precio_unitario": 300, "cantidad": 1}
+        {
+          "nombre": "Bravo",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Oran Soda",
+          "precio_unitario": 130,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Koka Kola",
+          "precio_unitario": 130,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Vere e Hapur",
+          "precio_unitario": 700,
+          "cantidad": 2.5
+        },
+        {
+          "nombre": "Perime te Ziera",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Djath i Bardhe",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pasta me Kima",
+          "precio_unitario": 400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Rizoto me Perime",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Zoq Fshati me Vidhe",
+          "precio_unitario": 1200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Koce 300gr",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ullinj+Limon",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pasta me Perime",
+          "precio_unitario": 300,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 5610,
       "notas": "CASO CLAVE: 'Vere e Hapur' (vino de la casa) se vende por copa de una botella -> '2.5 X 700,00 = 1.750,00', cantidad FRACCIONARIA real (2.5 copas). Es el caso que describe la regla de Albania en COUNTRY_RULES. Suma verificada exacta."
     },
-
-    { "id": "AL/vela-e-bardhe", "pais": "AL", "moneda": "ALL", "restaurante": "Vela e Bardhe",
+    {
+      "id": "AL/vela-e-bardhe",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Vela e Bardhe",
       "items": [
-        {"nombre": "Uje 0.75", "precio_unitario": 250, "cantidad": 1},
-        {"nombre": "Oktapod Zgare", "precio_unitario": 1300, "cantidad": 1},
-        {"nombre": "Peshk Levrek Zgare", "precio_unitario": 1000, "cantidad": 1},
-        {"nombre": "Fileto Salmoni", "precio_unitario": 1400, "cantidad": 1}
+        {
+          "nombre": "Uje 0.75",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Oktapod Zgare",
+          "precio_unitario": 1300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Peshk Levrek Zgare",
+          "precio_unitario": 1000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fileto Salmoni",
+          "precio_unitario": 1400,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 3950,
       "notas": "Suma verificada exacta. Trae equivalente en EUR al pie (39.50) -> solo referencia."
     },
-
-    { "id": "AL/tirana-asdulla", "pais": "AL", "moneda": "ALL", "restaurante": null,
+    {
+      "id": "AL/tirana-asdulla",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": null,
       "items": [
-        {"nombre": "Bruskete e vogel", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Coca Cola", "precio_unitario": 170, "cantidad": 2},
-        {"nombre": "Uje mineral natyral 0.75l", "precio_unitario": 250, "cantidad": 1},
-        {"nombre": "Patate furre", "precio_unitario": 250, "cantidad": 1},
-        {"nombre": "Sallate perme zgare", "precio_unitario": 500, "cantidad": 1},
-        {"nombre": "Bunrale Vici", "precio_unitario": 1500, "cantidad": 2}
+        {
+          "nombre": "Bruskete e vogel",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola",
+          "precio_unitario": 170,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Uje mineral natyral 0.75l",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Patate furre",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sallate perme zgare",
+          "precio_unitario": 500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bunrale Vici",
+          "precio_unitario": 1500,
+          "cantidad": 2
+        }
       ],
       "total_referencia": 4490,
       "notas": "CASO CLAVE punto=miles: '2 cope X 1.500,00 = 3.000,00' -> precio_unitario=1500, no 1.5. Suma verificada exacta."
     },
-
-    { "id": "AL/soma-albania", "pais": "AL", "moneda": "ALL", "restaurante": "Soma Albania",
+    {
+      "id": "AL/soma-albania",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Soma Albania",
       "items": [
-        {"nombre": "Amaretto Sour", "precio_unitario": 700, "cantidad": 1},
-        {"nombre": "Hattori Hanzo", "precio_unitario": 900, "cantidad": 1},
-        {"nombre": "Lije Natyral", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Ebi Tempura Roll", "precio_unitario": 1250, "cantidad": 1},
-        {"nombre": "Green Mizuna Salad", "precio_unitario": 1300, "cantidad": 1},
-        {"nombre": "Black Angus Beef Bao Buns", "precio_unitario": 950, "cantidad": 1},
-        {"nombre": "Seabass tartar roll 8 pcs", "precio_unitario": 1300, "cantidad": 1},
-        {"nombre": "Pecan pie", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Crispy Yuca", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Chicken Yakitori", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Grilled Padron Peppers", "precio_unitario": 1300, "cantidad": 1}
+        {
+          "nombre": "Amaretto Sour",
+          "precio_unitario": 700,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Hattori Hanzo",
+          "precio_unitario": 900,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lije Natyral",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ebi Tempura Roll",
+          "precio_unitario": 1250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Green Mizuna Salad",
+          "precio_unitario": 1300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Black Angus Beef Bao Buns",
+          "precio_unitario": 950,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Seabass tartar roll 8 pcs",
+          "precio_unitario": 1300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pecan pie",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Crispy Yuca",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken Yakitori",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Grilled Padron Peppers",
+          "precio_unitario": 1300,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 10300,
       "notas": "confianza_transcripcion: media — el precio de 'Grilled Padron Peppers' se infirio por descarte matematico (el resto de items suma exacto 9.000, falta 1.300 para llegar a 10.300) porque la foto no permite leerlo con total nitidez; verificar contra el original si se usa para medir con precision."
     },
-
-    { "id": "AL/astrit-oruci-kg-pricing", "pais": "AL", "moneda": "ALL", "restaurante": "Astrit Oruci",
+    {
+      "id": "AL/astrit-oruci-kg-pricing",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Astrit Oruci",
       "items": [
-        {"nombre": "Uje ne Qelq (0.75l)", "precio_unitario": 380, "cantidad": 1},
-        {"nombre": "Uje me gaz ne Qelq (0.75l)", "precio_unitario": 380, "cantidad": 1},
-        {"nombre": "Gote vere e bardhe", "precio_unitario": 450, "cantidad": 1},
-        {"nombre": "Sallate Abiori", "precio_unitario": 450, "cantidad": 1},
-        {"nombre": "Spicy Shrimp Tempura", "precio_unitario": 1200, "cantidad": 1},
-        {"nombre": "Karkalec Viola (me kg)", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Karkalec Tiger (me kg)", "precio_unitario": 552, "cantidad": 1},
-        {"nombre": "Skampi i dyte (me kg)", "precio_unitario": 1350, "cantidad": 1},
-        {"nombre": "Karpaco Oktapod (me kg)", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Karpaco Levreku (me kg)", "precio_unitario": 600, "cantidad": 1},
-        {"nombre": "Ostrike (Çope)", "precio_unitario": 500, "cantidad": 2},
-        {"nombre": "Fokace", "precio_unitario": 400, "cantidad": 1},
-        {"nombre": "Akullore Abiori 1 Kupe", "precio_unitario": 200, "cantidad": 2}
+        {
+          "nombre": "Uje ne Qelq (0.75l)",
+          "precio_unitario": 380,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Uje me gaz ne Qelq (0.75l)",
+          "precio_unitario": 380,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gote vere e bardhe",
+          "precio_unitario": 450,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sallate Abiori",
+          "precio_unitario": 450,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Spicy Shrimp Tempura",
+          "precio_unitario": 1200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Karkalec Viola (me kg)",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Karkalec Tiger (me kg)",
+          "precio_unitario": 552,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Skampi i dyte (me kg)",
+          "precio_unitario": 1350,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Karpaco Oktapod (me kg)",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Karpaco Levreku (me kg)",
+          "precio_unitario": 600,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ostrike (Çope)",
+          "precio_unitario": 500,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Fokace",
+          "precio_unitario": 400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Akullore Abiori 1 Kupe",
+          "precio_unitario": 200,
+          "cantidad": 2
+        }
       ],
       "total_referencia": 8762,
       "notas": "CASO MAS DURO de Albania — ventas 'ME KG' (por peso): la boleta muestra 'Sasia' en kg (0.08, 0.5, etc) y un 'Çmim' que parece precio por kg, pero NO reconcilian limpio como cantidad x precio unitario tradicional. Ground truth usa cantidad=1 y precio_unitario=el TOTAL de linea realmente cobrado (columna derecha), porque es la unica forma de que la suma cuadre exacto con el TOTAL impreso (8.762, verificado) y porque la app no tiene forma util de dividir '0.08 kg' entre personas de todas formas. Si el modelo intenta calcular un precio 'por kg' en vez de usar el total de linea, va a fallar este fixture — eso es exactamente lo que se quiere detectar."
     },
-
-    { "id": "AL/restaurant-fature", "pais": "AL", "moneda": "ALL", "restaurante": "Restaurant Fature",
+    {
+      "id": "AL/restaurant-fature",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": "Restaurant Fature",
       "items": [
-        {"nombre": "Sallate Greke (2 person)", "precio_unitario": 470, "cantidad": 1},
-        {"nombre": "Suxhuk placi me sne bal", "precio_unitario": 420, "cantidad": 1},
-        {"nombre": "Aiçi dhe veshka tigani", "precio_unitario": 630, "cantidad": 1},
-        {"nombre": "Perime te pjekura ne zg", "precio_unitario": 450, "cantidad": 1},
-        {"nombre": "Patate te ferguara", "precio_unitario": 350, "cantidad": 1},
-        {"nombre": "Lang Frutash i Freske", "precio_unitario": 320, "cantidad": 1},
-        {"nombre": "Pianta Exotic Shishe", "precio_unitario": 930, "cantidad": 1},
-        {"nombre": "Eskallop pule zgare", "precio_unitario": 700, "cantidad": 1},
-        {"nombre": "Ljoks pule zgare 280 gr", "precio_unitario": 990, "cantidad": 1},
-        {"nombre": "Fish i njome me barisht", "precio_unitario": 640, "cantidad": 1},
-        {"nombre": "Pianta Exotic Shishe", "precio_unitario": 160, "cantidad": 1},
-        {"nombre": "Coca Cola Light Shishe", "precio_unitario": 60, "cantidad": 1},
-        {"nombre": "Kulloire Vanilj", "precio_unitario": 360, "cantidad": 1},
-        {"nombre": "Torta Capreze me parfe", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Simb Krem Karamel", "precio_unitario": 220, "cantidad": 1},
-        {"nombre": "Simb Sullastin shtepie", "precio_unitario": 220, "cantidad": 1},
-        {"nombre": "Simb Sullastin shtepie", "precio_unitario": 660, "cantidad": 1},
-        {"nombre": "Servicio (6%)", "precio_unitario": 483, "cantidad": 1}
+        {
+          "nombre": "Sallate Greke (2 person)",
+          "precio_unitario": 470,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Suxhuk placi me sne bal",
+          "precio_unitario": 420,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Aiçi dhe veshka tigani",
+          "precio_unitario": 630,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Perime te pjekura ne zg",
+          "precio_unitario": 450,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Patate te ferguara",
+          "precio_unitario": 350,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lang Frutash i Freske",
+          "precio_unitario": 320,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pianta Exotic Shishe",
+          "precio_unitario": 930,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Eskallop pule zgare",
+          "precio_unitario": 700,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ljoks pule zgare 280 gr",
+          "precio_unitario": 990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fish i njome me barisht",
+          "precio_unitario": 640,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pianta Exotic Shishe",
+          "precio_unitario": 160,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola Light Shishe",
+          "precio_unitario": 60,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kulloire Vanilj",
+          "precio_unitario": 360,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Torta Capreze me parfe",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Simb Krem Karamel",
+          "precio_unitario": 220,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Simb Sullastin shtepie",
+          "precio_unitario": 220,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Simb Sullastin shtepie",
+          "precio_unitario": 660,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Servicio (6%)",
+          "precio_unitario": 483,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 8528,
       "notas": "confianza_transcripcion: baja — los nombres de varios items estan cortados en el margen izquierdo de la foto (ilegibles las primeras 1-2 letras de varias lineas), transcritos con mejor esfuerzo. Lo que SI es confiable: 'Shuma Lek' (subtotal) 8.045, '+6%' 483 (servicio sugerido, explicitamente SI sumado al 'Totale Lek' final de 8.528 segun la nota impresa 'Vlera 6% considerohet si shperblim per stafin e kamarereve... per mos pagu dicka te perimetur ju lakon vetem ju' = es voluntario pero aqui esta incluido en el total), y el total final 8.528. Usar este fixture para probar deteccion de pais/moneda/total; no confiar 100% en el listado de items sin verificar contra el original."
     },
-
-    { "id": "AL/shitje-bar", "pais": "AL", "moneda": "ALL", "restaurante": null,
+    {
+      "id": "AL/shitje-bar",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": null,
       "items": [
-        {"nombre": "Uje Tepelena", "precio_unitario": 70, "cantidad": 1},
-        {"nombre": "Kallamare ai mbushur", "precio_unitario": 1000, "cantidad": 1},
-        {"nombre": "Oktapod Zgare", "precio_unitario": 1000, "cantidad": 1},
-        {"nombre": "Pene Karkalec Kungul", "precio_unitario": 600, "cantidad": 1},
-        {"nombre": "Rizoto Perime", "precio_unitario": 450, "cantidad": 1},
-        {"nombre": "Tirana", "precio_unitario": 150, "cantidad": 2},
-        {"nombre": "Vera", "precio_unitario": 200, "cantidad": 1}
+        {
+          "nombre": "Uje Tepelena",
+          "precio_unitario": 70,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kallamare ai mbushur",
+          "precio_unitario": 1000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Oktapod Zgare",
+          "precio_unitario": 1000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pene Karkalec Kungul",
+          "precio_unitario": 600,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Rizoto Perime",
+          "precio_unitario": 450,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tirana",
+          "precio_unitario": 150,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Vera",
+          "precio_unitario": 200,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 3620,
       "notas": "Titulo 'SHITJE' = 'Venta', nombre de fantasia generico del ticket, no es el nombre del restaurante. Suma verificada exacta."
     },
-
-    { "id": "AL/bar-restorant-two-tables", "pais": "AL", "moneda": "ALL", "restaurante": null,
+    {
+      "id": "AL/bar-restorant-two-tables",
+      "pais": "AL",
+      "moneda": "ALL",
+      "restaurante": null,
       "items": [
-        {"nombre": "Bravo", "precio_unitario": 150, "cantidad": 1},
-        {"nombre": "Gote Vere", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Mix Peshku (2 PE)", "precio_unitario": 1500, "cantidad": 1},
-        {"nombre": "Perime Zgare", "precio_unitario": 300, "cantidad": 1},
-        {"nombre": "Sallat Jeshile", "precio_unitario": 200, "cantidad": 1},
-        {"nombre": "Eskallop Pana K", "precio_unitario": 800, "cantidad": 1},
-        {"nombre": "Elbar 0.5L", "precio_unitario": 200, "cantidad": 1}
+        {
+          "nombre": "Bravo",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gote Vere",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mix Peshku (2 PE)",
+          "precio_unitario": 1500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Perime Zgare",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sallat Jeshile",
+          "precio_unitario": 200,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Eskallop Pana K",
+          "precio_unitario": 800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Elbar 0.5L",
+          "precio_unitario": 200,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 3350,
       "notas": "CASO RARO: la boleta trae DOS bloques numerados por separado ('25' y '26') -> probablemente dos rondas/pedidos de la misma mesa en momentos distintos, pero es UN solo 'Totali' final (3.350) que los suma a todos -> tratar como una sola lista de items, ignorar los numeros de bloque '25'/'26' (no son cantidad ni precio). Suma verificada exacta."
     },
-
-    { "id": "CA/aux-anciens-canadiens-quebec", "pais": "CA", "moneda": "CAD", "restaurante": "Aux Anciens Canadiens",
+    {
+      "id": "CA/aux-anciens-canadiens-quebec",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "Aux Anciens Canadiens",
       "items": [
-        {"nombre": "Pate a la viande", "precio_unitario": 22.95, "cantidad": 1}
+        {
+          "nombre": "Pate a la viande",
+          "precio_unitario": 22.95,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 26.39,
       "notas": "CASO CLAVE Quebec: impuesto DOBLE separado 'Tx CAN 5%' (TPS federal) + 'Tx QC 9.975%' (TVQ provincial), a diferencia de Ontario/BC que traen un solo GST/HST/PST. 'Soupe du Jour', 'Blonde' (cerveza) y 'Dessert Jour' aparecen a $0.00 -> excluir por R1 (probablemente incluidos en un menu fijo no detallado); el item con precio real es el plato principal."
     },
-
-    { "id": "CA/berts-bar-ottawa", "pais": "CA", "moneda": "CAD", "restaurante": "Bert's Bar",
+    {
+      "id": "CA/berts-bar-ottawa",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "Bert's Bar",
       "items": [
-        {"nombre": "Mush-Swiss Burger", "precio_unitario": 16.49, "cantidad": 1},
-        {"nombre": "Soft Drink", "precio_unitario": 2.99, "cantidad": 1}
+        {
+          "nombre": "Mush-Swiss Burger",
+          "precio_unitario": 16.49,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Soft Drink",
+          "precio_unitario": 2.99,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 27.65,
       "notas": "confianza_transcripcion: media — el 'Subtotal' impreso (24.47) no cuadra con la suma de los 2 items legibles (19.48); probablemente hay un item mas fuera del encuadre de la foto. Util igual para probar el caso de impuesto UNICO 'HST' (Ontario, a diferencia del TPS+TVQ doble de Quebec) aunque el desglose de items no sea 100% completo."
     },
-
-    { "id": "CA/chateau-frontenac-quebec", "pais": "CA", "moneda": "CAD", "restaurante": "Fairmont Le Chateau Frontenac",
+    {
+      "id": "CA/chateau-frontenac-quebec",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "Fairmont Le Chateau Frontenac",
       "items": [
-        {"nombre": "Gin O'Clock", "precio_unitario": 47.00, "cantidad": 1},
-        {"nombre": "Casserolle", "precio_unitario": 48.00, "cantidad": 2},
-        {"nombre": "Carre de Porc", "precio_unitario": 48.00, "cantidad": 1},
-        {"nombre": "Roz Sanpierre Raffatlin", "precio_unitario": 18.00, "cantidad": 1},
-        {"nombre": "Ktr Mousseria", "precio_unitario": 25.00, "cantidad": 1},
-        {"nombre": "Spritz - SAM", "precio_unitario": 28.00, "cantidad": 1},
-        {"nombre": "Huitres (6x)", "precio_unitario": 23.00, "cantidad": 1},
-        {"nombre": "Combo Reviver #2 - SAM", "precio_unitario": 52.00, "cantidad": 1},
-        {"nombre": "Soz Sanpierre Raffatlin", "precio_unitario": 12.00, "cantidad": 2},
-        {"nombre": "Creme Brule", "precio_unitario": 12.00, "cantidad": 1},
-        {"nombre": "Sticky Toffee Pudding", "precio_unitario": 12.00, "cantidad": 1}
+        {
+          "nombre": "Gin O'Clock",
+          "precio_unitario": 47.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Casserolle",
+          "precio_unitario": 48.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Carre de Porc",
+          "precio_unitario": 48.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Roz Sanpierre Raffatlin",
+          "precio_unitario": 18.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ktr Mousseria",
+          "precio_unitario": 25.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Spritz - SAM",
+          "precio_unitario": 28.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Huitres (6x)",
+          "precio_unitario": 23.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Combo Reviver #2 - SAM",
+          "precio_unitario": 52.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Soz Sanpierre Raffatlin",
+          "precio_unitario": 12.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Creme Brule",
+          "precio_unitario": 12.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sticky Toffee Pudding",
+          "precio_unitario": 12.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 476.00,
+      "total_referencia": 476.0,
       "notas": "confianza_transcripcion: baja — foto borrosa/con poca luz (bar de hotel), el listado de items es mejor esfuerzo y probablemente tiene errores de nombre/cantidad. Lo confiable: Sous-Total 414.00 + TVQ 41.30 + TPS 20.70 = Total 476.00 (cuadra exacto) -> usar para probar total/pais/moneda en condiciones de imagen mala, no confiar en el detalle de items sin revisar el original."
     },
-
-    { "id": "CA/keung-kee-montreal", "pais": "CA", "moneda": "CAD", "restaurante": "Restaurant Keung Kee",
+    {
+      "id": "CA/keung-kee-montreal",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "Restaurant Keung Kee",
       "items": [
-        {"nombre": "Soupe aux estomac de porc", "precio_unitario": 10.95, "cantidad": 1},
-        {"nombre": "Filet de Boeuf en Cube Frit", "precio_unitario": 12.95, "cantidad": 1},
-        {"nombre": "Tofu Avec Porc Hache Epice", "precio_unitario": 10.95, "cantidad": 1},
-        {"nombre": "Bass vert a la Vapeur", "precio_unitario": 36.95, "cantidad": 1},
-        {"nombre": "Riz a la Vapeur (M)", "precio_unitario": 4.50, "cantidad": 1}
+        {
+          "nombre": "Soupe aux estomac de porc",
+          "precio_unitario": 10.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Filet de Boeuf en Cube Frit",
+          "precio_unitario": 12.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tofu Avec Porc Hache Epice",
+          "precio_unitario": 10.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bass vert a la Vapeur",
+          "precio_unitario": 36.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Riz a la Vapeur (M)",
+          "precio_unitario": 4.5,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 87.73,
       "notas": "Cada item trae un codigo de menu antes del nombre ('18.', '130.', '176.', '39.', '262.') -> es un numero de plato del menu, no cantidad ni precio, descartarlo del nombre. Suma verificada exacta: 76.30 + TPS 3.82 + TVQ 7.61 = 87.73."
     },
-
-    { "id": "CA/vip-montreal", "pais": "CA", "moneda": "CAD", "restaurante": "Restaurant V.I.P.",
+    {
+      "id": "CA/vip-montreal",
+      "pais": "CA",
+      "moneda": "CAD",
+      "restaurante": "Restaurant V.I.P.",
       "items": [
-        {"nombre": "L10. Boeuf avec tofu", "precio_unitario": 5.50, "cantidad": 1},
-        {"nombre": "L5. Poulet d'acajou epice", "precio_unitario": 5.50, "cantidad": 1},
-        {"nombre": "L23. Chow fun avec boeuf", "precio_unitario": 5.50, "cantidad": 1},
-        {"nombre": "L23. Chow fun avec boeuf", "precio_unitario": 5.50, "cantidad": 1}
+        {
+          "nombre": "L10. Boeuf avec tofu",
+          "precio_unitario": 5.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "L5. Poulet d'acajou epice",
+          "precio_unitario": 5.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "L23. Chow fun avec boeuf",
+          "precio_unitario": 5.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "L23. Chow fun avec boeuf",
+          "precio_unitario": 5.5,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 25.29,
       "notas": "CASO TRAMPA: 'L23. Chow fun avec boeuf' aparece en DOS lineas separadas (1x cada una), no es un solo item con cantidad=2 -> no fusionar. Suma verificada exacta: 22.00 + TPS 1.10 + TVQ 2.19 = 25.29."
     },
-
-    { "id": "ES/san-lazaro-santiago-compostela", "pais": "ES", "moneda": "EUR", "restaurante": "Bodeguilla de San Lazaro",
+    {
+      "id": "ES/san-lazaro-santiago-compostela",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Bodeguilla de San Lazaro",
       "items": [
-        {"nombre": "Cabreiroa 1L", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Croquetas Caseiras", "precio_unitario": 8.00, "cantidad": 1},
-        {"nombre": "Ensalada de Queixo", "precio_unitario": 9.50, "cantidad": 1},
-        {"nombre": "Solombinos o Queixo", "precio_unitario": 9.50, "cantidad": 1},
-        {"nombre": "1/2 Solombinos o Queixo", "precio_unitario": 5.70, "cantidad": 1},
-        {"nombre": "Pan", "precio_unitario": 0.80, "cantidad": 2},
-        {"nombre": "Flan de Laranxa", "precio_unitario": 2.25, "cantidad": 2},
-        {"nombre": "Cafe con Leite", "precio_unitario": 1.10, "cantidad": 2}
+        {
+          "nombre": "Cabreiroa 1L",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Croquetas Caseiras",
+          "precio_unitario": 8.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ensalada de Queixo",
+          "precio_unitario": 9.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Solombinos o Queixo",
+          "precio_unitario": 9.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "1/2 Solombinos o Queixo",
+          "precio_unitario": 5.7,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pan",
+          "precio_unitario": 0.8,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Flan de Laranxa",
+          "precio_unitario": 2.25,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Cafe con Leite",
+          "precio_unitario": 1.1,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 43.50,
+      "total_referencia": 43.5,
       "notas": "CASO TRAMPA: hay DOS lineas de 'Solombinos o Queixo' distintas, una entera (9.50) y una 'media racion' (1/2, 5.70) -> son items separados, no fusionar ni descartar la mitad. Gallego ('Queixo', 'Laranxa'). Suma verificada exacta."
     },
-
-    { "id": "ES/egeo-suvlakeria-madrid", "pais": "ES", "moneda": "EUR", "restaurante": "Egeo Suvlakeria",
+    {
+      "id": "ES/egeo-suvlakeria-madrid",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": "Egeo Suvlakeria",
       "items": [
-        {"nombre": "Suvlaki Revithekefte", "precio_unitario": 3.90, "cantidad": 1},
-        {"nombre": "Mixta Cerdo Pollo Pa", "precio_unitario": 8.00, "cantidad": 1},
-        {"nombre": "Ensalada Griega", "precio_unitario": 7.20, "cantidad": 1},
-        {"nombre": "Coca Cola Zero", "precio_unitario": 2.50, "cantidad": 2}
+        {
+          "nombre": "Suvlaki Revithekefte",
+          "precio_unitario": 3.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mixta Cerdo Pollo Pa",
+          "precio_unitario": 8.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ensalada Griega",
+          "precio_unitario": 7.2,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coca Cola Zero",
+          "precio_unitario": 2.5,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 24.10,
+      "total_referencia": 24.1,
       "notas": "CASO TRAMPA: restaurante griego ('Egeo' = Egeo/Aegean) pero el pais es España (NIF, IVA 10%, Madrid) -> no confundir con GR. Suma verificada exacta."
     },
-
-    { "id": "ES/bar5-gipuzkoa", "pais": "ES", "moneda": "EUR", "restaurante": null,
+    {
+      "id": "ES/bar5-gipuzkoa",
+      "pais": "ES",
+      "moneda": "EUR",
+      "restaurante": null,
       "items": [
-        {"nombre": "Txupito Licor", "precio_unitario": 2.50, "cantidad": 1},
-        {"nombre": "Tosta de Foie", "precio_unitario": 4.00, "cantidad": 1},
-        {"nombre": "Menu berezi", "precio_unitario": 29.00, "cantidad": 1},
-        {"nombre": "Torrija", "precio_unitario": 5.50, "cantidad": 1}
+        {
+          "nombre": "Txupito Licor",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tosta de Foie",
+          "precio_unitario": 4.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Menu berezi",
+          "precio_unitario": 29.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Torrija",
+          "precio_unitario": 5.5,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 41.00,
+      "total_referencia": 41.0,
       "notas": "Pais Vasco ('Menu berezi' = 'menu especial' en euskera) -> sigue siendo ES/EUR, no un pais aparte. Suma verificada exacta."
     },
-
-    { "id": "ZA/handwritten-gratuity", "pais": "ZA", "moneda": "ZAR", "restaurante": null,
+    {
+      "id": "ZA/handwritten-gratuity",
+      "pais": "ZA",
+      "moneda": "ZAR",
+      "restaurante": null,
       "items": [
-        {"nombre": "750ml Water Sparkling", "precio_unitario": 34.00, "cantidad": 1},
-        {"nombre": "Graham Beck Glass", "precio_unitario": 79.00, "cantidad": 2},
-        {"nombre": "Warwick Cabernet Sauv GL", "precio_unitario": 55.00, "cantidad": 1},
-        {"nombre": "Sardines + Sumac", "precio_unitario": 82.00, "cantidad": 1},
-        {"nombre": "Bombay Basket", "precio_unitario": 64.00, "cantidad": 1},
-        {"nombre": "Lamb Picanha Kebabs", "precio_unitario": 180.00, "cantidad": 1},
-        {"nombre": "Rock Shrimp Burger", "precio_unitario": 148.00, "cantidad": 1},
-        {"nombre": "Churros", "precio_unitario": 48.00, "cantidad": 1}
+        {
+          "nombre": "750ml Water Sparkling",
+          "precio_unitario": 34.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Graham Beck Glass",
+          "precio_unitario": 79.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Warwick Cabernet Sauv GL",
+          "precio_unitario": 55.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sardines + Sumac",
+          "precio_unitario": 82.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bombay Basket",
+          "precio_unitario": 64.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lamb Picanha Kebabs",
+          "precio_unitario": 180.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Rock Shrimp Burger",
+          "precio_unitario": 148.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Churros",
+          "precio_unitario": 48.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 769.00,
+      "total_referencia": 769.0,
       "notas": "Total impreso R769,00 (VAT 14% incluido, informativo). Debajo, A MANO, 'Gratuity: 81.00' y 'Total: 850.00': es una propina VOLUNTARIA del cliente, NO es ítem de la cuenta (R16); el total esperado es el impreso. Patrón general, aplica a cualquier país."
     },
-
-    { "id": "ZA/panarottis-ferndale", "pais": "ZA", "moneda": "ZAR", "restaurante": "Panarottis Ferndale",
+    {
+      "id": "ZA/panarottis-ferndale",
+      "pais": "ZA",
+      "moneda": "ZAR",
+      "restaurante": "Panarottis Ferndale",
       "items": [
-        {"nombre": "Chips", "precio_unitario": 29.90, "cantidad": 1},
-        {"nombre": "L/Lime & Lemon", "precio_unitario": 38.90, "cantidad": 1},
-        {"nombre": "Mozz Feta Oliv", "precio_unitario": 94.90, "cantidad": 1},
-        {"nombre": "Sir Juice Oran", "precio_unitario": 34.90, "cantidad": 1},
-        {"nombre": "Arrabbiata Pas", "precio_unitario": 104.90, "cantidad": 1}
+        {
+          "nombre": "Chips",
+          "precio_unitario": 29.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "L/Lime & Lemon",
+          "precio_unitario": 38.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mozz Feta Oliv",
+          "precio_unitario": 94.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sir Juice Oran",
+          "precio_unitario": 34.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Arrabbiata Pas",
+          "precio_unitario": 104.9,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 303.50,
+      "total_referencia": 303.5,
       "notas": "'Fettuccini ... n/c' = 'no charge' (cortesía/reposición), precio 0 -> excluir (R1). Suma verificada exacta: 29.90+38.90+94.90+34.90+104.90=303.50. 'Tax @ 15% (already included)' es informativo, ya está en los precios, no sumar aparte (R2)."
-    }
-    ,{ "id": "HR/skrapa-trogir", "pais": "HR", "moneda": "HRK", "restaurante": "Konoba Skrapa",
+    },
+    {
+      "id": "HR/skrapa-trogir",
+      "pais": "HR",
+      "moneda": "HRK",
+      "restaurante": "Konoba Skrapa",
       "items": [
-        {"nombre": "Voda 0,75", "precio_unitario": 20.00, "cantidad": 1},
-        {"nombre": "Riblja juha", "precio_unitario": 20.00, "cantidad": 1},
-        {"nombre": "Juha od rajcice", "precio_unitario": 20.00, "cantidad": 1},
-        {"nombre": "Svinjski vrat", "precio_unitario": 65.00, "cantidad": 1},
-        {"nombre": "Tunjevina na zaru", "precio_unitario": 90.00, "cantidad": 1},
-        {"nombre": "Blitva", "precio_unitario": 20.00, "cantidad": 1},
-        {"nombre": "Slani krumpir", "precio_unitario": 17.00, "cantidad": 1}
+        {
+          "nombre": "Voda 0,75",
+          "precio_unitario": 20.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Riblja juha",
+          "precio_unitario": 20.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Juha od rajcice",
+          "precio_unitario": 20.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Svinjski vrat",
+          "precio_unitario": 65.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tunjevina na zaru",
+          "precio_unitario": 90.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Blitva",
+          "precio_unitario": 20.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Slani krumpir",
+          "precio_unitario": 17.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 252.00,
+      "total_referencia": 252.0,
       "notas": "Croacia 2016: moneda 'kn' (HRK, antes del euro). Columnas Naziv|Kolicina|Cijena|Iznos. PDV 13% incluido (Osnovica 223,01 + Iznos poreza 28,99 = 252,00), informativo, no es ítem. Suma exacta: 20+20+20+65+90+20+17=252."
-    }
-    ,{ "id": "HR/pet-bunara-zadar", "pais": "HR", "moneda": "HRK", "restaurante": "Pet bunara",
+    },
+    {
+      "id": "HR/pet-bunara-zadar",
+      "pais": "HR",
+      "moneda": "HRK",
+      "restaurante": "Pet bunara",
       "items": [
-        {"nombre": "Kruh", "precio_unitario": 12.00, "cantidad": 1},
-        {"nombre": "Pivo točeno 0,3", "precio_unitario": 15.00, "cantidad": 1},
-        {"nombre": "Šinjorina smokva", "precio_unitario": 30.00, "cantidad": 1},
-        {"nombre": "Dalmatinski pršut", "precio_unitario": 55.00, "cantidad": 1},
-        {"nombre": "Hobotnica sa čičvardom", "precio_unitario": 78.00, "cantidad": 1},
-        {"nombre": "Brudet od sipe", "precio_unitario": 80.00, "cantidad": 1},
-        {"nombre": "Krpice negre", "precio_unitario": 85.00, "cantidad": 1},
-        {"nombre": "Patka", "precio_unitario": 145.00, "cantidad": 1},
-        {"nombre": "Sirah korlat", "precio_unitario": 195.00, "cantidad": 1}
+        {
+          "nombre": "Kruh",
+          "precio_unitario": 12.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pivo točeno 0,3",
+          "precio_unitario": 15.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Šinjorina smokva",
+          "precio_unitario": 30.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dalmatinski pršut",
+          "precio_unitario": 55.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Hobotnica sa čičvardom",
+          "precio_unitario": 78.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Brudet od sipe",
+          "precio_unitario": 80.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Krpice negre",
+          "precio_unitario": 85.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Patka",
+          "precio_unitario": 145.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sirah korlat",
+          "precio_unitario": 195.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 695.00,
+      "total_referencia": 695.0,
       "notas": "Croacia 2016, documento 'PONUDA' (oferta/precuenta, válido por R15). Total 695,00 kn; el 'TOTAL EUR 99,29' impreso es solo una equivalencia informativa, NO es ítem ni total a usar. Moneda kn = HRK. Suma exacta: 12+15+30+55+78+80+85+145+195=695."
-    }
-    ,{ "id": "RS/belgrade-konoba", "pais": "RS", "moneda": "RSD", "restaurante": null,
+    },
+    {
+      "id": "RS/belgrade-konoba",
+      "pais": "RS",
+      "moneda": "RSD",
+      "restaurante": null,
       "items": [
-        {"nombre": "Viljamovka 0.05", "precio_unitario": 175.00, "cantidad": 1},
-        {"nombre": "Dunja 0.05", "precio_unitario": 170.00, "cantidad": 1},
-        {"nombre": "Hoegaarden 0.33", "precio_unitario": 260.00, "cantidad": 1},
-        {"nombre": "Sok borovnica 0.20", "precio_unitario": 170.00, "cantidad": 1},
-        {"nombre": "Kisela voda 1l", "precio_unitario": 180.00, "cantidad": 2},
-        {"nombre": "Aqua viva 0.75", "precio_unitario": 165.00, "cantidad": 2},
-        {"nombre": "Biftek salata", "precio_unitario": 495.00, "cantidad": 2},
-        {"nombre": "Teleca corba", "precio_unitario": 165.00, "cantidad": 3},
-        {"nombre": "Biftek u ulju", "precio_unitario": 1545.00, "cantidad": 1},
-        {"nombre": "Teletina ispod saca", "precio_unitario": 1030.00, "cantidad": 4},
-        {"nombre": "Hleb ispod saca", "precio_unitario": 60.00, "cantidad": 8},
-        {"nombre": "Cilic Cabernet Sauv. 0.15", "precio_unitario": 350.00, "cantidad": 1},
-        {"nombre": "Basta salata", "precio_unitario": 180.00, "cantidad": 4},
-        {"nombre": "Tre lece", "precio_unitario": 280.00, "cantidad": 5}
+        {
+          "nombre": "Viljamovka 0.05",
+          "precio_unitario": 175.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dunja 0.05",
+          "precio_unitario": 170.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Hoegaarden 0.33",
+          "precio_unitario": 260.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sok borovnica 0.20",
+          "precio_unitario": 170.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kisela voda 1l",
+          "precio_unitario": 180.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Aqua viva 0.75",
+          "precio_unitario": 165.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Biftek salata",
+          "precio_unitario": 495.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Teleca corba",
+          "precio_unitario": 165.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Biftek u ulju",
+          "precio_unitario": 1545.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Teletina ispod saca",
+          "precio_unitario": 1030.0,
+          "cantidad": 4
+        },
+        {
+          "nombre": "Hleb ispod saca",
+          "precio_unitario": 60.0,
+          "cantidad": 8
+        },
+        {
+          "nombre": "Cilic Cabernet Sauv. 0.15",
+          "precio_unitario": 350.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Basta salata",
+          "precio_unitario": 180.0,
+          "cantidad": 4
+        },
+        {
+          "nombre": "Tre lece",
+          "precio_unitario": 280.0,
+          "cantidad": 5
+        }
       ],
-      "total_referencia": 11565.00,
+      "total_referencia": 11565.0,
       "notas": "Serbia, boleta fiscal en cirílico (ЗА УПЛАТУ 11.565,00). Fila: nombre en una línea y debajo 'Nx unitario ... total Ђ'. Ojo 'Teleca corba': impreso '3x 165,00' y total de línea 495,00 (cuadra). PDV 20% ya incluido (СБ: 20,00%), informativo. Foto recortada arriba: el primer ítem visible es Viljamovka, y la suma de los 14 ítems da exactamente el total, así que no falta ninguno. Suma verificada: 11565."
-    }
-    ,{ "id": "PK/dine-in-duplicate", "pais": "PK", "moneda": "PKR", "restaurante": null,
+    },
+    {
+      "id": "PK/dine-in-duplicate",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": null,
       "items": [
-        {"nombre": "Peri Bites", "precio_unitario": 740.00, "cantidad": 1},
-        {"nombre": "Mutton Masala Champ", "precio_unitario": 1340.00, "cantidad": 1},
-        {"nombre": "Chicken Makni Handi", "precio_unitario": 1490.00, "cantidad": 1},
-        {"nombre": "Tarragon Chicken", "precio_unitario": 990.00, "cantidad": 1},
-        {"nombre": "Garlic Naan", "precio_unitario": 90.00, "cantidad": 1},
-        {"nombre": "Plain Naan", "precio_unitario": 50.00, "cantidad": 3},
-        {"nombre": "Namkeen lassi", "precio_unitario": 240.00, "cantidad": 1},
-        {"nombre": "Mint Lemonade", "precio_unitario": 330.00, "cantidad": 1},
-        {"nombre": "Pina Colada", "precio_unitario": 340.00, "cantidad": 3},
-        {"nombre": "Namkeen lassi", "precio_unitario": 240.00, "cantidad": 1},
-        {"nombre": "Mint Lemonade", "precio_unitario": 330.00, "cantidad": 1},
-        {"nombre": "Plain Naan", "precio_unitario": 50.00, "cantidad": 1},
-        {"nombre": "Garlic Naan", "precio_unitario": 90.00, "cantidad": 1},
-        {"nombre": "Crispy Jalebi", "precio_unitario": 390.00, "cantidad": 1},
-        {"nombre": "Kulfi Falooda", "precio_unitario": 375.00, "cantidad": 3},
-        {"nombre": "Crispy Jalebi", "precio_unitario": 390.00, "cantidad": -1},
-        {"nombre": "Pina Colada", "precio_unitario": 340.00, "cantidad": -1}
+        {
+          "nombre": "Peri Bites",
+          "precio_unitario": 740.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mutton Masala Champ",
+          "precio_unitario": 1340.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken Makni Handi",
+          "precio_unitario": 1490.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tarragon Chicken",
+          "precio_unitario": 990.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Garlic Naan",
+          "precio_unitario": 90.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 50.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Namkeen lassi",
+          "precio_unitario": 240.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 330.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 340.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Namkeen lassi",
+          "precio_unitario": 240.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 330.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 50.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Garlic Naan",
+          "precio_unitario": 90.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Crispy Jalebi",
+          "precio_unitario": 390.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kulfi Falooda",
+          "precio_unitario": 375.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Crispy Jalebi",
+          "precio_unitario": 390.0,
+          "cantidad": -1
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 340.0,
+          "cantidad": -1
+        }
       ],
-      "total_referencia": 8910.00,
+      "total_referencia": 8910.0,
       "notas": "Pakistán, 'Duplicate Receipt'. Filas: Qty | Nombre | @unitario | Importe. Dos líneas de ANULACIÓN al final con cantidad negativa (-1 Crispy Jalebi @390 y -1 Pina Colada @340): se transcriben tal cual (R17) y el sistema las descuenta; neto = 7.885,00 (coincide con '19 Quantity 7,885.00'). 'Add Sales Tax @13%: 1,025.05' se SUMA encima: Total 8.910,00. Por eso sum(ítems) != total es esperado: el reconcile agrega el Impuesto (PK en TAX_ON_TOP_HIGH). Aviso: foto con el texto un poco borroso."
-    }
-    ,{ "id": "PK/tao-clifton-blurry", "pais": "PK", "moneda": "PKR", "restaurante": "TAO",
+    },
+    {
+      "id": "PK/tao-clifton-blurry",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "TAO",
       "items": [
-        {"nombre": "Dynamite Prawns", "precio_unitario": 725.00, "cantidad": 1},
-        {"nombre": "Dynamite Chicken", "precio_unitario": 725.00, "cantidad": 1},
-        {"nombre": "Crispy Beef", "precio_unitario": 945.00, "cantidad": 1},
-        {"nombre": "Szechuan Chicken", "precio_unitario": 785.00, "cantidad": 1},
-        {"nombre": "Gaeng Phet Chicken", "precio_unitario": 1095.00, "cantidad": 1},
-        {"nombre": "Fish In Tamarind Sauce", "precio_unitario": 1095.00, "cantidad": 1},
-        {"nombre": "Chicken Chowmein", "precio_unitario": 695.00, "cantidad": 1},
-        {"nombre": "Fried Rice With Vege Full", "precio_unitario": 490.00, "cantidad": 1},
-        {"nombre": "Strawberry Lemonade", "precio_unitario": 350.00, "cantidad": 2},
-        {"nombre": "Fresh Lime", "precio_unitario": 215.00, "cantidad": 1},
-        {"nombre": "Large Mineral Water", "precio_unitario": 160.00, "cantidad": 2},
-        {"nombre": "Pina Colada", "precio_unitario": 350.00, "cantidad": 2},
-        {"nombre": "Mint Lemonade", "precio_unitario": 320.00, "cantidad": 3}
+        {
+          "nombre": "Dynamite Prawns",
+          "precio_unitario": 725.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dynamite Chicken",
+          "precio_unitario": 725.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Crispy Beef",
+          "precio_unitario": 945.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Szechuan Chicken",
+          "precio_unitario": 785.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Gaeng Phet Chicken",
+          "precio_unitario": 1095.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fish In Tamarind Sauce",
+          "precio_unitario": 1095.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken Chowmein",
+          "precio_unitario": 695.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Fried Rice With Vege Full",
+          "precio_unitario": 490.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Strawberry Lemonade",
+          "precio_unitario": 350.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Fresh Lime",
+          "precio_unitario": 215.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Large Mineral Water",
+          "precio_unitario": 160.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Pina Colada",
+          "precio_unitario": 350.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Mint Lemonade",
+          "precio_unitario": 320.0,
+          "cantidad": 3
+        }
       ],
-      "total_referencia": 10678.50,
+      "total_referencia": 10678.5,
       "notas": "Pakistán (Karachi, Clifton), 'Duplicate Receipt' con foto MUY borrosa y de baja resolución: es un test de robustez. Net Amount 9.450,00 = suma exacta de los ítems; 'Add Sales Tax @13%: 1,228.50' se suma encima; Total 10.678,50 (el último dígito se lee borroso). Puntos difíciles: 'Fresh Lime' tiene cantidad 1 y total 215 (precio unitario ilegible; un modelo puede inventar 2 x 107,5); la última fila dice '...t Lemonade' @320 x3 (probablemente 'Mint Lemonade'). sum(ítems) != total es esperado (reconcile agrega el impuesto, PK en TAX_ON_TOP_HIGH)."
-    }
-    ,{ "id": "PK/tkr-islamabad", "pais": "PK", "moneda": "PKR", "restaurante": "TKR (Tahir Khan Restaurant)",
+    },
+    {
+      "id": "PK/tkr-islamabad",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "TKR (Tahir Khan Restaurant)",
       "items": [
-        {"nombre": "M-Large Water", "precio_unitario": 229.00, "cantidad": 1},
-        {"nombre": "Lamb Karahi", "precio_unitario": 4249.00, "cantidad": 1},
-        {"nombre": "TKR Special Platter", "precio_unitario": 7900.00, "cantidad": 1},
-        {"nombre": "Tandori Roti", "precio_unitario": 80.00, "cantidad": 3},
-        {"nombre": "Roghni Naan", "precio_unitario": 90.00, "cantidad": 1},
-        {"nombre": "Zeera Raita", "precio_unitario": 219.00, "cantidad": 1},
-        {"nombre": "Green Salad", "precio_unitario": 399.00, "cantidad": 1},
-        {"nombre": "Soft Drink Can", "precio_unitario": 189.00, "cantidad": 6},
-        {"nombre": "FBR POS Charges", "precio_unitario": 1.00, "cantidad": 1}
+        {
+          "nombre": "M-Large Water",
+          "precio_unitario": 229.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lamb Karahi",
+          "precio_unitario": 4249.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "TKR Special Platter",
+          "precio_unitario": 7900.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tandori Roti",
+          "precio_unitario": 80.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Roghni Naan",
+          "precio_unitario": 90.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Zeera Raita",
+          "precio_unitario": 219.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Green Salad",
+          "precio_unitario": 399.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Soft Drink Can",
+          "precio_unitario": 189.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "FBR POS Charges",
+          "precio_unitario": 1.0,
+          "cantidad": 1
+        }
       ],
-      "total_referencia": 16630.00,
+      "total_referencia": 16630.0,
       "notas": "Pakistán (Islamabad), tabla Description|Rate|Qty|Amount. Sub Total 14.460,00 = suma de los 8 ítems de comida; 'Tax 15.00%: 2,169.00' se SUMA encima; 'FBR POS CHARGES 1.00' es un cargo fijo de la autoridad tributaria que SÍ está en el total. Grand Total 16.630,00 = 14.460 + 2.169 + 1. Efectivo 16.640 (vuelto 10) no es el total. sum(ítems)=14.461 != total es esperado: el reconcile agrega el Impuesto 2.169 (PK en TAX_ON_TOP_HIGH). Caso validado en producción: el resultado final cuadró en 16.630."
-    }
-    ,{ "id": "PK/taus-i8-islamabad", "pais": "PK", "moneda": "PKR", "restaurante": "Tau's I-8",
+    },
+    {
+      "id": "PK/taus-i8-islamabad",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": "Tau's I-8",
       "items": [
-        {"nombre": "Fries", "precio_unitario": 450.00, "cantidad": 1},
-        {"nombre": "Raita", "precio_unitario": 195.00, "cantidad": 2},
-        {"nombre": "Salad", "precio_unitario": 155.00, "cantidad": 1},
-        {"nombre": "Mutton Karahi", "precio_unitario": 2529.00, "cantidad": 2},
-        {"nombre": "Chicken Makhni", "precio_unitario": 2630.00, "cantidad": 1},
-        {"nombre": "Jamia Masjid Kebab", "precio_unitario": 1440.00, "cantidad": 1},
-        {"nombre": "Plain Naan", "precio_unitario": 75.00, "cantidad": 6},
-        {"nombre": "Chapati", "precio_unitario": 55.00, "cantidad": 5},
-        {"nombre": "Coke", "precio_unitario": 175.00, "cantidad": 2},
-        {"nombre": "7UP", "precio_unitario": 175.00, "cantidad": 2},
-        {"nombre": "Water Large", "precio_unitario": 175.00, "cantidad": 1}
+        {
+          "nombre": "Fries",
+          "precio_unitario": 450.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Raita",
+          "precio_unitario": 195.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Salad",
+          "precio_unitario": 155.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mutton Karahi",
+          "precio_unitario": 2529.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Chicken Makhni",
+          "precio_unitario": 2630.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Jamia Masjid Kebab",
+          "precio_unitario": 1440.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 75.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Chapati",
+          "precio_unitario": 55.0,
+          "cantidad": 5
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 175.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "7UP",
+          "precio_unitario": 175.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Water Large",
+          "precio_unitario": 175.0,
+          "cantidad": 1
+        }
       ],
       "total_referencia": 12309.15,
       "notas": "Pakistán (Islamabad), 'Pending Bill'. Formato '2x NOMBRE @ Rs 195' con el importe de la línea a la derecha. 'Price Rs 11,723' es el SUBTOTAL (suma exacta de los ítems); 'Grand Total (Incl. GST) Rs 12,309.15' = 11.723 x 1,05: el GST del 5% (586,15) se SUMA encima, aunque la etiqueta diga 'Incl.'. total_referencia = Grand Total. El 5% es ~4,8% del total: PK necesita el auto-fix de impuesto desde el 4%. Hallazgo de producción: la app mostraba 11.723 y faltaban 586,15."
-    }
-    ,{ "id": "PK/dine-inn-salsa10", "pais": "PK", "moneda": "PKR", "restaurante": null,
+    },
+    {
+      "id": "PK/dine-inn-salsa10",
+      "pais": "PK",
+      "moneda": "PKR",
+      "restaurante": null,
       "items": [
-        {"nombre": "Prawn Handi Full", "precio_unitario": 1590.00, "cantidad": 1},
-        {"nombre": "Kabuli Pullao", "precio_unitario": 690.00, "cantidad": 1},
-        {"nombre": "Peshawari Chicken", "precio_unitario": 1490.00, "cantidad": 1},
-        {"nombre": "Peshawari Mutton", "precio_unitario": 1290.00, "cantidad": 1},
-        {"nombre": "Brain Masala", "precio_unitario": 690.00, "cantidad": 1},
-        {"nombre": "Plain Naan", "precio_unitario": 30.00, "cantidad": 6},
-        {"nombre": "White Colada", "precio_unitario": 250.00, "cantidad": 1},
-        {"nombre": "Lemon Mint Glacier", "precio_unitario": 170.00, "cantidad": 3},
-        {"nombre": "Choco Coffee Fantasy", "precio_unitario": 260.00, "cantidad": 1},
-        {"nombre": "Coke", "precio_unitario": 80.00, "cantidad": 1},
-        {"nombre": "Mineral Water Large", "precio_unitario": 95.00, "cantidad": 2},
-        {"nombre": "Plain Naan", "precio_unitario": 30.00, "cantidad": 2}
+        {
+          "nombre": "Prawn Handi Full",
+          "precio_unitario": 1590.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kabuli Pullao",
+          "precio_unitario": 690.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Peshawari Chicken",
+          "precio_unitario": 1490.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Peshawari Mutton",
+          "precio_unitario": 1290.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Brain Masala",
+          "precio_unitario": 690.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 30.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "White Colada",
+          "precio_unitario": 250.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lemon Mint Glacier",
+          "precio_unitario": 170.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choco Coffee Fantasy",
+          "precio_unitario": 260.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 80.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mineral Water Large",
+          "precio_unitario": 95.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Plain Naan",
+          "precio_unitario": 30.0,
+          "cantidad": 2
+        }
       ],
-      "total_referencia": 8226.40,
+      "total_referencia": 8226.4,
       "notas": "Pakistán 2017, 'Dine-Inn', foto rotada y borrosa. Cada fila trae un código de producto al inicio (R20, no debe ir en el nombre). Línea de conteo 'No. Of Item(s) 12  Total Qty 21  7280.00': ese 7280 es el SUBTOTAL, no el total. Sales Tax 13% = 946,40 se suma encima; 'Net Amount 8,226.40' es el total FINAL (aquí 'Net Amount' = final, a diferencia de TAO donde es el subtotal): decidir por aritmética (R19). Hallazgo de producción: la app mostró 7.280 sin impuesto porque tomó el subtotal como total."
+    },
+    {
+      "id": "IE/chinese-deposit",
+      "pais": "IE",
+      "moneda": "EUR",
+      "restaurante": null,
+      "items": [
+        {
+          "nombre": "curry sauce",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "spicy bag",
+          "precio_unitario": 6.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Shredded Chicken with Salt & Pepper",
+          "precio_unitario": 13.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Boiled Rice",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chips",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 2.5,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Deposit Return Scheme",
+          "precio_unitario": 0.45,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 37.25,
+      "notas": "Irlanda 2024. Subtotal 36,80 + Deposit Return Scheme 0,45 (depósito retornable, R3, SÍ es ítem) = 37,25. La línea muestra el total de línea (3 x Coke = 7,50 -> unitario 2,50). Texto en chino bajo cada ítem: ignorar. VAT 4,89 incluido (food 13,5%/drink 23%), informativo. Encabezados ===Starter=== son separadores, no ítems."
+    },
+    {
+      "id": "IE/pub-handwritten-total",
+      "pais": "IE",
+      "moneda": "EUR",
+      "restaurante": null,
+      "items": [
+        {
+          "nombre": "PT HOP HOUSE",
+          "precio_unitario": 8.85,
+          "cantidad": 2
+        },
+        {
+          "nombre": "7UP FREE",
+          "precio_unitario": 3.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FISH & CHIPS",
+          "precio_unitario": 23.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BEEF BURGER",
+          "precio_unitario": 21.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BEEF CASSEROLE",
+          "precio_unitario": 22.95,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 90.45,
+      "notas": "Irlanda 2025. Total impreso 90,45 (VAT 23% y 13,5% incluidos). A mano: 'TOTAL 100.50' = 90,45 + ~10% de servicio recomendado: propina voluntaria, NO ítem (R16). 'SERVICE CHARGE NOT INCLUDED'. Total esperado = impreso."
+    },
+    {
+      "id": "GB/boot-inn-category-subtotals",
+      "pais": "GB",
+      "moneda": "GBP",
+      "restaurante": "The Boot Inn",
+      "items": [
+        {
+          "nombre": "CARLING",
+          "precio_unitario": 3.4,
+          "cantidad": 2
+        },
+        {
+          "nombre": "DOOMBAR",
+          "precio_unitario": 3.6,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SODALIME",
+          "precio_unitario": 1.1,
+          "cantidad": 1
+        },
+        {
+          "nombre": "1/2 GUINNESS",
+          "precio_unitario": 2.05,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BALTIC BOARD",
+          "precio_unitario": 16.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SAUSAGE BAGUETTE",
+          "precio_unitario": 6.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BACON & BRIE",
+          "precio_unitario": 5.95,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CHIPS",
+          "precio_unitario": 5.9,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 48.85,
+      "notas": "Reino Unido 2015. Filas 'qty NOMBRE total'. Subtotales de categoría 'DRINKS 13.55' y 'FOOD 35.30' NO son ítems (R2: contarlos duplicaría el total). 'SHANDY x2 0.00' cuesta cero: excluir (R1). 'SERVICE NOT INCLUDED': sin cargo de servicio (excepción al perfil GB, aquí no hay). 2 x CARLING 6.80 -> unitario 3.40. Suma 13.55+35.30=48.85. Validado en producción."
+    },
+    {
+      "id": "MY/khan-jee-kl",
+      "pais": "MY",
+      "moneda": "MYR",
+      "restaurante": "Royal Dining Hall Restaurant Khan Jee",
+      "items": [
+        {
+          "nombre": "DAAL CHANA FRY",
+          "precio_unitario": 25,
+          "cantidad": 1
+        },
+        {
+          "nombre": "PLAIN NAAN",
+          "precio_unitario": 3,
+          "cantidad": 11
+        },
+        {
+          "nombre": "PALAK PANEER",
+          "precio_unitario": 25,
+          "cantidad": 2
+        },
+        {
+          "nombre": "CHICKEN CHEESY KOFTA",
+          "precio_unitario": 30,
+          "cantidad": 1
+        },
+        {
+          "nombre": "DAAL MASH FRY",
+          "precio_unitario": 25,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CH TANDOORI LEG",
+          "precio_unitario": 15,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PLAIN PARATHA",
+          "precio_unitario": 5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FRESH LIME JUICE",
+          "precio_unitario": 10,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Service Charges",
+          "precio_unitario": 20.8,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 242.55,
+      "notas": "Malasia 2025. Items suman 208,00 = 'Bill Amount'/'Sub Total'. 'SOFT DRINK (LARGE) COKE' y 'MINERAL WATER (LARGE)' tienen importe '.00' (0,00 con el 0 cortado): cuestan cero, excluir. Service Charges 20,80 (10%) es ítem obligatorio. SST 13,73 (6% de 208+20,80) se SUMA encima: Total 242,53 + Rounding 0,02 = Net Total 242,55. sum(items)=228,80 != total es esperado: reconcile agrega Impuesto 13,75 (MY en TAX_ON_TOP_HIGH). Hallazgo de producción: la app mostró 228,80 sin SST."
+    },
+    {
+      "id": "NG/restaurant-kano-vat-sc",
+      "pais": "NG",
+      "moneda": "NGN",
+      "restaurante": null,
+      "items": [
+        {
+          "nombre": "Minnie Burger",
+          "precio_unitario": 2000,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Mickey Pizza",
+          "precio_unitario": 2000,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Special Platter (12 Pcs)",
+          "precio_unitario": 12000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Under The Sea Combo",
+          "precio_unitario": 20000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Breaded Calamari",
+          "precio_unitario": 3500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "French Fries",
+          "precio_unitario": 1500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "White Fish Teppanyaki",
+          "precio_unitario": 4000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Dynamite Shrimp",
+          "precio_unitario": 4000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Blue Sky",
+          "precio_unitario": 1500,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Pepsi",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sprite",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Swan Water Large",
+          "precio_unitario": 350,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Stamp Duty",
+          "precio_unitario": 50,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SC (7.5%)",
+          "precio_unitario": 4387.5,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 67275.0,
+      "notas": "Nigeria (Kano), 2021. La columna derecha es el TOTAL DE LÍNEA (2 x Minnie Burger = 4.000, unitario 2.000; 3 x Blue Sky = 4.500). Subtotales 'Beverage Total 5.450', 'Food Total 53.000' y 'Stamp Duty Total 50' NO son ítems (R2). Sub Total 58.500 = 12 platos/bebidas 58.450 + Stamp Duty 50. 'SC (7.5%)' 4.387,50 es el servicio (ítem) y 'VAT' 4.387,50 se SUMA encima: Total 67.275 = 58.500 + 4.387,50 + 4.387,50. sum(ítems)=62.887,50 != total es esperado: el reconcile agrega el Impuesto 4.387,50 (NG en TAX_ON_TOP_HIGH). Hallazgo de producción en v2: faltaba Stamp Duty, 'SC' se contaba como consumo y no entraba el VAT (67.275 vs 62.837,50)."
+    },
+    {
+      "id": "LK/cinnamon-garuka-taxes",
+      "pais": "LK",
+      "moneda": "LKR",
+      "restaurante": "Cinnamon Hotels (GarukaD)",
+      "items": [
+        {
+          "nombre": "OLU STILL - L",
+          "precio_unitario": 600,
+          "cantidad": 1
+        },
+        {
+          "nombre": "COCA COLA PET BOTTLE",
+          "precio_unitario": 500,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PORK CHOP",
+          "precio_unitario": 8500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "STEAK FRITES",
+          "precio_unitario": 17000,
+          "cantidad": 2
+        },
+        {
+          "nombre": "MIXED LETTUCE SALAD",
+          "precio_unitario": 1500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "APPLE TART TATIN",
+          "precio_unitario": 1800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "PROFITEROLES",
+          "precio_unitario": 1800,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Service Charge",
+          "precio_unitario": 4920,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 66118.3,
+      "notas": "Sri Lanka 2025, hotel Cinnamon. Fila 'QTY NOMBRE IMPORTE': el importe es el TOTAL DE LÍNEA (2 COCA COLA 1.000 -> unitario 500; 2 STEAK FRITES 34.000 -> 17.000). Subtotal 49.200 = suma de los 7 platos; Service Charge 4.920 (10%) es ítem; 'Taxes' 11.998,30 se SUMA encima (22% de 54.120) y NO es ítem. Payment 66.118,30 = 49.200 + 4.920 + 11.998,30 (= total_referencia; 'Change Due 0' y 'Master 4190' son líneas de pago). sum(ítems)=54.120 != total es esperado: el reconcile agrega el Impuesto 11.998,30 (LK en TAX_ON_TOP_HIGH, tope 22%). Hallazgo de producción en v2: la misma foto dio 3 lecturas distintas (sin impuestos; con 'Impuesto'; y con 'Taxes' contado como consumo)."
+    },
+    {
+      "id": "AT/klagenfurt-bar-supplement",
+      "pais": "AT",
+      "moneda": "EUR",
+      "restaurante": "Claus Spitzbart KG",
+      "items": [
+        {
+          "nombre": "Hirter 1270 - 0,4",
+          "precio_unitario": 4.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Prosecco - mit Aperol",
+          "precio_unitario": 5.2,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Venezia - normal",
+          "precio_unitario": 11.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "San Daniele",
+          "precio_unitario": 13.2,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 43.5,
+      "notas": "Austria (Klagenfurt) 2019, 'Barrechnung'. Columnas Anz.|Artikel|Preis|Total; la letra tras el importe (A/D) es la categoría de IVA. CASO CLAVE: bajo 'Venezia - normal 11.90 11,90D' aparecen 'Rucola', 'Parmesan' y '(+1.20)': es un suplemento YA INCLUIDO en el 11,90 (R21). Sumarlo da 13,10 y un total de 44,70. SUMME 43,50 = 8,00 + 10,40 + 11,90 + 13,20. Netto 38,15 + 20% MwSt 3,07 + 10% MwSt 2,28 = 43,50: IVA incluido, informativo. Hallazgo de producción en v2: la app leyó 13,10 y avisó 'sobran 1,20'."
+    },
+    {
+      "id": "KR/jeju-noodles-vat-included",
+      "pais": "KR",
+      "moneda": "KRW",
+      "restaurante": "국수비다본점",
+      "items": [
+        {
+          "nombre": "밀면",
+          "precio_unitario": 10000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "고기국수(곱배기)",
+          "precio_unitario": 10000,
+          "cantidad": 2
+        },
+        {
+          "nombre": "비빔국수",
+          "precio_unitario": 10000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "왕만두(4알)",
+          "precio_unitario": 5000,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 45000,
+      "notas": "Corea (Jeju) 2024. Foto recortada de una captura. Columnas nombre+precio unitario debajo, cantidad, importe. 과세금액 40.910 + 부가세 4.090 = 45.000: IVA INCLUIDO, informativo, no es ítem ni se suma. 합계 = 받을금액 = 신용카드 = 45.000. Verificado en v2: cuadra sin extras."
+    },
+    {
+      "id": "SG/the-catch-seafood-svc10-gst0",
+      "pais": "SG",
+      "moneda": "SGD",
+      "restaurante": "The Catch Seafood Restaurant & Bar",
+      "items": [
+        {
+          "nombre": "Chicken Glu.Rice",
+          "precio_unitario": 58.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tea Towel Pickle",
+          "precio_unitario": 2.0,
+          "cantidad": 6
+        },
+        {
+          "nombre": "Mud Crab 100g",
+          "precio_unitario": 61.2,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Local Lobster 10",
+          "precio_unitario": 58.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "L.Spinach SB-M",
+          "precio_unitario": 15.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BFCube w BPp-M",
+          "precio_unitario": 33.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Br.Noodle XO-S",
+          "precio_unitario": 14.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ser Chg 10%",
+          "precio_unitario": 25.12,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 276.3,
+      "notas": "Singapur 2016. Ítems por peso: 'Mud Crab 9.00 @ 6.80 = 61.20', 'Local Lobster 10.00 @ 5.80 = 58.00' (la línea 'N @ P' es el cálculo, el importe es el de la derecha, R18). Sub-Total 251.20 + Ser Chg 10% 25.12 + GST 7% 0.00 + Round Amt -0.02 = Total Due 276.30. El redondeo -0.02 NO es ítem. Verificado en v2: 276,32 vs 276,30 → cuadra dentro de tolerancia."
+    },
+    {
+      "id": "LK/sovereign-german-tax15",
+      "pais": "LK",
+      "moneda": "LKR",
+      "restaurante": "Sovereign German Restaurant",
+      "items": [
+        {
+          "nombre": "BBQ ROAST PORK",
+          "precio_unitario": 1600,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CARLSBERG-BOTTLE",
+          "precio_unitario": 490,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 2403.5,
+      "notas": "Sri Lanka 2017. Sub Total 2090 + TAX 313.50 (15%, 'All prices are subject to 15% Tax Charges') = Bill Amount 2403.50. El TAX va SUMADO y es cargo proporcional, no consumo."
+    },
+    {
+      "id": "KR/tokyo-ramen-addons",
+      "pais": "KR",
+      "moneda": "KRW",
+      "restaurante": "도쿄라멘(진해평안점)",
+      "items": [
+        {
+          "nombre": "소유라멘(간장)",
+          "precio_unitario": 5400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "->차슈 추가",
+          "precio_unitario": 3000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "->야끼교자",
+          "precio_unitario": 4000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "카스",
+          "precio_unitario": 4000,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 16400,
+      "notas": "Corea 2024. Las líneas '->' son extras con su propio precio (ítems aparte). 소계 16.400 = 매출합계. 순매출 14.908 + 부가세 1.492 = IVA incluido (ignorar). 봉사료 0."
+    },
+    {
+      "id": "MY/it-restaurant-cavia",
+      "pais": "MY",
+      "moneda": "MYR",
+      "restaurante": "IT Restaurant",
+      "items": [
+        {
+          "nombre": "Chateau Margaux '99",
+          "precio_unitario": 13888,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cht Margaux '98",
+          "precio_unitario": 18000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Cht Pavie '05",
+          "precio_unitario": 15488,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lobster Salad",
+          "precio_unitario": 138,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Bone Marrow",
+          "precio_unitario": 128,
+          "cantidad": 4
+        },
+        {
+          "nombre": "Tomahawk 1.6Kgm",
+          "precio_unitario": 1380,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Lamb Rack",
+          "precio_unitario": 158,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Spring Chicken",
+          "precio_unitario": 128,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Steak Fries",
+          "precio_unitario": 18,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Portobello Mshroom",
+          "precio_unitario": 18,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Creamed Spinach",
+          "precio_unitario": 26,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Truffle Mash",
+          "precio_unitario": 18,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Cristal Champgn",
+          "precio_unitario": 3888,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Choc Fondant",
+          "precio_unitario": 48,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Creme Brulee",
+          "precio_unitario": 38,
+          "cantidad": 3
+        },
+        {
+          "nombre": "MV Still 750ml",
+          "precio_unitario": 28,
+          "cantidad": 11
+        },
+        {
+          "nombre": "Open Food OSETRA CAVIA",
+          "precio_unitario": 1400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food OSETRA CAVIA",
+          "precio_unitario": 1400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food OSETRA CAVIA",
+          "precio_unitario": 1400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food BELUGA CAVIA",
+          "precio_unitario": 2000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Open Food SPECIAL CHEESE",
+          "precio_unitario": 98,
+          "cantidad": 12
+        },
+        {
+          "nombre": "Service Charge",
+          "precio_unitario": 6730.6,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 78478.8,
+      "notas": "Malasia 2017, cuenta de 12 personas. Items suman 67.306,00 (verificado línea a línea). 10% Srv Chg 6.730,60 y GST 6% 4.442,20 (= 6% de 74.036,60: GST sobre subtotal+servicio). Amt Due 78.478,80. La 'S' al final de cada importe es el código de impuesto, no parte del precio. 'Open Food' + nombre en la línea siguiente = un ítem de 2 líneas. Foto con overlay del teléfono arriba."
+    },
+    {
+      "id": "NG/calypso-sc-10",
+      "pais": "NG",
+      "moneda": "NGN",
+      "restaurante": "Calypso Restaurant",
+      "items": [
+        {
+          "nombre": "English",
+          "precio_unitario": 3400,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Water (Small)",
+          "precio_unitario": 300,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Coke",
+          "precio_unitario": 400,
+          "cantidad": 1
+        },
+        {
+          "nombre": "S/CHARGE",
+          "precio_unitario": 750,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 8250,
+      "notas": "Nigeria 2021. 2 English = 6.800 (3.400 c/u). Sub Total 7.500 + S/CHARGE 750 (10%) = 8.250. Sin VAT."
+    },
+    {
+      "id": "AT/leto-zwischenrechnung",
+      "pais": "AT",
+      "moneda": "EUR",
+      "restaurante": "Café Restaurant Leto",
+      "items": [
+        {
+          "nombre": "Soda Zitrone 0,25",
+          "precio_unitario": 1.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Wasser 0.75l mit",
+          "precio_unitario": 4.2,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tzatziki",
+          "precio_unitario": 4.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Aubergine mit Fet",
+          "precio_unitario": 6.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ceasar Salat",
+          "precio_unitario": 12.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kalamari",
+          "precio_unitario": 14.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Garnelen mit Feta",
+          "precio_unitario": 18.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "GV Haus 1/8",
+          "precio_unitario": 3.4,
+          "cantidad": 3
+        }
+      ],
+      "total_referencia": 74.3,
+      "notas": "Austria 2018. 'KEINE RECHNUNG / Zwischenrechnung': cuenta provisoria válida. Dos columnas de importe iguales salvo la última línea (3 x 3,40 = 10,20). 'geteilt durch 3 Personen: 24,76' es informativo. Suma = 74,30."
+    },
+    {
+      "id": "SG/irodori-svc-gst-on-top",
+      "pais": "SG",
+      "moneda": "SGD",
+      "restaurante": "Irodori Japanese Restaurant Pte Ltd",
+      "items": [
+        {
+          "nombre": "Adult",
+          "precio_unitario": 38.8,
+          "cantidad": 6
+        },
+        {
+          "nombre": "GIN NO TSUKASA(720ML)",
+          "precio_unitario": 68,
+          "cantidad": 1
+        },
+        {
+          "nombre": "UME (ROCKS)",
+          "precio_unitario": 10,
+          "cantidad": 1
+        },
+        {
+          "nombre": "10% Svc Charge",
+          "precio_unitario": 31.08,
+          "cantidad": 1
+        },
+        {
+          "nombre": "7% GST",
+          "precio_unitario": 23.93,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 365.81,
+      "notas": "Singapur 2018. Sub-Total 310.80 + 10% Svc Charge 31.08 + 7% GST 23.93 (= 7% de 341.88) = TOTAL 365.81 (VISA 365.81). El GST va SUMADO encima."
+    },
+    {
+      "id": "TH/three-monkeys-svc-vat",
+      "pais": "TH",
+      "moneda": "THB",
+      "restaurante": "Three Monkeys (Skyworld Adventures)",
+      "items": [
+        {
+          "nombre": "หมูอบอาเมจักร",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ซีโครงหมูรมควันไม้เกากัด",
+          "precio_unitario": 499,
+          "cantidad": 2
+        },
+        {
+          "nombre": "มะระผัดไข่",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ข้าวผัดกุ้ง (S)",
+          "precio_unitario": 180,
+          "cantidad": 1
+        },
+        {
+          "nombre": "หมูสันนอกย่างสไตล์บาหลี",
+          "precio_unitario": 220,
+          "cantidad": 1
+        },
+        {
+          "nombre": "หมีโกเร้ง หมีผัดสไตล์อิ",
+          "precio_unitario": 230,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Watermelon Smoothies",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Water",
+          "precio_unitario": 30,
+          "cantidad": 2
+        },
+        {
+          "nombre": "ค่าบริการ 10%",
+          "precio_unitario": 239.47,
+          "cantidad": 1
+        },
+        {
+          "nombre": "VAT 7%",
+          "precio_unitario": 156.66,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 2634.0,
+      "notas": "Tailandia 2022. Los cargos (servicio y VAT) se listan como ítems de cargo proporcional. Items suman 2.238. ค่าบริการ 'Service 10%' 239,47 y VAT 7% 156,66 SUMADOS = 2.634,13; ปัดเศษ -0,13 → รวมสุทธิ 2.634,00 (Rounding no es ítem). Nombres en tailandés: transcribirlos tal cual."
+    },
+    {
+      "id": "TH/secret-recipe-svc-1",
+      "pais": "TH",
+      "moneda": "THB",
+      "restaurante": "Secret Recipe Central Festival Pattaya",
+      "items": [
+        {
+          "nombre": "Chocolate Indulgence 6 Slices",
+          "precio_unitario": 135,
+          "cantidad": 1
+        },
+        {
+          "nombre": "H Twinning Tea Pot",
+          "precio_unitario": 65,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Service Charge 10%",
+          "precio_unitario": 20,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 220,
+      "notas": "Tailandia 2018. ยอดรวม 200 + Service Charge 10% 20 = 220. Rounding 0.00 no es ítem. Foto cortada arriba."
+    },
+    {
+      "id": "TH/secret-recipe-svc-2",
+      "pais": "TH",
+      "moneda": "THB",
+      "restaurante": "Secret Recipe Central Festival Pattaya",
+      "items": [
+        {
+          "nombre": "Chocolate Indulgence 6 Slices",
+          "precio_unitario": 135,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mocha Walnut 6 Slices",
+          "precio_unitario": 135,
+          "cantidad": 1
+        },
+        {
+          "nombre": "น้ำแร่ เพอร์ร่า 500มล./ขวด",
+          "precio_unitario": 20,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Service Charge 10%",
+          "precio_unitario": 29,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 319,
+      "notas": "Tailandia 2018. 290 + Service Charge 10% 29 = 319. Foto cortada arriba."
+    },
+    {
+      "id": "TH/kaya-toast-addons",
+      "pais": "TH",
+      "moneda": "THB",
+      "restaurante": "Café tailandés (Kaya Toast)",
+      "items": [
+        {
+          "nombre": "Kaya Toast",
+          "precio_unitario": 45,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ข้าวหมูทอด + ไข่ชัน",
+          "precio_unitario": 94,
+          "cantidad": 1
+        },
+        {
+          "nombre": "มาม่าผัดน้ำข้น + ไข่",
+          "precio_unitario": 59,
+          "cantidad": 1
+        },
+        {
+          "nombre": "โอเลี้ยง",
+          "precio_unitario": 35,
+          "cantidad": 1
+        },
+        {
+          "nombre": "น้ำมะพร้าว",
+          "precio_unitario": 35,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ข้าวหมูทอด + ไข่ดาว",
+          "precio_unitario": 89,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 357,
+      "notas": "Tailandia 2024. Cada línea muestra '1 x B79.00' y '+ ไข่ (B10.00)': el importe de la derecha (89) YA incluye el extra (R21). Total ฿357 = 45+94+59+35+35+89. Foto parcialmente tapada por texto de TikTok."
+    },
+    {
+      "id": "TH/cafe-amazon-vat-included",
+      "pais": "TH",
+      "moneda": "THB",
+      "restaurante": "Café Amazon (PTT Station)",
+      "items": [
+        {
+          "nombre": "TW ชาม่วงนมเย็น",
+          "precio_unitario": 50,
+          "cantidad": 1
+        },
+        {
+          "nombre": "TW มัทฉะ อัญชัน Light",
+          "precio_unitario": 60,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 110,
+      "notas": "Tailandia 2024 (2567 b.e.). Total 110 = NET BAHT. VATable 110 + VAT 7.00% 7.20: IVA INCLUIDO (ราคารวมภาษีมูลค่าเพิ่มแล้ว), no es cargo extra. 'Cash 120 / Change 10' no son ítems. Línea de 0.00 es modificador sin cargo."
+    },
+    {
+      "id": "MA/le-marrakchi",
+      "pais": "MA",
+      "moneda": "MAD",
+      "restaurante": "Le Marrakchi",
+      "items": [
+        {
+          "nombre": "COCA LIGHT",
+          "precio_unitario": 30,
+          "cantidad": 3
+        },
+        {
+          "nombre": "SIDI ALI",
+          "precio_unitario": 35,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SAN MIGUEL",
+          "precio_unitario": 50,
+          "cantidad": 2
+        },
+        {
+          "nombre": "COCA COLA",
+          "precio_unitario": 30,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PASTILLA AU POULET",
+          "precio_unitario": 100,
+          "cantidad": 3
+        },
+        {
+          "nombre": "VARIET.BRIOUATES",
+          "precio_unitario": 90,
+          "cantidad": 2
+        },
+        {
+          "nombre": "COUSCOUS AGNEAU AUX 7 LEGU",
+          "precio_unitario": 150,
+          "cantidad": 1
+        },
+        {
+          "nombre": "COUSCOUS VEGETARIEN",
+          "precio_unitario": 130,
+          "cantidad": 1
+        },
+        {
+          "nombre": "KNAFFA",
+          "precio_unitario": 60,
+          "cantidad": 2
+        },
+        {
+          "nombre": "CROQUANT AU CHOCOLAT",
+          "precio_unitario": 60,
+          "cantidad": 2
+        },
+        {
+          "nombre": "YAOURT MAISON SUCRE",
+          "precio_unitario": 40,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PATISSERIES MAROCAINES",
+          "precio_unitario": 60,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 1425,
+      "notas": "Marruecos 2017, francés. Importe de la derecha = total de la línea (3 COCA LIGHT 90.00 → 3 x 30). Suma verificada = 1.425. HT 1425 = TTC 1425, TVA vacía: sin impuesto aparte. '10 COUVERT' = comensales, no ítem. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."
+    },
+    {
+      "id": "CH/cedre-zurich-mwst-incl",
+      "pais": "CH",
+      "moneda": "CHF",
+      "restaurante": "Restaurant Cèdre",
+      "items": [
+        {
+          "nombre": "Hommos bi Lahme",
+          "precio_unitario": 18.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Arayess Lahme",
+          "precio_unitario": 19.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Hommos bi Snoubar",
+          "precio_unitario": 17.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Warak Inab bil Zet",
+          "precio_unitario": 13.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Beste Falafel",
+          "precio_unitario": 13.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Scheschtaouk",
+          "precio_unitario": 24.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Kafta bi Laban",
+          "precio_unitario": 28.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Elmer Citro 3dl",
+          "precio_unitario": 4.5,
+          "cantidad": 2
+        }
+      ],
+      "total_referencia": 144.5,
+      "notas": "Suiza (Zúrich) 2015. 'N x NOMBRE à PRECIO' + importe de la línea a la derecha; la letra 'A' tras el importe es la categoría de IVA. Suma verificada = 144,50. 'Umsatz 8.0% inkl.' y 'MwSt 8.0% CHF 10,70' = IVA INCLUIDO (informativo, no es ítem ni se suma). 'Bar' = pagado en efectivo. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."
+    },
+    {
+      "id": "GR/aimani-columnas-desfasadas",
+      "pais": "GR",
+      "moneda": "EUR",
+      "restaurante": "Taberna (Αιμάνι / Mesa 50)",
+      "items": [
+        {
+          "nombre": "SPRITE 250ml",
+          "precio_unitario": 1.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΑΡΤΟΣ ΑΤΟΜΙΚΟΣ",
+          "precio_unitario": 0.8,
+          "cantidad": 6
+        },
+        {
+          "nombre": "ΒΑΡΒΑΓΙΑΝΝΗΣ ΜΠΛΕ",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΤΟΝΟ",
+          "precio_unitario": 7.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ",
+          "precio_unitario": 1.0,
+          "cantidad": 2
+        },
+        {
+          "nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ",
+          "precio_unitario": 1.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΚΑΛΑΜΑΡΑΚΙ",
+          "precio_unitario": 7.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ",
+          "precio_unitario": 14.44,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΚΕΧΡΙΜΠΑΡΙ 500ml",
+          "precio_unitario": 4.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΚΟΚ. ΞΗΡΟ ΚΑΡΑΦΑ 500ml",
+          "precio_unitario": 4.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΚΟΛΟΚΥΘΑΚΙΑ",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΜΕΛΙΤΖΑΝΑ ΨΗΤΗ",
+          "precio_unitario": 4.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΜΥΔΙΑ ΑΧΝΙΣΤΑ",
+          "precio_unitario": 7.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΝΕΣ NESTLE",
+          "precio_unitario": 2.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΠΑΤΑΤΕΣ",
+          "precio_unitario": 2.8,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΣΑΛΑΤΑ ΤΟΥ ΣΑΒΒΑ",
+          "precio_unitario": 6.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΤΖΑΤΖΙΚΙ",
+          "precio_unitario": 3.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΤΣΙΠΟΥΡΟ ΗΔΩΝΙΚΟ (Μ)",
+          "precio_unitario": 7.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΧΤΑΠΟΔΙ",
+          "precio_unitario": 9.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ΧΤΑΠΟΔΙ ΒΡ. ΨΗΤΟ",
+          "precio_unitario": 9.0,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 105.84,
+      "notas": "Grecia. Foto inclinada: la columna de importes queda desfasada respecto a los nombres. Hallazgo de producción en v2: la app leyó ΒΑΡΒΑΓΙΑΝΝΗΣ 7.00 (es 6.00), ΤΟΝΟ 2.00 (es 7.00) y omitió la segunda fila ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ (1 x 1.00): suma 100.84 vs 105.84 (avisó 'faltan 5,00'). Columnas: cantidad | nombre | ΦΠΑ 0% | importe de la línea (6 ΑΡΤΟΣ 4.80 = 6 x 0.80). 'ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ' 0.38 kg = 14.44 (R18). ΣΥΝΟΛΟ 105.84 = ΠΛΗΡΩΤΕΟ 105.84. A mano: 'ΚΕΧΡΙΜΠΑΡΙ' tachado, '95,00' y '-4,00': NO cuentan; el total impreso 105.84 incluye el tachado. Dos filas con el mismo nombre (agua) son dos líneas reales."
+    },
+    {
+      "id": "AR/don-domingo-caba",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Don Domingo (Santo Tomé, CABA)",
+      "items": [
+        {
+          "nombre": "BIFE DON DOMIN",
+          "precio_unitario": 395,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MAT A LA PIZZA",
+          "precio_unitario": 335,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SUPREMA FUGAZZ",
+          "precio_unitario": 165,
+          "cantidad": 1
+        },
+        {
+          "nombre": "AGUA 1500",
+          "precio_unitario": 70,
+          "cantidad": 1
+        },
+        {
+          "nombre": "LINEA COCA 150",
+          "precio_unitario": 85,
+          "cantidad": 1
+        },
+        {
+          "nombre": "COPA DON DOMIN",
+          "precio_unitario": 180,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BENJAMIN MALBE",
+          "precio_unitario": 155,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CAFE JARRITO",
+          "precio_unitario": 35,
+          "cantidad": 4
+        }
+      ],
+      "total_referencia": 1525,
+      "notas": "Argentina, ticket de matriz. Columnas Cant | Detalle | P.Unit | Importe. '5.00 SERV.DE MESA' no tiene precio: no es ítem. Suma 1525 = total."
+    },
+    {
+      "id": "AR/control-mesa-805",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa (Mesa 8)",
+      "items": [
+        {
+          "nombre": "CUBIERTO",
+          "precio_unitario": 25,
+          "cantidad": 2
+        },
+        {
+          "nombre": "AGUA SABO",
+          "precio_unitario": 60,
+          "cantidad": 1
+        },
+        {
+          "nombre": "STELLA A",
+          "precio_unitario": 175,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FILET DE",
+          "precio_unitario": 205,
+          "cantidad": 2
+        },
+        {
+          "nombre": "ENSALADA",
+          "precio_unitario": 110,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 805,
+      "notas": "Argentina. El precio de cada línea ya es el IMPORTE de la línea (2 CUBIERTO 50, 2 FILET 410): no multiplicar por cantidad. Por eso unitario = importe/cantidad. Suma 805 = total."
+    },
+    {
+      "id": "AR/servicio-mesa-2930",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa (Mesa 29)",
+      "items": [
+        {
+          "nombre": "SERVICIO DE MESA",
+          "precio_unitario": 110,
+          "cantidad": 2
+        },
+        {
+          "nombre": "GASEOSA",
+          "precio_unitario": 150,
+          "cantidad": 4
+        },
+        {
+          "nombre": "ENSALADA 1",
+          "precio_unitario": 280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "1/2 PASTAS",
+          "precio_unitario": 280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MINI BIFE",
+          "precio_unitario": 570,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BIFE DE LOMO",
+          "precio_unitario": 980,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 2930,
+      "notas": "Argentina. Columna 'Precio' = importe de la línea (4 GASEOSA 600, 2 SERVICIO DE MESA 220). SERVICIO DE MESA es el cubierto, cobrado de verdad. Subtotal 2930, descuento 0."
+    },
+    {
+      "id": "AR/comprobante-39-30",
+      "pais": "AR",
+      "moneda": "EUR",
+      "restaurante": "Comprobante (Mesa 1)",
+      "items": [
+        {
+          "nombre": "Agua",
+          "precio_unitario": 1.4,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Empanadilla argentina",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MENU parrillada punto",
+          "precio_unitario": 32.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Agua Grande",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 39.3,
+      "notas": "Restaurante argentino en el extranjero (euros). 'Cola Zero' x2 y 'Panqueque' salen a 0,00 (cortesía/menú): no aportan. Suma 39,30 = total a pagar."
+    },
+    {
+      "id": "AR/palermo-inclinada-9320",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Palermo (Mesa 710)",
+      "items": [
+        {
+          "nombre": "CUBIERTO NOCHE",
+          "precio_unitario": 90,
+          "cantidad": 5
+        },
+        {
+          "nombre": "Agua San Pellegrino",
+          "precio_unitario": 295,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Acqua Panna",
+          "precio_unitario": 295,
+          "cantidad": 3
+        },
+        {
+          "nombre": "BURRATA",
+          "precio_unitario": 685,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PICANHA",
+          "precio_unitario": 1990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "LOMO",
+          "precio_unitario": 1240,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ENSALADA RUCULA PAR",
+          "precio_unitario": 340,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CARMELA RESERVA MAL",
+          "precio_unitario": 850,
+          "cantidad": 2
+        },
+        {
+          "nombre": "FRUTILLAS CON HELAD",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "PANQUEQUE DE MANZAN",
+          "precio_unitario": 375,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CAFE AMERICANO",
+          "precio_unitario": 130,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 9320,
+      "notas": "Foto muy inclinada, mano y fondo. Columnas pegadas ('685.001370.00' = unitario 685.00 + importe 1370.00). '5 COMENSALES 0.00' no es ítem; '5 CUBIERTO NOCHE' 90 x5 = 450 sí. Suma 9320 = total."
+    },
+    {
+      "id": "AR/control-mesa-fudo-461400",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa #1328 (Fudo)",
+      "items": [
+        {
+          "nombre": "Limonada Anchoita",
+          "precio_unitario": 9100,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choripan Medio Oriente",
+          "precio_unitario": 13000,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choripan Ginger",
+          "precio_unitario": 13000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ojo de roastbeef 300 gr",
+          "precio_unitario": 28500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Charolais Bife Chorizo 600g",
+          "precio_unitario": 87000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Charolais Ojo de Bife 800g",
+          "precio_unitario": 116000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mezzelune Amatriciana",
+          "precio_unitario": 32000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Papas Fritas",
+          "precio_unitario": 13500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ensalada de colores",
+          "precio_unitario": 13000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mendel Late Harvest",
+          "precio_unitario": 41500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Panettone y Sambayón",
+          "precio_unitario": 15500,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Finca La Leona Café Cortado",
+          "precio_unitario": 4900,
+          "cantidad": 4
+        }
+      ],
+      "total_referencia": 461400,
+      "notas": "Hallazgo de producción v2: foto curva; la columna de importes quedó desfasada una fila al final: leyó Mendel 13.000, Panettone 2x20.750, Café 4x7.750 (suma 454.800, faltan 6.600). Correcto: la columna es el IMPORTE de la línea (Mendel 41.500, Panettone x2 31.000, Café x4 19.600). Subtotal = Total = 461.400."
     }
-    ,{"id": "IE/chinese-deposit", "pais": "IE", "moneda": "EUR", "restaurante": null, "items": [{"nombre": "curry sauce", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "spicy bag", "precio_unitario": 6.9, "cantidad": 1}, {"nombre": "Shredded Chicken with Salt & Pepper", "precio_unitario": 13.9, "cantidad": 1}, {"nombre": "Boiled Rice", "precio_unitario": 2.5, "cantidad": 1}, {"nombre": "Chips", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "Coke", "precio_unitario": 2.5, "cantidad": 3}, {"nombre": "Deposit Return Scheme", "precio_unitario": 0.45, "cantidad": 1}], "total_referencia": 37.25, "notas": "Irlanda 2024. Subtotal 36,80 + Deposit Return Scheme 0,45 (depósito retornable, R3, SÍ es ítem) = 37,25. La línea muestra el total de línea (3 x Coke = 7,50 -> unitario 2,50). Texto en chino bajo cada ítem: ignorar. VAT 4,89 incluido (food 13,5%/drink 23%), informativo. Encabezados ===Starter=== son separadores, no ítems."}
-    ,{"id": "IE/pub-handwritten-total", "pais": "IE", "moneda": "EUR", "restaurante": null, "items": [{"nombre": "PT HOP HOUSE", "precio_unitario": 8.85, "cantidad": 2}, {"nombre": "7UP FREE", "precio_unitario": 3.9, "cantidad": 1}, {"nombre": "FISH & CHIPS", "precio_unitario": 23.95, "cantidad": 1}, {"nombre": "BEEF BURGER", "precio_unitario": 21.95, "cantidad": 1}, {"nombre": "BEEF CASSEROLE", "precio_unitario": 22.95, "cantidad": 1}], "total_referencia": 90.45, "notas": "Irlanda 2025. Total impreso 90,45 (VAT 23% y 13,5% incluidos). A mano: 'TOTAL 100.50' = 90,45 + ~10% de servicio recomendado: propina voluntaria, NO ítem (R16). 'SERVICE CHARGE NOT INCLUDED'. Total esperado = impreso."}
-    ,{"id": "GB/boot-inn-category-subtotals", "pais": "GB", "moneda": "GBP", "restaurante": "The Boot Inn", "items": [{"nombre": "CARLING", "precio_unitario": 3.4, "cantidad": 2}, {"nombre": "DOOMBAR", "precio_unitario": 3.6, "cantidad": 1}, {"nombre": "SODALIME", "precio_unitario": 1.1, "cantidad": 1}, {"nombre": "1/2 GUINNESS", "precio_unitario": 2.05, "cantidad": 1}, {"nombre": "BALTIC BOARD", "precio_unitario": 16.95, "cantidad": 1}, {"nombre": "SAUSAGE BAGUETTE", "precio_unitario": 6.5, "cantidad": 1}, {"nombre": "BACON & BRIE", "precio_unitario": 5.95, "cantidad": 1}, {"nombre": "CHIPS", "precio_unitario": 5.9, "cantidad": 1}], "total_referencia": 48.85, "notas": "Reino Unido 2015. Filas 'qty NOMBRE total'. Subtotales de categoría 'DRINKS 13.55' y 'FOOD 35.30' NO son ítems (R2: contarlos duplicaría el total). 'SHANDY x2 0.00' cuesta cero: excluir (R1). 'SERVICE NOT INCLUDED': sin cargo de servicio (excepción al perfil GB, aquí no hay). 2 x CARLING 6.80 -> unitario 3.40. Suma 13.55+35.30=48.85. Validado en producción."}
-    ,{"id": "MY/khan-jee-kl", "pais": "MY", "moneda": "MYR", "restaurante": "Royal Dining Hall Restaurant Khan Jee", "items": [{"nombre": "DAAL CHANA FRY", "precio_unitario": 25, "cantidad": 1}, {"nombre": "PLAIN NAAN", "precio_unitario": 3, "cantidad": 11}, {"nombre": "PALAK PANEER", "precio_unitario": 25, "cantidad": 2}, {"nombre": "CHICKEN CHEESY KOFTA", "precio_unitario": 30, "cantidad": 1}, {"nombre": "DAAL MASH FRY", "precio_unitario": 25, "cantidad": 1}, {"nombre": "CH TANDOORI LEG", "precio_unitario": 15, "cantidad": 2}, {"nombre": "PLAIN PARATHA", "precio_unitario": 5, "cantidad": 1}, {"nombre": "FRESH LIME JUICE", "precio_unitario": 10, "cantidad": 1}, {"nombre": "Service Charges", "precio_unitario": 20.8, "cantidad": 1}], "total_referencia": 242.55, "notas": "Malasia 2025. Items suman 208,00 = 'Bill Amount'/'Sub Total'. 'SOFT DRINK (LARGE) COKE' y 'MINERAL WATER (LARGE)' tienen importe '.00' (0,00 con el 0 cortado): cuestan cero, excluir. Service Charges 20,80 (10%) es ítem obligatorio. SST 13,73 (6% de 208+20,80) se SUMA encima: Total 242,53 + Rounding 0,02 = Net Total 242,55. sum(items)=228,80 != total es esperado: reconcile agrega Impuesto 13,75 (MY en TAX_ON_TOP_HIGH). Hallazgo de producción: la app mostró 228,80 sin SST."}
-    ,{"id": "NG/restaurant-kano-vat-sc", "pais": "NG", "moneda": "NGN", "restaurante": null, "items": [{"nombre": "Minnie Burger", "precio_unitario": 2000, "cantidad": 2}, {"nombre": "Mickey Pizza", "precio_unitario": 2000, "cantidad": 2}, {"nombre": "Special Platter (12 Pcs)", "precio_unitario": 12000, "cantidad": 1}, {"nombre": "Under The Sea Combo", "precio_unitario": 20000, "cantidad": 1}, {"nombre": "Breaded Calamari", "precio_unitario": 3500, "cantidad": 1}, {"nombre": "French Fries", "precio_unitario": 1500, "cantidad": 1}, {"nombre": "White Fish Teppanyaki", "precio_unitario": 4000, "cantidad": 1}, {"nombre": "Dynamite Shrimp", "precio_unitario": 4000, "cantidad": 1}, {"nombre": "Blue Sky", "precio_unitario": 1500, "cantidad": 3}, {"nombre": "Pepsi", "precio_unitario": 300, "cantidad": 1}, {"nombre": "Sprite", "precio_unitario": 300, "cantidad": 1}, {"nombre": "Swan Water Large", "precio_unitario": 350, "cantidad": 1}, {"nombre": "Stamp Duty", "precio_unitario": 50, "cantidad": 1}, {"nombre": "SC (7.5%)", "precio_unitario": 4387.5, "cantidad": 1}], "total_referencia": 67275.0, "notas": "Nigeria (Kano), 2021. La columna derecha es el TOTAL DE LÍNEA (2 x Minnie Burger = 4.000, unitario 2.000; 3 x Blue Sky = 4.500). Subtotales 'Beverage Total 5.450', 'Food Total 53.000' y 'Stamp Duty Total 50' NO son ítems (R2). Sub Total 58.500 = 12 platos/bebidas 58.450 + Stamp Duty 50. 'SC (7.5%)' 4.387,50 es el servicio (ítem) y 'VAT' 4.387,50 se SUMA encima: Total 67.275 = 58.500 + 4.387,50 + 4.387,50. sum(ítems)=62.887,50 != total es esperado: el reconcile agrega el Impuesto 4.387,50 (NG en TAX_ON_TOP_HIGH). Hallazgo de producción en v2: faltaba Stamp Duty, 'SC' se contaba como consumo y no entraba el VAT (67.275 vs 62.837,50)."}
-    ,{"id": "LK/cinnamon-garuka-taxes", "pais": "LK", "moneda": "LKR", "restaurante": "Cinnamon Hotels (GarukaD)", "items": [{"nombre": "OLU STILL - L", "precio_unitario": 600, "cantidad": 1}, {"nombre": "COCA COLA PET BOTTLE", "precio_unitario": 500, "cantidad": 2}, {"nombre": "PORK CHOP", "precio_unitario": 8500, "cantidad": 1}, {"nombre": "STEAK FRITES", "precio_unitario": 17000, "cantidad": 2}, {"nombre": "MIXED LETTUCE SALAD", "precio_unitario": 1500, "cantidad": 1}, {"nombre": "APPLE TART TATIN", "precio_unitario": 1800, "cantidad": 1}, {"nombre": "PROFITEROLES", "precio_unitario": 1800, "cantidad": 1}, {"nombre": "Service Charge", "precio_unitario": 4920, "cantidad": 1}], "total_referencia": 66118.3, "notas": "Sri Lanka 2025, hotel Cinnamon. Fila 'QTY NOMBRE IMPORTE': el importe es el TOTAL DE LÍNEA (2 COCA COLA 1.000 -> unitario 500; 2 STEAK FRITES 34.000 -> 17.000). Subtotal 49.200 = suma de los 7 platos; Service Charge 4.920 (10%) es ítem; 'Taxes' 11.998,30 se SUMA encima (22% de 54.120) y NO es ítem. Payment 66.118,30 = 49.200 + 4.920 + 11.998,30 (= total_referencia; 'Change Due 0' y 'Master 4190' son líneas de pago). sum(ítems)=54.120 != total es esperado: el reconcile agrega el Impuesto 11.998,30 (LK en TAX_ON_TOP_HIGH, tope 22%). Hallazgo de producción en v2: la misma foto dio 3 lecturas distintas (sin impuestos; con 'Impuesto'; y con 'Taxes' contado como consumo)."}
-    ,{"id": "AT/klagenfurt-bar-supplement", "pais": "AT", "moneda": "EUR", "restaurante": "Claus Spitzbart KG", "items": [{"nombre": "Hirter 1270 - 0,4", "precio_unitario": 4.0, "cantidad": 2}, {"nombre": "Prosecco - mit Aperol", "precio_unitario": 5.2, "cantidad": 2}, {"nombre": "Venezia - normal", "precio_unitario": 11.9, "cantidad": 1}, {"nombre": "San Daniele", "precio_unitario": 13.2, "cantidad": 1}], "total_referencia": 43.5, "notas": "Austria (Klagenfurt) 2019, 'Barrechnung'. Columnas Anz.|Artikel|Preis|Total; la letra tras el importe (A/D) es la categoría de IVA. CASO CLAVE: bajo 'Venezia - normal 11.90 11,90D' aparecen 'Rucola', 'Parmesan' y '(+1.20)': es un suplemento YA INCLUIDO en el 11,90 (R21). Sumarlo da 13,10 y un total de 44,70. SUMME 43,50 = 8,00 + 10,40 + 11,90 + 13,20. Netto 38,15 + 20% MwSt 3,07 + 10% MwSt 2,28 = 43,50: IVA incluido, informativo. Hallazgo de producción en v2: la app leyó 13,10 y avisó 'sobran 1,20'."},
-    {"id": "KR/jeju-noodles-vat-included", "pais": "KR", "moneda": "KRW", "restaurante": "국수비다본점", "items": [{"nombre": "밀면", "precio_unitario": 10000, "cantidad": 1}, {"nombre": "고기국수(곱배기)", "precio_unitario": 10000, "cantidad": 2}, {"nombre": "비빔국수", "precio_unitario": 10000, "cantidad": 1}, {"nombre": "왕만두(4알)", "precio_unitario": 5000, "cantidad": 1}], "total_referencia": 45000, "notas": "Corea (Jeju) 2024. Foto recortada de una captura. Columnas nombre+precio unitario debajo, cantidad, importe. 과세금액 40.910 + 부가세 4.090 = 45.000: IVA INCLUIDO, informativo, no es ítem ni se suma. 합계 = 받을금액 = 신용카드 = 45.000. Verificado en v2: cuadra sin extras."},
-    {"id": "SG/the-catch-seafood-svc10-gst0", "pais": "SG", "moneda": "SGD", "restaurante": "The Catch Seafood Restaurant & Bar", "items": [{"nombre": "Chicken Glu.Rice", "precio_unitario": 58.0, "cantidad": 1}, {"nombre": "Tea Towel Pickle", "precio_unitario": 2.0, "cantidad": 6}, {"nombre": "Mud Crab 100g", "precio_unitario": 61.2, "cantidad": 1}, {"nombre": "Local Lobster 10", "precio_unitario": 58.0, "cantidad": 1}, {"nombre": "L.Spinach SB-M", "precio_unitario": 15.0, "cantidad": 1}, {"nombre": "BFCube w BPp-M", "precio_unitario": 33.0, "cantidad": 1}, {"nombre": "Br.Noodle XO-S", "precio_unitario": 14.0, "cantidad": 1}, {"nombre": "Ser Chg 10%", "precio_unitario": 25.12, "cantidad": 1}], "total_referencia": 276.3, "notas": "Singapur 2016. Ítems por peso: 'Mud Crab 9.00 @ 6.80 = 61.20', 'Local Lobster 10.00 @ 5.80 = 58.00' (la línea 'N @ P' es el cálculo, el importe es el de la derecha, R18). Sub-Total 251.20 + Ser Chg 10% 25.12 + GST 7% 0.00 + Round Amt -0.02 = Total Due 276.30. El redondeo -0.02 NO es ítem. Verificado en v2: 276,32 vs 276,30 → cuadra dentro de tolerancia."},
-    {"id": "LK/sovereign-german-tax15", "pais": "LK", "moneda": "LKR", "restaurante": "Sovereign German Restaurant", "items": [{"nombre": "BBQ ROAST PORK", "precio_unitario": 1600, "cantidad": 1}, {"nombre": "CARLSBERG-BOTTLE", "precio_unitario": 490, "cantidad": 1}], "total_referencia": 2403.5, "notas": "Sri Lanka 2017. Sub Total 2090 + TAX 313.50 (15%, 'All prices are subject to 15% Tax Charges') = Bill Amount 2403.50. El TAX va SUMADO y es cargo proporcional, no consumo."},
-    {"id": "KR/tokyo-ramen-addons", "pais": "KR", "moneda": "KRW", "restaurante": "도쿄라멘(진해평안점)", "items": [{"nombre": "소유라멘(간장)", "precio_unitario": 5400, "cantidad": 1}, {"nombre": "->차슈 추가", "precio_unitario": 3000, "cantidad": 1}, {"nombre": "->야끼교자", "precio_unitario": 4000, "cantidad": 1}, {"nombre": "카스", "precio_unitario": 4000, "cantidad": 1}], "total_referencia": 16400, "notas": "Corea 2024. Las líneas '->' son extras con su propio precio (ítems aparte). 소계 16.400 = 매출합계. 순매출 14.908 + 부가세 1.492 = IVA incluido (ignorar). 봉사료 0."},
-    {"id": "MY/it-restaurant-cavia", "pais": "MY", "moneda": "MYR", "restaurante": "IT Restaurant", "items": [{"nombre": "Chateau Margaux '99", "precio_unitario": 13888, "cantidad": 1}, {"nombre": "Cht Margaux '98", "precio_unitario": 18000, "cantidad": 1}, {"nombre": "Cht Pavie '05", "precio_unitario": 15488, "cantidad": 1}, {"nombre": "Lobster Salad", "precio_unitario": 138, "cantidad": 3}, {"nombre": "Bone Marrow", "precio_unitario": 128, "cantidad": 4}, {"nombre": "Tomahawk 1.6Kgm", "precio_unitario": 1380, "cantidad": 2}, {"nombre": "Lamb Rack", "precio_unitario": 158, "cantidad": 1}, {"nombre": "Spring Chicken", "precio_unitario": 128, "cantidad": 1}, {"nombre": "Steak Fries", "precio_unitario": 18, "cantidad": 3}, {"nombre": "Portobello Mshroom", "precio_unitario": 18, "cantidad": 3}, {"nombre": "Creamed Spinach", "precio_unitario": 26, "cantidad": 3}, {"nombre": "Truffle Mash", "precio_unitario": 18, "cantidad": 3}, {"nombre": "Cristal Champgn", "precio_unitario": 3888, "cantidad": 2}, {"nombre": "Choc Fondant", "precio_unitario": 48, "cantidad": 3}, {"nombre": "Creme Brulee", "precio_unitario": 38, "cantidad": 3}, {"nombre": "MV Still 750ml", "precio_unitario": 28, "cantidad": 11}, {"nombre": "Open Food OSETRA CAVIA", "precio_unitario": 1400, "cantidad": 1}, {"nombre": "Open Food OSETRA CAVIA", "precio_unitario": 1400, "cantidad": 1}, {"nombre": "Open Food OSETRA CAVIA", "precio_unitario": 1400, "cantidad": 1}, {"nombre": "Open Food BELUGA CAVIA", "precio_unitario": 2000, "cantidad": 1}, {"nombre": "Open Food SPECIAL CHEESE", "precio_unitario": 98, "cantidad": 12}, {"nombre": "Service Charge", "precio_unitario": 6730.6, "cantidad": 1}], "total_referencia": 78478.8, "notas": "Malasia 2017, cuenta de 12 personas. Items suman 67.306,00 (verificado línea a línea). 10% Srv Chg 6.730,60 y GST 6% 4.442,20 (= 6% de 74.036,60: GST sobre subtotal+servicio). Amt Due 78.478,80. La 'S' al final de cada importe es el código de impuesto, no parte del precio. 'Open Food' + nombre en la línea siguiente = un ítem de 2 líneas. Foto con overlay del teléfono arriba."},
-    {"id": "NG/calypso-sc-10", "pais": "NG", "moneda": "NGN", "restaurante": "Calypso Restaurant", "items": [{"nombre": "English", "precio_unitario": 3400, "cantidad": 2}, {"nombre": "Water (Small)", "precio_unitario": 300, "cantidad": 1}, {"nombre": "Coke", "precio_unitario": 400, "cantidad": 1}, {"nombre": "S/CHARGE", "precio_unitario": 750, "cantidad": 1}], "total_referencia": 8250, "notas": "Nigeria 2021. 2 English = 6.800 (3.400 c/u). Sub Total 7.500 + S/CHARGE 750 (10%) = 8.250. Sin VAT."},
-    {"id": "AT/leto-zwischenrechnung", "pais": "AT", "moneda": "EUR", "restaurante": "Café Restaurant Leto", "items": [{"nombre": "Soda Zitrone 0,25", "precio_unitario": 1.8, "cantidad": 1}, {"nombre": "Wasser 0.75l mit", "precio_unitario": 4.2, "cantidad": 1}, {"nombre": "Tzatziki", "precio_unitario": 4.9, "cantidad": 1}, {"nombre": "Aubergine mit Fet", "precio_unitario": 6.8, "cantidad": 1}, {"nombre": "Ceasar Salat", "precio_unitario": 12.8, "cantidad": 1}, {"nombre": "Kalamari", "precio_unitario": 14.8, "cantidad": 1}, {"nombre": "Garnelen mit Feta", "precio_unitario": 18.8, "cantidad": 1}, {"nombre": "GV Haus 1/8", "precio_unitario": 3.4, "cantidad": 3}], "total_referencia": 74.3, "notas": "Austria 2018. 'KEINE RECHNUNG / Zwischenrechnung': cuenta provisoria válida. Dos columnas de importe iguales salvo la última línea (3 x 3,40 = 10,20). 'geteilt durch 3 Personen: 24,76' es informativo. Suma = 74,30."},
-    {"id": "SG/irodori-svc-gst-on-top", "pais": "SG", "moneda": "SGD", "restaurante": "Irodori Japanese Restaurant Pte Ltd", "items": [{"nombre": "Adult", "precio_unitario": 38.8, "cantidad": 6}, {"nombre": "GIN NO TSUKASA(720ML)", "precio_unitario": 68, "cantidad": 1}, {"nombre": "UME (ROCKS)", "precio_unitario": 10, "cantidad": 1}, {"nombre": "10% Svc Charge", "precio_unitario": 31.08, "cantidad": 1}, {"nombre": "7% GST", "precio_unitario": 23.93, "cantidad": 1}], "total_referencia": 365.81, "notas": "Singapur 2018. Sub-Total 310.80 + 10% Svc Charge 31.08 + 7% GST 23.93 (= 7% de 341.88) = TOTAL 365.81 (VISA 365.81). El GST va SUMADO encima."},
-    {"id": "TH/three-monkeys-svc-vat", "pais": "TH", "moneda": "THB", "restaurante": "Three Monkeys (Skyworld Adventures)", "items": [{"nombre": "หมูอบอาเมจักร", "precio_unitario": 250, "cantidad": 1}, {"nombre": "ซีโครงหมูรมควันไม้เกากัด", "precio_unitario": 499, "cantidad": 2}, {"nombre": "มะระผัดไข่", "precio_unitario": 150, "cantidad": 1}, {"nombre": "ข้าวผัดกุ้ง (S)", "precio_unitario": 180, "cantidad": 1}, {"nombre": "หมูสันนอกย่างสไตล์บาหลี", "precio_unitario": 220, "cantidad": 1}, {"nombre": "หมีโกเร้ง หมีผัดสไตล์อิ", "precio_unitario": 230, "cantidad": 1}, {"nombre": "Watermelon Smoothies", "precio_unitario": 150, "cantidad": 1}, {"nombre": "Water", "precio_unitario": 30, "cantidad": 2}, {"nombre": "ค่าบริการ 10%", "precio_unitario": 239.47, "cantidad": 1}, {"nombre": "VAT 7%", "precio_unitario": 156.66, "cantidad": 1}], "total_referencia": 2634.0, "notas": "Tailandia 2022. Los cargos (servicio y VAT) se listan como ítems de cargo proporcional. Items suman 2.238. ค่าบริการ 'Service 10%' 239,47 y VAT 7% 156,66 SUMADOS = 2.634,13; ปัดเศษ -0,13 → รวมสุทธิ 2.634,00 (Rounding no es ítem). Nombres en tailandés: transcribirlos tal cual."},
-    {"id": "TH/secret-recipe-svc-1", "pais": "TH", "moneda": "THB", "restaurante": "Secret Recipe Central Festival Pattaya", "items": [{"nombre": "Chocolate Indulgence 6 Slices", "precio_unitario": 135, "cantidad": 1}, {"nombre": "H Twinning Tea Pot", "precio_unitario": 65, "cantidad": 1}, {"nombre": "Service Charge 10%", "precio_unitario": 20, "cantidad": 1}], "total_referencia": 220, "notas": "Tailandia 2018. ยอดรวม 200 + Service Charge 10% 20 = 220. Rounding 0.00 no es ítem. Foto cortada arriba."},
-    {"id": "TH/secret-recipe-svc-2", "pais": "TH", "moneda": "THB", "restaurante": "Secret Recipe Central Festival Pattaya", "items": [{"nombre": "Chocolate Indulgence 6 Slices", "precio_unitario": 135, "cantidad": 1}, {"nombre": "Mocha Walnut 6 Slices", "precio_unitario": 135, "cantidad": 1}, {"nombre": "น้ำแร่ เพอร์ร่า 500มล./ขวด", "precio_unitario": 20, "cantidad": 1}, {"nombre": "Service Charge 10%", "precio_unitario": 29, "cantidad": 1}], "total_referencia": 319, "notas": "Tailandia 2018. 290 + Service Charge 10% 29 = 319. Foto cortada arriba."},
-    {"id": "TH/kaya-toast-addons", "pais": "TH", "moneda": "THB", "restaurante": "Café tailandés (Kaya Toast)", "items": [{"nombre": "Kaya Toast", "precio_unitario": 45, "cantidad": 1}, {"nombre": "ข้าวหมูทอด + ไข่ชัน", "precio_unitario": 94, "cantidad": 1}, {"nombre": "มาม่าผัดน้ำข้น + ไข่", "precio_unitario": 59, "cantidad": 1}, {"nombre": "โอเลี้ยง", "precio_unitario": 35, "cantidad": 1}, {"nombre": "น้ำมะพร้าว", "precio_unitario": 35, "cantidad": 1}, {"nombre": "ข้าวหมูทอด + ไข่ดาว", "precio_unitario": 89, "cantidad": 1}], "total_referencia": 357, "notas": "Tailandia 2024. Cada línea muestra '1 x B79.00' y '+ ไข่ (B10.00)': el importe de la derecha (89) YA incluye el extra (R21). Total ฿357 = 45+94+59+35+35+89. Foto parcialmente tapada por texto de TikTok."},
-    {"id": "TH/cafe-amazon-vat-included", "pais": "TH", "moneda": "THB", "restaurante": "Café Amazon (PTT Station)", "items": [{"nombre": "TW ชาม่วงนมเย็น", "precio_unitario": 50, "cantidad": 1}, {"nombre": "TW มัทฉะ อัญชัน Light", "precio_unitario": 60, "cantidad": 1}], "total_referencia": 110, "notas": "Tailandia 2024 (2567 b.e.). Total 110 = NET BAHT. VATable 110 + VAT 7.00% 7.20: IVA INCLUIDO (ราคารวมภาษีมูลค่าเพิ่มแล้ว), no es cargo extra. 'Cash 120 / Change 10' no son ítems. Línea de 0.00 es modificador sin cargo."},
-    {"id": "MA/le-marrakchi", "pais": "MA", "moneda": "MAD", "restaurante": "Le Marrakchi", "items": [{"nombre": "COCA LIGHT", "precio_unitario": 30, "cantidad": 3}, {"nombre": "SIDI ALI", "precio_unitario": 35, "cantidad": 1}, {"nombre": "SAN MIGUEL", "precio_unitario": 50, "cantidad": 2}, {"nombre": "COCA COLA", "precio_unitario": 30, "cantidad": 2}, {"nombre": "PASTILLA AU POULET", "precio_unitario": 100, "cantidad": 3}, {"nombre": "VARIET.BRIOUATES", "precio_unitario": 90, "cantidad": 2}, {"nombre": "COUSCOUS AGNEAU AUX 7 LEGU", "precio_unitario": 150, "cantidad": 1}, {"nombre": "COUSCOUS VEGETARIEN", "precio_unitario": 130, "cantidad": 1}, {"nombre": "KNAFFA", "precio_unitario": 60, "cantidad": 2}, {"nombre": "CROQUANT AU CHOCOLAT", "precio_unitario": 60, "cantidad": 2}, {"nombre": "YAOURT MAISON SUCRE", "precio_unitario": 40, "cantidad": 2}, {"nombre": "PATISSERIES MAROCAINES", "precio_unitario": 60, "cantidad": 1}], "total_referencia": 1425, "notas": "Marruecos 2017, francés. Importe de la derecha = total de la línea (3 COCA LIGHT 90.00 → 3 x 30). Suma verificada = 1.425. HT 1425 = TTC 1425, TVA vacía: sin impuesto aparte. '10 COUVERT' = comensales, no ítem. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."},
-    {"id": "CH/cedre-zurich-mwst-incl", "pais": "CH", "moneda": "CHF", "restaurante": "Restaurant Cèdre", "items": [{"nombre": "Hommos bi Lahme", "precio_unitario": 18.5, "cantidad": 1}, {"nombre": "Arayess Lahme", "precio_unitario": 19.5, "cantidad": 1}, {"nombre": "Hommos bi Snoubar", "precio_unitario": 17.5, "cantidad": 1}, {"nombre": "Warak Inab bil Zet", "precio_unitario": 13.5, "cantidad": 1}, {"nombre": "Beste Falafel", "precio_unitario": 13.5, "cantidad": 1}, {"nombre": "Scheschtaouk", "precio_unitario": 24.5, "cantidad": 1}, {"nombre": "Kafta bi Laban", "precio_unitario": 28.5, "cantidad": 1}, {"nombre": "Elmer Citro 3dl", "precio_unitario": 4.5, "cantidad": 2}], "total_referencia": 144.5, "notas": "Suiza (Zúrich) 2015. 'N x NOMBRE à PRECIO' + importe de la línea a la derecha; la letra 'A' tras el importe es la categoría de IVA. Suma verificada = 144,50. 'Umsatz 8.0% inkl.' y 'MwSt 8.0% CHF 10,70' = IVA INCLUIDO (informativo, no es ítem ni se suma). 'Bar' = pagado en efectivo. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."},
-    {"id": "GR/aimani-columnas-desfasadas", "pais": "GR", "moneda": "EUR", "restaurante": "Taberna (Αιμάνι / Mesa 50)", "items": [{"nombre": "SPRITE 250ml", "precio_unitario": 1.5, "cantidad": 1}, {"nombre": "ΑΡΤΟΣ ΑΤΟΜΙΚΟΣ", "precio_unitario": 0.8, "cantidad": 6}, {"nombre": "ΒΑΡΒΑΓΙΑΝΝΗΣ ΜΠΛΕ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΟΝΟ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 2}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΑΚΙ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ", "precio_unitario": 14.44, "cantidad": 1}, {"nombre": "ΚΕΧΡΙΜΠΑΡΙ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΚ. ΞΗΡΟ ΚΑΡΑΦΑ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΛΟΚΥΘΑΚΙΑ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΜΕΛΙΤΖΑΝΑ ΨΗΤΗ", "precio_unitario": 4.8, "cantidad": 1}, {"nombre": "ΜΥΔΙΑ ΑΧΝΙΣΤΑ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΝΕΣ NESTLE", "precio_unitario": 2.0, "cantidad": 1}, {"nombre": "ΠΑΤΑΤΕΣ", "precio_unitario": 2.8, "cantidad": 1}, {"nombre": "ΣΑΛΑΤΑ ΤΟΥ ΣΑΒΒΑ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΖΑΤΖΙΚΙ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΤΣΙΠΟΥΡΟ ΗΔΩΝΙΚΟ (Μ)", "precio_unitario": 7.5, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ", "precio_unitario": 9.0, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ ΒΡ. ΨΗΤΟ", "precio_unitario": 9.0, "cantidad": 1}], "total_referencia": 105.84, "notas": "Grecia. Foto inclinada: la columna de importes queda desfasada respecto a los nombres. Hallazgo de producción en v2: la app leyó ΒΑΡΒΑΓΙΑΝΝΗΣ 7.00 (es 6.00), ΤΟΝΟ 2.00 (es 7.00) y omitió la segunda fila ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ (1 x 1.00): suma 100.84 vs 105.84 (avisó 'faltan 5,00'). Columnas: cantidad | nombre | ΦΠΑ 0% | importe de la línea (6 ΑΡΤΟΣ 4.80 = 6 x 0.80). 'ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ' 0.38 kg = 14.44 (R18). ΣΥΝΟΛΟ 105.84 = ΠΛΗΡΩΤΕΟ 105.84. A mano: 'ΚΕΧΡΙΜΠΑΡΙ' tachado, '95,00' y '-4,00': NO cuentan; el total impreso 105.84 incluye el tachado. Dos filas con el mismo nombre (agua) son dos líneas reales."}
   ]
 }
