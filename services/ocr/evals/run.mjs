@@ -266,7 +266,14 @@ async function main() {
   const im = ok_.reduce((a, r) => a + r.itemScore.matched, 0), it = ok_.reduce((a, r) => a + r.itemScore.total, 0);
   console.log(`ítems correctos (nombre+precio+cantidad): ${im}/${it} (${it ? Math.round(100 * im / it) : 0}%)`);
   const nq = ok_.filter(r => !r.cuadra).sort((a, b) => Math.abs(b.cuadraDiff) / (b.fixture.total_referencia || 1) - Math.abs(a.cuadraDiff) / (a.fixture.total_referencia || 1));
-  if (nq.length) { console.log('\nBoletas que NO cuadran (de la más lejana a la más cercana):'); for (const r of nq) console.log(`  ${r.fixture.id}: ${r.cuadraDiff > 0 ? 'faltan' : 'sobran'} ${Math.abs(r.cuadraDiff).toFixed(2)} ${r.fixture.moneda} de ${r.fixture.total_referencia} (${(100 * Math.abs(r.cuadraDiff) / (r.fixture.total_referencia || 1)).toFixed(1)}%)`); }
+  if (nq.length) {
+    console.log('\nBoletas que NO cuadran (de la más lejana a la más cercana):');
+    for (const r of nq) {
+      console.log(`  ${r.fixture.id}: ${r.cuadraDiff > 0 ? 'faltan' : 'sobran'} ${Math.abs(r.cuadraDiff).toFixed(2)} ${r.fixture.moneda} de ${r.fixture.total_referencia} (${(100 * Math.abs(r.cuadraDiff) / (r.fixture.total_referencia || 1)).toFixed(1)}%)`);
+      console.log('      LEYÓ:     ' + (r.raw.items || []).map(i => `${i.nombre} ${i.cantidad}x${i.precio_unitario}`).join(' | '));
+      console.log('      ESPERABA: ' + r.fixture.items.map(i => `${i.nombre} ${i.cantidad}x${i.precio_unitario}`).join(' | '));
+    }
+  }
 
   fs.writeFileSync(
     path.join(__dirname, `results.${MODEL}.${Date.now()}.json`),
