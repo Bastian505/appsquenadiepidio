@@ -31,6 +31,16 @@
   <input id="f3" type="file" style="width:100%">
 </div>
 
+<div class="box"><b>Prueba 5 · como la app anterior (evento delegado en la página)</b>
+  <label class="btn" for="f5">📷 Elegir foto (delegado)</label>
+  <input id="f5" class="sr" type="file" accept="image/*" data-x="1">
+</div>
+
+<div class="box"><b>Prueba 6 · como la app anterior (vacía el campo al tocar)</b>
+  <label class="btn" for="f6">📷 Elegir foto (con vaciado)</label>
+  <input id="f6" class="sr" type="file" accept="image/*">
+</div>
+
 <div class="box"><b>Prueba 4 · conexión</b>
   <button id="net">Probar conexión</button>
 </div>
@@ -43,7 +53,12 @@
   say('navegador: ' + navigator.userAgent);
   say('pantalla: ' + innerWidth + 'x' + innerHeight + ' · idioma: ' + navigator.language);
   window.addEventListener('error', function (e) { say('ERROR JS: ' + e.message); });
-  ['f1', 'f2', 'f3'].forEach(function (id, i) {
+  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'f6') { try { e.target.value = ''; } catch (x) {} } }, true);
+  document.addEventListener('change', function (e) {
+    if (e.target && e.target.id === 'f5') { var f = e.target.files && e.target.files[0]; say('prueba 5 (delegado): ' + (f ? 'eligió ' + f.name + ' · ' + Math.round(f.size / 1024) + ' KB' : 'nada')); }
+  });
+  ['f1', 'f2', 'f3', 'f6'].forEach(function (id, i) {
+    i = id === 'f6' ? 5 : i;
     var el = document.getElementById(id);
     el.addEventListener('click', function () { say('prueba ' + (i + 1) + ': toque recibido (se debería abrir el selector)'); });
     el.addEventListener('change', function () {
