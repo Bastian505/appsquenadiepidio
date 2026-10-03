@@ -196,11 +196,17 @@ ok(db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'lo 
 await guest.waitForFunction(() => /También: Rodrigo/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el invitado ve en vivo lo que marcó el anfitrión'), () => ok(false, 'el invitado ve en vivo lo que marcó el anfitrión'));
 await host.waitForTimeout(4500);   // pasa una consulta periódica: la marca del anfitrión no se pierde
 ok(await hostAssign('Pizza').locator('.pbtn.on', { hasText: 'Rodrigo' }).count() === 1, 'la marca del anfitrión sigue ahí tras actualizar');
-const before = db.claims.length;
+// El anfitrión marca por el invitado conectado (la base lo permite al dueño) y el invitado lo ve y puede corregirlo.
 await hostAssign('Cerveza').locator('.pbtn', { hasText: 'Tiano' }).click();
-await host.waitForTimeout(300);
-ok(db.claims.length === before, 'el anfitrión no puede marcar por alguien conectado (lo hace esa persona)');
-ok(/Tiano marca lo suyo/.test(await host.innerText('body')), 'y se le explica con el nombre');
+await host.waitForTimeout(700);
+ok(!db.claims.some(c => c.member_id === 'm-user-guest' && c.item_id === '2'), 'el anfitrión puede quitar lo que el invitado marcó (Cerveza)');
+await hostAssign('Cerveza').locator('.pbtn', { hasText: 'Tiano' }).click();
+await host.waitForTimeout(700);
+ok(db.claims.some(c => c.member_id === 'm-user-guest' && c.item_id === '2'), 'y volver a marcarla por él');
+await hostAssign('Pizza').locator('.pbtn', { hasText: 'Tiano' }).click();
+await host.waitForTimeout(700);
+ok(!db.claims.some(c => c.member_id === 'm-user-guest' && c.item_id === '1'), 'el anfitrión desmarca la Pizza del invitado');
+await guest.waitForFunction(() => { const r = [...document.querySelectorAll('.assign')].find(x => /Pizza/.test(x.innerText)); return r && !/✓ Lo consumí/.test(r.innerText); }, null, { timeout: 9000 }).then(() => ok(true, 'el invitado lo ve en su teléfono'), () => ok(false, 'el invitado lo ve en su teléfono'));
 await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
 await host.waitForTimeout(700);
 ok(!db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'si el anfitrión desmarca, también se quita en la base');

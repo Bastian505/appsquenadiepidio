@@ -154,17 +154,20 @@
 
   // ── Marcar lo que consumí ──────────────────────────────────────────────────
   // units = null → comparte la línea completa; un número → esas unidades.
-  function setClaim(itemId, units) {
-    if (!sb || !state.billId || !state.memberId) return Promise.resolve();
+  // memberId opcional: el anfitrión marca por otro miembro de su cuenta (la base lo permite solo al dueño).
+  function setClaim(itemId, units, memberId) {
+    var mid = memberId || state.memberId;
+    if (!sb || !state.billId || !mid) return Promise.resolve();
     return sb.from('dc_claims').upsert({
-      bill_id: state.billId, member_id: state.memberId, item_id: String(itemId), units: units == null ? null : units
-    }, { onConflict: 'bill_id,member_id,item_id' }).then(function (r) { if (r.error) console.warn('setClaim:', r.error.message); });
+      bill_id: state.billId, member_id: mid, item_id: String(itemId), units: units == null ? null : units
+    }, { onConflict: 'bill_id,member_id,item_id' }).then(function (r) { if (r.error) { console.warn('setClaim:', r.error.message); return { error: r.error }; } });
   }
-  function clearClaim(itemId) {
-    if (!sb || !state.billId || !state.memberId) return Promise.resolve();
+  function clearClaim(itemId, memberId) {
+    var mid = memberId || state.memberId;
+    if (!sb || !state.billId || !mid) return Promise.resolve();
     return sb.from('dc_claims').delete()
-      .eq('bill_id', state.billId).eq('member_id', state.memberId).eq('item_id', String(itemId))
-      .then(function (r) { if (r.error) console.warn('clearClaim:', r.error.message); });
+      .eq('bill_id', state.billId).eq('member_id', mid).eq('item_id', String(itemId))
+      .then(function (r) { if (r.error) { console.warn('clearClaim:', r.error.message); return { error: r.error }; } });
   }
   // El anfitrión marca cuál de la lista es él; y puede sacar a alguien de la cuenta.
   function setPersonKey(key) {

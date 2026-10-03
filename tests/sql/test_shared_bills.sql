@@ -167,6 +167,40 @@ begin;
       format($$update dc_bill_members set person_key = '2' where id = %L$$, get('ana_member'))));
 commit;
 
+\echo '── El anfitrión marca por los demás (y solo en su cuenta) ──'
+begin;
+  select as_user('33333333-3333-3333-3333-333333333333');
+  insert into ctx select 'bill2', out_bill_id::text from dc_create_bill('Extraño', 'MYR');
+  insert into ctx select 'member2', id::text from dc_bill_members where bill_id = get('bill2')::uuid;
+  reset role;
+commit;
+begin;
+  select note('anfitrión marca por el invitado',
+    not denied('11111111-1111-1111-1111-111111111111',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill'), get('guest_member'))));
+  select note('anfitrión cambia las unidades del invitado',
+    not denied('11111111-1111-1111-1111-111111111111',
+      format($$update dc_claims set units = 2 where member_id = %L and item_id = '3'$$, get('guest_member'))));
+  select note('el invitado puede corregir lo que marcó el anfitrión',
+    not denied('22222222-2222-2222-2222-222222222222',
+      format($$update dc_claims set units = 1 where member_id = %L and item_id = '3'$$, get('guest_member'))));
+  select note('el invitado puede quitar la marca que puso el anfitrión',
+    not denied('22222222-2222-2222-2222-222222222222',
+      format($$delete from dc_claims where member_id = %L and item_id = '3'$$, get('guest_member'))));
+  select note('anfitrión no marca por un miembro de otra cuenta',
+    denied('11111111-1111-1111-1111-111111111111',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill'), get('member2'))));
+  select note('anfitrión no escribe en una cuenta ajena',
+    denied('11111111-1111-1111-1111-111111111111',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill2'), get('member2'))));
+  select note('el invitado sigue sin poder marcar por el anfitrión',
+    denied('22222222-2222-2222-2222-222222222222',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill'), get('host_member'))));
+  select note('el extraño no marca por nadie de esta cuenta',
+    denied('33333333-3333-3333-3333-333333333333',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill'), get('guest_member'))));
+commit;
+
 \echo '── Cuenta cerrada ──'
 begin;
   select as_user('11111111-1111-1111-1111-111111111111');
@@ -176,6 +210,9 @@ commit;
 begin;
   select note('cerrada: el invitado ya no puede marcar',
     denied('22222222-2222-2222-2222-222222222222',
+      format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '9', 1)$$, get('bill'), get('guest_member'))));
+  select note('cerrada: ni el anfitrión puede marcar por otros',
+    denied('11111111-1111-1111-1111-111111111111',
       format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '9', 1)$$, get('bill'), get('guest_member'))));
   insert into auth.users (id) values ('44444444-4444-4444-4444-444444444444');
   select as_user('44444444-4444-4444-4444-444444444444');
