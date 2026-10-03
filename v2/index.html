@@ -9,6 +9,12 @@
 <link rel="manifest" href="/v2/manifest.webmanifest">
 <link rel="icon" href="/v2/icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/v2/styles.css">
+<script>
+  // Si algo falla en el navegador queda registrado y se muestra en pantalla (ayuda a encontrar fallos en teléfonos reales).
+  window.__errs = [];
+  window.addEventListener('error', function (e) { window.__errs.push((e.message || 'error') + (e.filename ? ' @' + String(e.filename).split('/').pop() + ':' + e.lineno : '')); });
+  window.addEventListener('unhandledrejection', function (e) { window.__errs.push('promesa: ' + String(e.reason && (e.reason.message || e.reason)).slice(0, 120)); });
+</script>
 <script src="/core/config.js"></script>
 <script src="/core/currencies.js"></script>
 <script src="/core/split.js"></script>
