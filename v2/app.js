@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.g';
+  var BUILD = '2026-10-03.h';
   // Registro de cada paso de la lectura de la boleta (se guarda: si el teléfono recarga la página a mitad de camino, queda a la vista).
   var TRACE_KEY = 'dc_v2_trace', trace = [];
   try { trace = JSON.parse(localStorage.getItem(TRACE_KEY)) || []; } catch (e) { trace = []; }
@@ -63,6 +63,16 @@
     var app = document.getElementById('app');
     var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary, join: join, share: shareScreen }[state.step] || home)();
     app.innerHTML = html;
+    var ph = document.getElementById('photo');
+    if (ph) {
+      ph.addEventListener('click', function () { tlog('selector de fotos abierto'); });
+      ph.addEventListener('change', function () {
+        var pf = ph.files && ph.files[0];
+        if (!pf) { tlog('el selector se cerró sin entregar ninguna foto'); return; }
+        tlog('foto elegida: ' + (pf.name || 'sin nombre') + ' · ' + (pf.type || 'tipo desconocido') + ' · ' + Math.round(pf.size / 1024) + ' KB');
+        startScan(pf);
+      });
+    }
     var f = app.querySelector('[data-autofocus]'); if (f) f.focus();
   }
 
@@ -347,13 +357,10 @@
   });
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
-    if (a === 'photo' && el.files && el.files[0]) { var pf = el.files[0]; trace = []; tlog('foto elegida: ' + (pf.name || 'sin nombre') + ' · ' + (pf.type || 'tipo desconocido') + ' · ' + Math.round(pf.size / 1024) + ' KB'); startScan(pf); }
-    else if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
+    if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
-  // Vaciar el campo ANTES de abrir el selector permite volver a elegir la misma foto (tocar el archivo ya elegido no dispara 'change').
-  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'photo') { try { e.target.value = ''; } catch (x) {} } }, true);
   document.addEventListener('submit', function (e) {
     if (e.target.dataset.action === 'do-join') {
       e.preventDefault(); var n = e.target.elements.name.value.trim();
@@ -409,6 +416,7 @@
   // ── lectura de la boleta ───────────────────────────────────────────────────
   var pending = null;
   function startScan(file) {
+    trace = trace.slice(-2);
     ui.error = null; ui.confirm = null; ui.scanStage = 0; ui.photo = null;
     toast('Procesando la foto…');
     var done = false, guard = setTimeout(function () { if (!done) { done = true; tlog('✗ la foto no terminó de procesarse en 25 s'); fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
