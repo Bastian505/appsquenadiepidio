@@ -221,6 +221,15 @@ await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
 await host.waitForTimeout(700);
 ok(!db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'si el anfitrión desmarca, también se quita en la base');
 
+// El detalle abierto no se cierra solo cuando llega un cambio de otro teléfono.
+await host.click('text=Ver cuánto paga cada uno').catch(() => {});
+await host.waitForSelector('details summary', { timeout: 5000 });
+await host.locator('details summary').first().click();
+await guest.locator('.assign', { hasText: 'Cerveza' }).locator('.pbtn').first().click();   // el invitado cambia algo
+await host.waitForTimeout(3500);
+ok(await host.locator('details').first().evaluate(d => d.open), 'el detalle abierto sigue abierto tras un cambio de otro teléfono');
+await host.click('[data-action=go][data-to=assign]').catch(() => {});
+
 // ── Un link inválido no deja entrar ─────────────────────────────────────────
 const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-CL' });
 const other = await ctxC.newPage(); await wire(other, 'user-otro');

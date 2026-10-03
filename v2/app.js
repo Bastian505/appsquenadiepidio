@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.l';
+  var BUILD = '2026-10-03.m';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -27,7 +27,7 @@
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
-  var ui = { unitsOpen: {}, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
+  var ui = { unitsOpen: {}, openDetail: {}, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
 
   function fresh() {
     return { step: 'home', currency: 'CLP', restaurant: null, country: null, items: [], people: [], assigns: {},
@@ -322,7 +322,7 @@
       r.perPerson.map(function (p) {
         var ppl = person(p.id);
         return '<div class="card pcard"><div class="row">' + avatar(ppl) + '<b style="flex:1">' + esc(p.name) + '</b><div><div class="amount num">' + money(p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
-          '<details><summary>Ver detalle</summary><div class="lines">' +
+          '<details data-pid="' + p.id + '"' + (ui.openDetail[p.id] ? ' open' : '') + '><summary>Ver detalle</summary><div class="lines">' +
           p.lines.map(function (l) { return '<div class="row"><span>' + nameHtml(item(l.itemId) || { name: l.name }) + (l.units ? ' ×' + l.units : '') + (l.shared ? ' (compartido)' : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
           (p.extras > tiny ? '<div class="row"><span>Impuesto y cargos (' + pct + '%)</span><span class="spacer"></span><span>' + money(p.extras) + '</span></div>' : '') +
           (p.tip > tiny ? '<div class="row"><span>Propina</span><span class="spacer"></span><span>' + money(p.tip) + '</span></div>' : '') +
@@ -332,6 +332,10 @@
   }
 
   // ── acciones ───────────────────────────────────────────────────────────────
+  // El detalle abierto se recuerda: la pantalla se repinta cuando alguien marca algo y no debe cerrarse sola.
+  document.addEventListener('toggle', function (e) {
+    var d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset && d.dataset.pid) ui.openDetail[d.dataset.pid] = d.open;
+  }, true);
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-action]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'FORM') return;
     var a = el.dataset.action, id = Number(el.dataset.id), itemId = Number(el.dataset.item), pid = Number(el.dataset.person);
@@ -589,7 +593,7 @@
     if (!SYNC) return;
     SYNC.subscribe(function (d) { syncSig = sigOf(d); applyRemote(d); render(); });
     if (!pollTimer) {
-      pollTimer = setInterval(function () { if (!document.hidden) pull(false); }, 4000);
+      pollTimer = setInterval(function () { if (!document.hidden) pull(false); }, 2000);
       document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(true); });
       window.addEventListener('focus', function () { pull(true); });
       window.addEventListener('online', function () { pull(true); });
