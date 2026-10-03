@@ -262,6 +262,8 @@ R21. SUPLEMENTOS "(+X.XX)": un monto entre paréntesis bajo un ítem, con "+" (e
      y debajo "Rucola / Parmesan (+1.20)"), es el desglose de extras que YA ESTÁN INCLUIDOS en el total
      de esa línea. El precio del ítem es el de la columna Total (11.90); NO le sumes el suplemento ni
      lo listes como ítem. Los modificadores sin monto tampoco son ítems (R6).
+     Igual con extras en otras monedas ("+ ไข่ดาว (B10.00)" bajo "ข้าวหมูทอด 1 x B79.00", con 89.00 a la
+     derecha): el importe de la derecha ya incluye el extra, úsalo tal cual (89 = 79 + 10).
 
 R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
@@ -425,7 +427,7 @@ const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
 // Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (PK 5-15%, MY 6-8%, NG 7,5%, LK ~22%)
-const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK']);
+const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK','SG']);
 
 function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
