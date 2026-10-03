@@ -14,7 +14,7 @@
     tax_kw:['iva','impuesto'], deposit_kw:[], refund_kw:['devolucion','anulacion'],
     tip_behavior:'none', tip_kw:[], total_kw:['total','a pagar','monto'],
     price_format:'standard', signals:['rut','sii','folio','timbre','giro'],
-    format:'$ = CLP. Precios SIN decimales. IVA incluido. Filtrar items precio=0. "Propina sugerida (10%)": si el Total final impreso YA la suma (subtotal + propina = total), inclúyela como ítem "Propina" y total_referencia = ese total final; si el total no la incluye (es solo una sugerencia aparte), NO la incluyas. Decide con la aritmética (R19).'
+    format:'$ = CLP. Precios SIN decimales. IVA incluido. Filtrar items precio=0. "Propina sugerida (10%)": si el Total final impreso YA la suma (subtotal + propina = total), inclúyela como ítem "Propina" y total_referencia = ese total final; si el total no la incluye (es solo una sugerencia aparte), NO la incluyas. Decide con la aritmética (R19). Si imprime "Total a pagar 46.000" y DEBAJO "Propina Sugerida 4.600" y "Total c/propina 50.600", el total real es "Total a pagar" (la propina es voluntaria): total_referencia=46.000 y NO listes la propina.'
   },
   AR: {
     name:'Argentina', currency:'ARS', symbol:'$', has_decimals:true,
@@ -151,7 +151,9 @@ Nombres en 2 líneas = UN SOLO ítem. Decimal con coma: "1,80"→1.80.`
 FORMATO: "N..NOMBRE TOTAL" → precio_unitario=TOTAL÷N. Ej: "3 Coffee $12.00" → {precio_unitario:4.00, cantidad:3}.
 IGNORAR líneas sin precio: "Over Easy,Brown Bread", "Poached Medium", "Any Style", etc.
 INCLUIR: "Health Ins (X%)" como item. Service charge como item.
-TOTAL: usar "Cash Total" si existe (sin propina). Propina solo si en total real pagado.`
+TOTAL: si imprime "CASH TOTAL" y debajo "TOTAL" MAYOR (precio con tarjeta: Items + Tax = Cash Total, y Total = Cash Total
++ recargo de tarjeta, ej. 95.10 vs 98.43), total_referencia = el "TOTAL" (precio tarjeta) y menciona el "Cash Total" en notas.
+Si solo hay "Cash Total", úsalo (sin propina). Las "Suggested gratuities" al pie nunca son ítems ni parte del total.`
   },
   CA: {
     name:'Canadá', currency:'CAD', symbol:'$', has_decimals:true,
