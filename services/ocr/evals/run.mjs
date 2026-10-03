@@ -149,6 +149,22 @@ function parseJSON(raw) {
   return null;
 }
 
+// --pipeline: en vez de llamar al modelo directo, pasa cada boleta por el MISMO handler que usa la app
+// (reconciliación, auto-arreglos y segunda lectura incluidas). Sin la bandera mide solo la lectura cruda.
+const PIPELINE = process.argv.includes('--pipeline');
+let _handler = null, _ipSeq = 0;
+async function viaHandler(fx, imgPath) {
+  if (!_handler) _handler = (await import('../../../api/scan-receipt.js')).default;
+  const buf = fs.readFileSync(imgPath);
+  const mediaType = buf[0] === 0x89 && buf[1] === 0x50 ? 'image/png' : 'image/jpeg';
+  let status = 0, body = null;
+  const res = { setHeader() {}, status(c) { status = c; return this; }, json(b) { body = b; return this; }, end() {} };
+  await _handler({ method: 'POST', headers: { 'x-forwarded-for': '10.1.' + Math.floor(++_ipSeq / 250) + '.' + (_ipSeq % 250) },
+    body: { image_base64: buf.toString('base64'), media_type: mediaType, country_hint: fx.pais } }, res);
+  if (status !== 200 || !body || body.ok === false) return { ok: false, reason: (body && (body.reason || body.code || body.error)) || ('HTTP ' + status) };
+  return body;
+}
+
 async function main() {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -170,8 +186,7 @@ async function main() {
     const system = buildV5Prompt(fx.pais);
     process.stdout.write(`${fx.id} ... `);
     try {
-      const raw = await callClaude(apiKey, imgPath, system);
-      const parsed = parseJSON(raw);
+      const parsed = PIPELINE ? await viaHandler(fx, imgPath) : parseJSON(await callClaude(apiKey, imgPath, system));
       if (!parsed || parsed.ok === false) {
         console.log(`REHUSADA (${parsed?.reason || 'parse_error'})`);
         results.push({ fixture: fx, ok: false, reason: parsed?.reason || 'parse_error' });

@@ -13,6 +13,10 @@ on:
         description: "Modelo"
         required: false
         default: "claude-sonnet-4-6"
+      pipeline:
+        description: "true = pasar por el mismo flujo de la app (reconciliación y segunda lectura incluidas)"
+        required: false
+        default: "false"
 
 jobs:
   evals:
@@ -28,10 +32,12 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           COUNTRY: ${{ inputs.country }}
           MODEL: ${{ inputs.model }}
+          PIPELINE: ${{ inputs.pipeline }}
         run: |
           set -o pipefail
           ARGS="--model=$MODEL"
           if [ -n "$COUNTRY" ]; then ARGS="$ARGS --country=$COUNTRY"; fi
+          if [ "$PIPELINE" = "true" ]; then ARGS="$ARGS --pipeline"; fi
           node services/ocr/evals/run.mjs $ARGS | tee evals-output.txt
       - name: Resumen
         if: always()
