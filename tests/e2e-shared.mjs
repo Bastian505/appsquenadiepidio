@@ -175,6 +175,16 @@ ok(/¿Cuántas tomaste\?/.test(await guest.innerText('body')), 'y le ofrece eleg
 await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').click();
 await guest.waitForTimeout(500);
 ok(beer() && beer().units === 2, 'el invitado sube a 2 unidades y se guarda');
+ok(await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').isDisabled(), 'no puede subir más allá de la cantidad de la línea (2)');
+await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="-1"]').click();
+await guest.waitForTimeout(400);
+db.claims.push({ bill_id: 'b1', member_id: 'm-user-host', item_id: '2', units: 1 });   // el anfitrión se queda con la otra
+await guest.waitForFunction(() => /También: Rodrigo \(1\)/.test(document.body.innerText), null, { timeout: 9000 }).catch(() => {});
+ok(await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').isDisabled(), 'si otro ya tomó la otra unidad, el + queda desactivado (no se pasan)');
+db.claims.splice(db.claims.findIndex(c => c.member_id === 'm-user-host' && c.item_id === '2'), 1);
+await guest.waitForFunction(() => /Nadie más lo marcó/.test([...document.querySelectorAll('.assign')].find(x => /Cerveza/.test(x.innerText)).innerText), null, { timeout: 9000 }).catch(() => {});
+await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').click();
+await guest.waitForTimeout(500);
 await shot(guest, 'shared-3-invitado.png');
 
 // El tiempo real puede cortarse: el anfitrión debe enterarse solo (consulta periódica), sin recargar.

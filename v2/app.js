@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.k';
+  var BUILD = '2026-10-03.l';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -270,7 +270,7 @@
         var mineOn = (a.people || []).indexOf(mine) > -1;
         var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name + (it.qty > 1 && a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : '') : ''; }).filter(Boolean);
         var myU = (a.units && a.units[mine]) || 0;
-        var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">¿Cuántas tomaste?</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="Más"' + (myU >= it.qty ? ' disabled' : '') + '>+</button></div></div>' : '';
+        var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">¿Cuántas tomaste?</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="Más"' + (myU >= it.qty - othersUnits(it.id, mine) ? ' disabled' : '') + '>+</button></div></div>' : '';
         return '<div class="assign' + (mineOn ? ' done' : '') + '">' +
           '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
           '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' + stepper +
@@ -292,7 +292,7 @@
     var all = who.length === state.people.length && state.people.length > 0;
     var unitsOpen = ui.unitsOpen[it.id] || unitSum > 0;
     var stateTxt = !who.length ? 'Sin asignar'
-      : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? 'Unidades repartidas ✓' : 'Faltan ' + (it.qty - unitSum) + ' de ' + it.qty + ' unidades')
+      : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? 'Unidades repartidas ✓' : unitSum > it.qty ? 'Se pasaron ' + (unitSum - it.qty) + ' unidades: ajusten' : 'Faltan ' + (it.qty - unitSum) + ' de ' + it.qty + ' unidades')
       : who.length > 1 ? 'Se divide en partes iguales entre ' + who.length : 'Lo paga ' + esc(person(who[0]) ? person(who[0]).name : '');
     return '<div class="assign' + (isAssigned(it) ? ' done' : '') + '">' +
       '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
@@ -667,8 +667,15 @@
     pushClaims(calls);
   }
 
+  // Unidades de una línea que ya tomaron los demás (para no pasarse de la cantidad).
+  function othersUnits(itemId, me) {
+    var a = state.assigns[itemId]; if (!a) return 0;
+    return (a.people || []).reduce(function (t, pid) { return pid === me ? t : t + ((a.units && a.units[pid]) || 0); }, 0);
+  }
+
   function toggleClaim(itemId) {
-    var mine = state.myMemberId, it = item(itemId);
+    var mine = state.myMemberId, it = item(itemId), cur = state.assigns[itemId];
+    if (it && it.qty > 1 && !(cur && (cur.people || []).indexOf(mine) > -1) && othersUnits(itemId, mine) >= it.qty) { toast('Ya se repartieron todas las unidades'); return; }
     // Optimista: se ve al instante y la base confirma (o corrige) por tiempo real.
     togglePerson(itemId, mine);
     var a = state.assigns[itemId];
@@ -679,7 +686,7 @@
   function claimUnits(itemId, d) {
     var mine = state.myMemberId, it = item(itemId), a = state.assigns[itemId];
     if (!it || !a || a.people.indexOf(mine) < 0) return;
-    var next = Math.max(0, Math.min(it.qty, (a.units[mine] || 0) + d));
+    var next = Math.max(0, Math.min(it.qty - othersUnits(itemId, mine), (a.units[mine] || 0) + d));
     if (next === 0) { togglePerson(itemId, mine); }
     else a.units[mine] = next;
     save(); render();
