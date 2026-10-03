@@ -17,6 +17,10 @@ on:
         description: "Modelo de la segunda lectura en modo pipeline (vacío = el mismo)"
         required: false
         default: ""
+      retry:
+        description: "true = encender la segunda lectura (por defecto apagada, igual que en producción)"
+        required: false
+        default: "false"
       pipeline:
         description: "true = pasar por el mismo flujo de la app (reconciliación y segunda lectura incluidas)"
         required: false
@@ -38,7 +42,7 @@ jobs:
           MODEL: ${{ inputs.model }}
           PIPELINE: ${{ inputs.pipeline }}
           OCR_RETRY_MODEL: ${{ inputs.retry_model }}
-          OCR_RETRY: ${{ inputs.pipeline == 'true' && '1' || '0' }}
+          OCR_RETRY: ${{ inputs.retry == 'true' && '1' || '0' }}
         run: |
           set -o pipefail
           ARGS="--model=$MODEL"
