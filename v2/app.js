@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.d';
+  var BUILD = '2026-10-03.e';
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
@@ -334,7 +334,7 @@
   });
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
-    if (a === 'photo' && el.files && el.files[0]) startScan(el.files[0]);
+    if (a === 'photo' && el.files && el.files[0]) { var f = el.files[0]; try { el.value = ''; } catch (x) {} startScan(f); }   // vaciar permite volver a elegir la misma foto
     else if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
