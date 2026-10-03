@@ -9,9 +9,26 @@
 
   function ready() { return !!sb; }
 
+  // La librería de Supabase carga aparte (async) para no frenar la app: aquí se espera a que llegue (máx. 10 s).
+  function whenLibrary() {
+    return new Promise(function (resolve) {
+      var tries = 0;
+      (function check() {
+        if (root.supabase) return resolve(true);
+        if (++tries > 100) return resolve(false);
+        setTimeout(check, 100);
+      })();
+    });
+  }
+
   function init() {
     if (sb) return Promise.resolve(sb);
-    if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY || !root.supabase) return Promise.resolve(null);
+    if (!CFG.SUPABASE_URL || !CFG.SUPABASE_ANON_KEY) return Promise.resolve(null);
+    return whenLibrary().then(function (ok) { return ok ? connect() : null; });
+  }
+
+  function connect() {
+    if (sb) return Promise.resolve(sb);
     sb = root.supabase.createClient(CFG.SUPABASE_URL, CFG.SUPABASE_ANON_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, storageKey: 'dc_v2_auth' }
     });
