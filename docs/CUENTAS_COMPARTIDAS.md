@@ -56,3 +56,7 @@ El anfitrión arma la lista de personas; al abrir el link, el invitado ve esa li
 - `dc_join_bill(token, nombre, persona)` con `persona`: el nombre lo pone el servidor, un nombre solo lo toma una persona (`NAME_TAKEN`) y las marcas previas del anfitrión pasan a las marcas del invitado.
 - Quien ya entró marca lo suyo desde su teléfono; el anfitrión no lo cambia por él.
 - El teléfono consulta la cuenta cada 4 s y al volver a la pestaña, porque el tiempo real se corta cuando el teléfono suspende la página.
+
+## El anfitrión marca por los demás (migración 20261005)
+
+El dueño de la cuenta puede marcar, cambiar unidades y desmarcar por cualquier miembro de **su** cuenta (útil si alguien no tiene batería o no quiere entrar). Cada invitado sigue pudiendo corregir lo suyo; si dos tocan a la vez gana el último y el otro lo ve en ~4 s. Los permisos están en `dc_claims_insert/update` (y `delete`, que ya existía) y se prueban en `tests/sql/test_shared_bills.sql`: un invitado no marca por otro, nadie escribe en cuentas ajenas ni cerradas.
