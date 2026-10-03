@@ -38,6 +38,7 @@ jobs:
           MODEL: ${{ inputs.model }}
           PIPELINE: ${{ inputs.pipeline }}
           OCR_RETRY_MODEL: ${{ inputs.retry_model }}
+          OCR_RETRY: ${{ inputs.pipeline == 'true' && '1' || '0' }}
         run: |
           set -o pipefail
           ARGS="--model=$MODEL"

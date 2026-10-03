@@ -2,6 +2,7 @@
 // Segunda lectura cuando la suma no cuadra: se adopta solo si acerca claramente al total; si falla, se conserva la primera.
 // Sin red: se reemplaza fetch por respuestas simuladas del modelo.
 process.env.ANTHROPIC_API_KEY = 'test';
+process.env.OCR_RETRY = '1';   // la segunda lectura está apagada por defecto
 const { default: handler } = await import('../api/scan-receipt.js');
 
 let fails = 0, n = 0;

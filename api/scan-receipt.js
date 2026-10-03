@@ -702,7 +702,8 @@ export default async function handler(req, res) {
     // modelo cuánto falta y qué suele causarlo (importe corrido de fila en fotos inclinadas, fila repetida omitida).
     // Se queda con la segunda solo si la acerca claramente al total; si falla o tarda, se conserva la primera.
     let reintento = { usado:false, mejoro:false };
-    const reintentable = !recon.auto_fixed && recon.total > 0 && recon.ratio >= 0.03 && recon.ratio <= 0.35
+    // APAGADO por defecto (OCR_RETRY=1 para activarlo): en las pruebas con la boleta griega no mejoró la lectura; ver docs/DECISIONES.md.
+    const reintentable = process.env.OCR_RETRY === '1' && !recon.auto_fixed && recon.total > 0 && recon.ratio >= 0.03 && recon.ratio <= 0.35
       && Date.now() - startMs < 28000 && !is_confirmation;
     if (reintentable) {
       reintento.usado = true;
