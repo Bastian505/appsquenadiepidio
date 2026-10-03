@@ -713,7 +713,8 @@ export default async function handler(req, res) {
           'Vuelve a mirar la foto fila por fila. Causas frecuentes: un importe corrido a la fila vecina (foto inclinada), ' +
           'una fila omitida (incluso si repite el nombre de otra), o una cantidad mal leída. Corrige SOLO lo que veas mal en la foto; ' +
           'no inventes ni agregues ítems para cuadrar la suma. Devuelve el JSON completo con el mismo formato.';
-        const raw2 = await callClaude(apiKey, image_base64, media_type, system, aviso, model);
+        const retryModel = process.env.OCR_RETRY_MODEL || model;   // opcional: un modelo más potente solo para la segunda lectura
+        const raw2 = await callClaude(apiKey, image_base64, media_type, system, aviso, retryModel);
         const p2 = parseJSON(raw2);
         if (p2?.items?.length && !(p2.ok === false && p2.reason)) {
           const nb2 = normalizeItems(p2.items, currency);
