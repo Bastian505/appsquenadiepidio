@@ -920,6 +920,296 @@
     {"id": "TH/cafe-amazon-vat-included", "pais": "TH", "moneda": "THB", "restaurante": "Café Amazon (PTT Station)", "items": [{"nombre": "TW ชาม่วงนมเย็น", "precio_unitario": 50, "cantidad": 1}, {"nombre": "TW มัทฉะ อัญชัน Light", "precio_unitario": 60, "cantidad": 1}], "total_referencia": 110, "notas": "Tailandia 2024 (2567 b.e.). Total 110 = NET BAHT. VATable 110 + VAT 7.00% 7.20: IVA INCLUIDO (ราคารวมภาษีมูลค่าเพิ่มแล้ว), no es cargo extra. 'Cash 120 / Change 10' no son ítems. Línea de 0.00 es modificador sin cargo."},
     {"id": "MA/le-marrakchi", "pais": "MA", "moneda": "MAD", "restaurante": "Le Marrakchi", "items": [{"nombre": "COCA LIGHT", "precio_unitario": 30, "cantidad": 3}, {"nombre": "SIDI ALI", "precio_unitario": 35, "cantidad": 1}, {"nombre": "SAN MIGUEL", "precio_unitario": 50, "cantidad": 2}, {"nombre": "COCA COLA", "precio_unitario": 30, "cantidad": 2}, {"nombre": "PASTILLA AU POULET", "precio_unitario": 100, "cantidad": 3}, {"nombre": "VARIET.BRIOUATES", "precio_unitario": 90, "cantidad": 2}, {"nombre": "COUSCOUS AGNEAU AUX 7 LEGU", "precio_unitario": 150, "cantidad": 1}, {"nombre": "COUSCOUS VEGETARIEN", "precio_unitario": 130, "cantidad": 1}, {"nombre": "KNAFFA", "precio_unitario": 60, "cantidad": 2}, {"nombre": "CROQUANT AU CHOCOLAT", "precio_unitario": 60, "cantidad": 2}, {"nombre": "YAOURT MAISON SUCRE", "precio_unitario": 40, "cantidad": 2}, {"nombre": "PATISSERIES MAROCAINES", "precio_unitario": 60, "cantidad": 1}], "total_referencia": 1425, "notas": "Marruecos 2017, francés. Importe de la derecha = total de la línea (3 COCA LIGHT 90.00 → 3 x 30). Suma verificada = 1.425. HT 1425 = TTC 1425, TVA vacía: sin impuesto aparte. '10 COUVERT' = comensales, no ítem. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."},
     {"id": "CH/cedre-zurich-mwst-incl", "pais": "CH", "moneda": "CHF", "restaurante": "Restaurant Cèdre", "items": [{"nombre": "Hommos bi Lahme", "precio_unitario": 18.5, "cantidad": 1}, {"nombre": "Arayess Lahme", "precio_unitario": 19.5, "cantidad": 1}, {"nombre": "Hommos bi Snoubar", "precio_unitario": 17.5, "cantidad": 1}, {"nombre": "Warak Inab bil Zet", "precio_unitario": 13.5, "cantidad": 1}, {"nombre": "Beste Falafel", "precio_unitario": 13.5, "cantidad": 1}, {"nombre": "Scheschtaouk", "precio_unitario": 24.5, "cantidad": 1}, {"nombre": "Kafta bi Laban", "precio_unitario": 28.5, "cantidad": 1}, {"nombre": "Elmer Citro 3dl", "precio_unitario": 4.5, "cantidad": 2}], "total_referencia": 144.5, "notas": "Suiza (Zúrich) 2015. 'N x NOMBRE à PRECIO' + importe de la línea a la derecha; la letra 'A' tras el importe es la categoría de IVA. Suma verificada = 144,50. 'Umsatz 8.0% inkl.' y 'MwSt 8.0% CHF 10,70' = IVA INCLUIDO (informativo, no es ítem ni se suma). 'Bar' = pagado en efectivo. Probada en v2 en producción: lectura correcta, cuadra. Foto recortada de captura."},
-    {"id": "GR/aimani-columnas-desfasadas", "pais": "GR", "moneda": "EUR", "restaurante": "Taberna (Αιμάνι / Mesa 50)", "items": [{"nombre": "SPRITE 250ml", "precio_unitario": 1.5, "cantidad": 1}, {"nombre": "ΑΡΤΟΣ ΑΤΟΜΙΚΟΣ", "precio_unitario": 0.8, "cantidad": 6}, {"nombre": "ΒΑΡΒΑΓΙΑΝΝΗΣ ΜΠΛΕ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΟΝΟ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 2}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΑΚΙ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ", "precio_unitario": 14.44, "cantidad": 1}, {"nombre": "ΚΕΧΡΙΜΠΑΡΙ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΚ. ΞΗΡΟ ΚΑΡΑΦΑ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΛΟΚΥΘΑΚΙΑ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΜΕΛΙΤΖΑΝΑ ΨΗΤΗ", "precio_unitario": 4.8, "cantidad": 1}, {"nombre": "ΜΥΔΙΑ ΑΧΝΙΣΤΑ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΝΕΣ NESTLE", "precio_unitario": 2.0, "cantidad": 1}, {"nombre": "ΠΑΤΑΤΕΣ", "precio_unitario": 2.8, "cantidad": 1}, {"nombre": "ΣΑΛΑΤΑ ΤΟΥ ΣΑΒΒΑ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΖΑΤΖΙΚΙ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΤΣΙΠΟΥΡΟ ΗΔΩΝΙΚΟ (Μ)", "precio_unitario": 7.5, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ", "precio_unitario": 9.0, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ ΒΡ. ΨΗΤΟ", "precio_unitario": 9.0, "cantidad": 1}], "total_referencia": 105.84, "notas": "Grecia. Foto inclinada: la columna de importes queda desfasada respecto a los nombres. Hallazgo de producción en v2: la app leyó ΒΑΡΒΑΓΙΑΝΝΗΣ 7.00 (es 6.00), ΤΟΝΟ 2.00 (es 7.00) y omitió la segunda fila ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ (1 x 1.00): suma 100.84 vs 105.84 (avisó 'faltan 5,00'). Columnas: cantidad | nombre | ΦΠΑ 0% | importe de la línea (6 ΑΡΤΟΣ 4.80 = 6 x 0.80). 'ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ' 0.38 kg = 14.44 (R18). ΣΥΝΟΛΟ 105.84 = ΠΛΗΡΩΤΕΟ 105.84. A mano: 'ΚΕΧΡΙΜΠΑΡΙ' tachado, '95,00' y '-4,00': NO cuentan; el total impreso 105.84 incluye el tachado. Dos filas con el mismo nombre (agua) son dos líneas reales."}
+    {"id": "GR/aimani-columnas-desfasadas", "pais": "GR", "moneda": "EUR", "restaurante": "Taberna (Αιμάνι / Mesa 50)", "items": [{"nombre": "SPRITE 250ml", "precio_unitario": 1.5, "cantidad": 1}, {"nombre": "ΑΡΤΟΣ ΑΤΟΜΙΚΟΣ", "precio_unitario": 0.8, "cantidad": 6}, {"nombre": "ΒΑΡΒΑΓΙΑΝΝΗΣ ΜΠΛΕ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΟΝΟ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 2}, {"nombre": "ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ ΙΑΙΤ", "precio_unitario": 1.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΑΚΙ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ", "precio_unitario": 14.44, "cantidad": 1}, {"nombre": "ΚΕΧΡΙΜΠΑΡΙ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΚ. ΞΗΡΟ ΚΑΡΑΦΑ 500ml", "precio_unitario": 4.0, "cantidad": 1}, {"nombre": "ΚΟΛΟΚΥΘΑΚΙΑ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΜΕΛΙΤΖΑΝΑ ΨΗΤΗ", "precio_unitario": 4.8, "cantidad": 1}, {"nombre": "ΜΥΔΙΑ ΑΧΝΙΣΤΑ", "precio_unitario": 7.0, "cantidad": 1}, {"nombre": "ΝΕΣ NESTLE", "precio_unitario": 2.0, "cantidad": 1}, {"nombre": "ΠΑΤΑΤΕΣ", "precio_unitario": 2.8, "cantidad": 1}, {"nombre": "ΣΑΛΑΤΑ ΤΟΥ ΣΑΒΒΑ", "precio_unitario": 6.0, "cantidad": 1}, {"nombre": "ΤΖΑΤΖΙΚΙ", "precio_unitario": 3.0, "cantidad": 1}, {"nombre": "ΤΣΙΠΟΥΡΟ ΗΔΩΝΙΚΟ (Μ)", "precio_unitario": 7.5, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ", "precio_unitario": 9.0, "cantidad": 1}, {"nombre": "ΧΤΑΠΟΔΙ ΒΡ. ΨΗΤΟ", "precio_unitario": 9.0, "cantidad": 1}], "total_referencia": 105.84, "notas": "Grecia. Foto inclinada: la columna de importes queda desfasada respecto a los nombres. Hallazgo de producción en v2: la app leyó ΒΑΡΒΑΓΙΑΝΝΗΣ 7.00 (es 6.00), ΤΟΝΟ 2.00 (es 7.00) y omitió la segunda fila ΕΜΦΙΑΛΩΜΕΝΟ ΝΕΡΟ (1 x 1.00): suma 100.84 vs 105.84 (avisó 'faltan 5,00'). Columnas: cantidad | nombre | ΦΠΑ 0% | importe de la línea (6 ΑΡΤΟΣ 4.80 = 6 x 0.80). 'ΚΑΛΑΜΑΡΙΑ ΨΗΤΟ ΚΙΛΟ' 0.38 kg = 14.44 (R18). ΣΥΝΟΛΟ 105.84 = ΠΛΗΡΩΤΕΟ 105.84. A mano: 'ΚΕΧΡΙΜΠΑΡΙ' tachado, '95,00' y '-4,00': NO cuentan; el total impreso 105.84 incluye el tachado. Dos filas con el mismo nombre (agua) son dos líneas reales."},
+    {
+      "id": "AR/don-domingo-caba",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Don Domingo (Santo Tomé, CABA)",
+      "items": [
+        {
+          "nombre": "BIFE DON DOMIN",
+          "precio_unitario": 395,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MAT A LA PIZZA",
+          "precio_unitario": 335,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SUPREMA FUGAZZ",
+          "precio_unitario": 165,
+          "cantidad": 1
+        },
+        {
+          "nombre": "AGUA 1500",
+          "precio_unitario": 70,
+          "cantidad": 1
+        },
+        {
+          "nombre": "LINEA COCA 150",
+          "precio_unitario": 85,
+          "cantidad": 1
+        },
+        {
+          "nombre": "COPA DON DOMIN",
+          "precio_unitario": 180,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BENJAMIN MALBE",
+          "precio_unitario": 155,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CAFE JARRITO",
+          "precio_unitario": 35,
+          "cantidad": 4
+        }
+      ],
+      "total_referencia": 1525,
+      "notas": "Argentina, ticket de matriz. Columnas Cant | Detalle | P.Unit | Importe. '5.00 SERV.DE MESA' no tiene precio: no es ítem. Suma 1525 = total."
+    },
+    {
+      "id": "AR/control-mesa-805",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa (Mesa 8)",
+      "items": [
+        {
+          "nombre": "CUBIERTO",
+          "precio_unitario": 25,
+          "cantidad": 2
+        },
+        {
+          "nombre": "AGUA SABO",
+          "precio_unitario": 60,
+          "cantidad": 1
+        },
+        {
+          "nombre": "STELLA A",
+          "precio_unitario": 175,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FILET DE",
+          "precio_unitario": 205,
+          "cantidad": 2
+        },
+        {
+          "nombre": "ENSALADA",
+          "precio_unitario": 110,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 805,
+      "notas": "Argentina. El precio de cada línea ya es el IMPORTE de la línea (2 CUBIERTO 50, 2 FILET 410): no multiplicar por cantidad. Por eso unitario = importe/cantidad. Suma 805 = total."
+    },
+    {
+      "id": "AR/servicio-mesa-2930",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa (Mesa 29)",
+      "items": [
+        {
+          "nombre": "SERVICIO DE MESA",
+          "precio_unitario": 110,
+          "cantidad": 2
+        },
+        {
+          "nombre": "GASEOSA",
+          "precio_unitario": 150,
+          "cantidad": 4
+        },
+        {
+          "nombre": "ENSALADA 1",
+          "precio_unitario": 280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "1/2 PASTAS",
+          "precio_unitario": 280,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MINI BIFE",
+          "precio_unitario": 570,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BIFE DE LOMO",
+          "precio_unitario": 980,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 2930,
+      "notas": "Argentina. Columna 'Precio' = importe de la línea (4 GASEOSA 600, 2 SERVICIO DE MESA 220). SERVICIO DE MESA es el cubierto, cobrado de verdad. Subtotal 2930, descuento 0."
+    },
+    {
+      "id": "AR/comprobante-39-30",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Comprobante (Mesa 1)",
+      "items": [
+        {
+          "nombre": "Agua",
+          "precio_unitario": 1.4,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Empanadilla argentina",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "MENU parrillada punto",
+          "precio_unitario": 32.9,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Agua Grande",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 39.3,
+      "notas": "Sin símbolo de moneda (precios con decimales chicos: podría ser un restaurante argentino fuera del país); se toma ARS por el país. 'Cola Zero' x2 y 'Panqueque' salen a 0,00 (cortesía/menú): no aportan. Suma 39,30 = total a pagar."
+    },
+    {
+      "id": "AR/palermo-inclinada-9320",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Palermo (Mesa 710)",
+      "items": [
+        {
+          "nombre": "CUBIERTO NOCHE",
+          "precio_unitario": 90,
+          "cantidad": 5
+        },
+        {
+          "nombre": "Agua San Pellegrino",
+          "precio_unitario": 295,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Acqua Panna",
+          "precio_unitario": 295,
+          "cantidad": 3
+        },
+        {
+          "nombre": "BURRATA",
+          "precio_unitario": 685,
+          "cantidad": 2
+        },
+        {
+          "nombre": "PICANHA",
+          "precio_unitario": 1990,
+          "cantidad": 1
+        },
+        {
+          "nombre": "LOMO",
+          "precio_unitario": 1240,
+          "cantidad": 1
+        },
+        {
+          "nombre": "ENSALADA RUCULA PAR",
+          "precio_unitario": 340,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CARMELA RESERVA MAL",
+          "precio_unitario": 850,
+          "cantidad": 2
+        },
+        {
+          "nombre": "FRUTILLAS CON HELAD",
+          "precio_unitario": 250,
+          "cantidad": 1
+        },
+        {
+          "nombre": "PANQUEQUE DE MANZAN",
+          "precio_unitario": 375,
+          "cantidad": 1
+        },
+        {
+          "nombre": "CAFE AMERICANO",
+          "precio_unitario": 130,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 9320,
+      "notas": "Foto muy inclinada, mano y fondo. Columnas pegadas ('685.001370.00' = unitario 685.00 + importe 1370.00). '5 COMENSALES 0.00' no es ítem; '5 CUBIERTO NOCHE' 90 x5 = 450 sí. Suma 9320 = total."
+    },
+    {
+      "id": "AR/control-mesa-fudo-461400",
+      "pais": "AR",
+      "moneda": "ARS",
+      "restaurante": "Control de mesa #1328 (Fudo)",
+      "items": [
+        {
+          "nombre": "Limonada Anchoita",
+          "precio_unitario": 9100,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choripan Medio Oriente",
+          "precio_unitario": 13000,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Choripan Ginger",
+          "precio_unitario": 13000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ojo de roastbeef 300 gr",
+          "precio_unitario": 28500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Charolais Bife Chorizo 600g",
+          "precio_unitario": 87000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Charolais Ojo de Bife 800g",
+          "precio_unitario": 116000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mezzelune Amatriciana",
+          "precio_unitario": 32000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Papas Fritas",
+          "precio_unitario": 13500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Ensalada de colores",
+          "precio_unitario": 13000,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Mendel Late Harvest",
+          "precio_unitario": 41500,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Panettone y Sambayón",
+          "precio_unitario": 15500,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Finca La Leona Café Cortado",
+          "precio_unitario": 4900,
+          "cantidad": 4
+        }
+      ],
+      "total_referencia": 461400,
+      "notas": "Hallazgo de producción v2: foto curva; la columna de importes quedó desfasada una fila al final: leyó Mendel 13.000, Panettone 2x20.750, Café 4x7.750 (suma 454.800, faltan 6.600). Correcto: la columna es el IMPORTE de la línea (Mendel 41.500, Panettone x2 31.000, Café x4 19.600). Subtotal = Total = 461.400."
+    }
   ]
 }
