@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.e';
+  var BUILD = '2026-10-03.f';
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
@@ -334,11 +334,13 @@
   });
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
-    if (a === 'photo' && el.files && el.files[0]) { var f = el.files[0]; try { el.value = ''; } catch (x) {} startScan(f); }   // vaciar permite volver a elegir la misma foto
+    if (a === 'photo' && el.files && el.files[0]) startScan(el.files[0]);
     else if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
+  // Vaciar el campo ANTES de abrir el selector permite volver a elegir la misma foto (tocar el archivo ya elegido no dispara 'change').
+  document.addEventListener('click', function (e) { if (e.target && e.target.id === 'photo') { try { e.target.value = ''; } catch (x) {} } }, true);
   document.addEventListener('submit', function (e) {
     if (e.target.dataset.action === 'do-join') {
       e.preventDefault(); var n = e.target.elements.name.value.trim();
@@ -395,14 +397,15 @@
   var pending = null;
   function startScan(file) {
     ui.error = null; ui.confirm = null; ui.scanStage = 0; ui.photo = null;
-    // Reacciona al instante: la pantalla de lectura aparece antes de procesar la foto (fotos grandes tardan).
-    state.step = 'scanning'; render();
+    toast('Procesando la foto…');
     var done = false, guard = setTimeout(function () { if (!done) { done = true; fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
     compress(file, function (b64, dataUrl) {
       if (done) return; done = true; clearTimeout(guard);
       ui.photo = dataUrl; pending = b64; state.step = 'scanning'; render();
       send({ image_base64: b64, media_type: 'image/jpeg' });
-    }, function (msg) { if (done) return; done = true; clearTimeout(guard); fail(msg); });
+    }, function (msg) { if (done) return; done = true; clearTimeout(guard); fail(msg); },
+    // El archivo ya está leído en memoria: recién ahí se cambia de pantalla (no antes: el navegador puede soltar el archivo si se quita el campo).
+    function () { if (!done) { state.step = 'scanning'; render(); } });
   }
   function rescan(code) { ui.confirm = null; ui.scanStage = 1; render(); send({ image_base64: pending, media_type: 'image/jpeg', country_hint: code, is_confirmation: true }); }
 
@@ -461,9 +464,10 @@
       .then(function () { state.items.forEach(function (it) { it.needsTr = false; }); ui.translating = false; save(); render(); });
   }
 
-  function compress(file, cb, onFail) {
+  function compress(file, cb, onFail, onRead) {
     var reader = new FileReader();
     reader.onload = function (ev) {
+      if (onRead) onRead();
       var img = new Image();
       img.onload = function () {
         var MAX = 1600, w = img.width, h = img.height, r = Math.min(1, MAX / Math.max(w, h));
