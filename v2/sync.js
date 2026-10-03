@@ -56,15 +56,27 @@
   }
 
   // El anfitrión manda la boleta completa (ítems, propina, moneda). Los invitados no pueden.
+  // Si la base aún no tiene las columnas nuevas (migración 20261004 sin correr), se publica sin ellas y todo sigue funcionando.
+  var extrasOk = true;
   function pushBill(bill) {
     if (!sb || !state.billId || state.role !== 'host') return Promise.resolve();
-    return sb.from('dc_bills').update({
+    var base = {
       restaurant: bill.restaurant || null, currency: bill.currency, country_code: bill.countryCode || null,
-      items: bill.items || [], tip: bill.tip || null, receipt_total: bill.receiptTotal || null,
-      // La lista de nombres (para que el invitado elija el suyo) y lo que ya se marcó a quienes aún no entran.
-      people: (bill.people || []).map(function (p) { return { id: String(p.id), name: p.name }; }),
-      pre_assigns: preAssigns(bill)
-    }).eq('id', state.billId).then(function (r) { if (r.error) console.warn('pushBill:', r.error.message); });
+      items: bill.items || [], tip: bill.tip || null, receipt_total: bill.receiptTotal || null
+    };
+    function send(withExtras) {
+      var row = base;
+      if (withExtras) row = Object.assign({}, base, {
+        // La lista de nombres (para que el invitado elija el suyo) y lo que ya se marcó a quienes aún no entran.
+        people: (bill.people || []).map(function (p) { return { id: String(p.id), name: p.name }; }),
+        pre_assigns: preAssigns(bill)
+      });
+      return sb.from('dc_bills').update(row).eq('id', state.billId);
+    }
+    return send(extrasOk).then(function (r) {
+      if (r.error && extrasOk && /people|pre_assigns|column/i.test(r.error.message)) { extrasOk = false; return send(false); }
+      return r;
+    }).then(function (r) { if (r && r.error) console.warn('pushBill:', r.error.message); });
   }
 
   // Marcas del anfitrión para personas que todavía no entran: {idPersona: {idÍtem: unidades|null}}.
@@ -98,7 +110,9 @@
   function joinBill(token, name, personId) {
     return init().then(function (c) {
       if (!c) throw new Error('SIN_CONEXION');
-      return c.rpc('dc_join_bill', { p_token: token, p_name: name, p_person: personId == null ? null : String(personId) });
+      var args = { p_token: token, p_name: name };
+      if (personId != null) args.p_person = String(personId);   // sin persona elegida se usa la firma de siempre
+      return c.rpc('dc_join_bill', args);
     }).then(function (r) {
       if (r.error) throw new Error(r.error.message === 'TOO_MANY_ATTEMPTS' ? 'DEMASIADOS_INTENTOS'
         : /NAME_TAKEN/.test(r.error.message) ? 'NOMBRE_TOMADO' : r.error.message);
