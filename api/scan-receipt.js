@@ -127,7 +127,7 @@ PROCESO MENTAL
    para cuadrar (el sistema externo se encarga de la reconciliación).
 
 ═══════════════════════════════════════════════════════════════════════════════
-REGLAS UNIVERSALES (R1-R20)
+REGLAS UNIVERSALES (R1-R21)
 ═══════════════════════════════════════════════════════════════════════════════
 
 R1. INCLUIR solo productos/servicios con precio real visible o derivable.
@@ -257,6 +257,11 @@ R19. TOTAL FINAL: total_referencia = el MONTO FINAL A PAGAR = subtotal + impuest
 
 R20. CÓDIGOS DE ÍTEM: no incluyas el código numérico del producto al inicio del
      nombre ("2201 KABULI PULLAO" → nombre "KABULI PULLAO").
+
+R21. SUPLEMENTOS "(+X.XX)": un monto entre paréntesis bajo un ítem, con "+" (ej. "Venezia 11.90 11.90"
+     y debajo "Rucola / Parmesan (+1.20)"), es el desglose de extras que YA ESTÁN INCLUIDOS en el total
+     de esa línea. El precio del ítem es el de la columna Total (11.90); NO le sumes el suplemento ni
+     lo listes como ítem. Los modificadores sin monto tampoco son ítems (R6).
 
 R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      "-1 Crispy Jalebi @390 -390.00") anula parte de un ítem anterior. Transcríbela
@@ -419,8 +424,8 @@ function parseJSON(raw) {
 const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
-// Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (ej. PK: 13% sobre ítems)
-const TAX_ON_TOP_HIGH           = new Set(['PK','MY']);
+// Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (PK 5-15%, MY 6-8%, NG 7,5%, LK ~22%)
+const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK']);
 
 function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
@@ -472,7 +477,7 @@ function reconcile(items, totalReported, countryCode) {
   }
 
   // 6-8%: impuesto (US/CA); hasta 15% en países con impuesto alto sumado aparte (PK)
-  if (((ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio >= 0.04 && ratio <= 0.15 && TAX_ON_TOP_HIGH.has(countryCode))) && !(TAX_ON_TOP_HIGH.has(countryCode) ? hasTax : hasServicio)) {
+  if (((ratio >= 0.06 && ratio <= 0.08 && TAX_COUNTRIES.has(countryCode)) || (ratio >= 0.04 && ratio <= 0.22 && TAX_ON_TOP_HIGH.has(countryCode))) && !(TAX_ON_TOP_HIGH.has(countryCode) ? hasTax : hasServicio)) {
     const fixed = [...items, { nombre:'Impuesto', precio_unitario:extraAmount, cantidad:1,
       auto_created:true, auto_fix_type:'tax', auto_fix_evidence:`Diferencia de ${Math.round(ratio*100)}% — tax no incluido en precios`, confianza:0.50 }];
     const newSum = fixed.reduce((s,it) => s+it.precio_unitario*it.cantidad, 0);
