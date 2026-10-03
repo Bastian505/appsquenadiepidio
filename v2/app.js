@@ -126,7 +126,8 @@
   function review() {
     var r = split(), base = baseItems(), extras = extraItems();
     var printed = state.receiptTotal, diff = printed ? printed - (r.baseTotal + r.extrasTotal) : 0;
-    var tol = C.decimals(state.currency) === 0 ? 1 : 0.05;
+    // Tolerancia: redondeos de centavos ("Round Amt", ajustes de 0,13) no son un error de lectura.
+    var tol = C.decimals(state.currency) === 0 ? 1 : Math.max(0.05, (printed || 0) * 0.0015);
     var banner = '';
     if (printed && Math.abs(diff) > tol) banner = '<div class="banner warn"><b>Los ítems no cuadran con la boleta.</b> Total impreso ' + money(printed) + ', ítems ' + money(r.baseTotal + r.extrasTotal) + ' (' + (diff > 0 ? 'faltan ' : 'sobran ') + money(Math.abs(diff)) + '). Revisa los precios marcados o agrega lo que falte.</div>';
     else if (printed) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ').</div>';

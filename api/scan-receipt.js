@@ -427,6 +427,9 @@ const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
 // Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (PK 5-15%, MY 6-8%, NG 7,5%, LK ~22%)
+// Canadá: impuestos por provincia (sobre el precio sin impuesto): GST 5 % (AB/TERR.), SK 11 %, BC y MB 12 %,
+// HST Ontario 13 %, Quebec TPS 5 % + TVQ 9,975 % = 14,975 %, HST Atlántico 15 %.
+const CA_TAX_RATES = [0.05, 0.11, 0.12, 0.13, 0.14975, 0.15];
 const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK','SG']);
 
 function reconcile(items, totalReported, countryCode) {
@@ -441,6 +444,20 @@ function reconcile(items, totalReported, countryCode) {
   // 0-3%: diferencia silenciosa de redondeo
   if (ratio < 0.03) {
     return { ok:true, sum, total:totalReported, diff, ratio, note:null, auto_fixed:false };
+  }
+
+  // Canadá: si lo que falta es EXACTAMENTE una tasa de impuesto provincial sobre la suma, es el impuesto (no un ítem perdido).
+  if (countryCode === 'CA' && diff > 0 && sum > 0 && ratio <= 0.22) {
+    const rate = diff / sum, known = CA_TAX_RATES.find(r => Math.abs(rate - r) <= 0.006);
+    const yaHayImpuesto = items.some(it => /impuesto|tax|gst|hst|pst|qst|tps|tvq/i.test(it.nombre||''));
+    if (known && !yaHayImpuesto) {
+      const monto = Math.round(diff * 100) / 100;
+      const fix = { nombre:'Impuesto', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
+        auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre los ítems = impuesto provincial de Canadá`, confianza:0.50 };
+      return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté impuestos del ${(known*100).toFixed(known === 0.14975 ? 3 : 0).replace('.', ',')}% (~${monto}). Revísalo antes de dividir.` };
+    }
   }
 
   // 3-6%: warning leve, no crear ítem (salvo PK: un 5% sumado encima es ~4,8% del total)
