@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.c';
+  var BUILD = '2026-10-04.d';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -27,7 +27,7 @@
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
-  var ui = { unitsOpen: {}, openDetail: {}, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
+  var ui = { unitsOpen: {}, openDetail: {}, voice: { open: false, text: '', busy: false, preview: null, error: null, listening: false }, voiceUndo: null, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
 
   function fresh() {
     return { step: 'home', currency: 'CLP', restaurant: null, country: null, items: [], people: [], assigns: {},
@@ -247,12 +247,76 @@
         (free ? '<form class="field" data-action="do-join" style="margin-top:12px"><input name="name" placeholder="Tu nombre" maxlength="24" value="' + esc(ui.joinName) + '" ' + (ui.joinFree || !(inv && inv.people.length) ? 'data-autofocus ' : '') + 'aria-label="Tu nombre"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? 'Entrando…' : 'Entrar') + '</button></form>' : ''));
   }
 
+  // ── PROTOTIPO: asignar hablando (apagado por defecto: se activa con ?voz=1 y se desactiva con ?voz=0) ──
+  function voiceOn() { try { return localStorage.getItem('dc_voice') === '1'; } catch (e) { return false; } }
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function voicePanel() {
+    if (!voiceOn() || state.people.length < 1) return '';
+    var v = ui.voice, undo = ui.voiceUndo;
+    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">🎤 Asignar hablando <span class="badge accent">prueba</span></button>' +
+      (undo ? '<button class="btn sm ghost" data-action="voice-undo">Deshacer lo último</button>' : '') + '</div>';
+    var pv = v.preview;
+    return '<div class="card" style="margin-bottom:12px"><div class="row"><b style="flex:1">Asignar hablando</b><span class="badge accent">prueba</span><button class="btn sm ghost" data-action="voice-close">Cerrar</button></div>' +
+      '<p class="small" style="margin:6px 0">Cuenta quién comió qué. Ej.: «yo el bife, ' + esc((state.people[1] || state.people[0]).name) + ' la pizza, la cerveza entre los dos»</p>' +
+      '<textarea name="voicetext" data-action="voice-text" rows="3" maxlength="500" placeholder="Habla o escribe aquí…" style="width:100%">' + esc(v.text) + '</textarea>' +
+      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : '🎤 Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
+      '<span class="spacer"></span><button class="btn sm primary" data-action="voice-go"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? 'Interpretando…' : 'Interpretar') + '</button></div>' +
+      (v.error ? '<div class="banner danger" style="margin:10px 0 0">' + esc(v.error) + '</div>' : '') +
+      (pv ? '<div style="margin-top:12px"><div class="small">Esto entendí (revísalo antes de aplicar):</div>' +
+        (pv.length ? pv.map(function (a) {
+          var it = item(a.item); if (!it) return '';
+          return '<div class="row" style="padding:4px 0"><span style="flex:1">' + esc(it.name) + '</span><span class="small">→ ' + a.who.map(function (pid) { var p = person(pid); return esc(p ? p.name : '?') + (a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : ''); }).join(', ') + '</span></div>';
+        }).join('') : '<p class="small">No pude emparejar nada. Prueba con los nombres tal como aparecen.</p>') +
+        (pv.length ? '<div class="row" style="margin-top:8px"><button class="btn sm primary" data-action="voice-apply">Aplicar</button><button class="btn sm ghost" data-action="voice-discard">Descartar</button></div>' : '') + '</div>' : '') +
+      '</div>';
+  }
+  function voiceInterpret() {
+    var v = ui.voice, text = String(v.text || '').trim(); if (!text || v.busy) return;
+    var items = baseItems().map(function (it) { return { id: it.id, name: String(it.name).slice(0, 80), qty: Number.isInteger(it.qty) && it.qty >= 1 && it.qty <= 99 ? it.qty : 1 }; });
+    var speaker = state.share ? state.myMemberId : (state.people[0] && state.people[0].id);
+    var people = state.people.map(function (p) { return { id: p.id, name: p.name.slice(0, 80) }; });
+    v.busy = true; v.error = null; v.preview = null; render();
+    fetch(CFG.ASSIGN_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-App-Secret': CFG.APP_SHARED_SECRET }, body: JSON.stringify({ text: text, items: items, people: people, speaker: speaker }) })
+      .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+      .then(function (x) {
+        v.busy = false;
+        if (!x.ok || !x.d || !x.d.ok) { v.error = x.d && x.d.code === 'RATE_LIMITED' ? 'Muchos intentos seguidos. Espera un minuto.' : 'No pude interpretarlo ahora. Puedes marcar a mano.'; }
+        else v.preview = (x.d.assigns || []).map(function (a) { return { item: Number(a.item), who: a.who.map(Number), units: a.units ? Object.keys(a.units).reduce(function (o, k) { o[Number(k)] = a.units[k]; return o; }, {}) : null }; });
+        render();
+      })
+      .catch(function () { v.busy = false; v.error = 'No hay conexión. Puedes marcar a mano.'; render(); });
+  }
+  function voiceApply() {
+    var pv = ui.voice.preview; if (!pv || !pv.length) return;
+    var ids = pv.map(function (a) { return a.item; });
+    ui.voiceUndo = { ids: ids, assigns: JSON.parse(JSON.stringify(state.assigns)) };
+    pv.forEach(function (a) { if (item(a.item)) state.assigns[a.item] = { people: a.who.filter(function (pid) { return person(pid); }), units: a.units || {} }; });
+    ui.voice.preview = null; ui.voice.text = ''; ui.voice.open = false;
+    save(); render(); syncHost(ids); toast('Listo: revisa y ajusta lo que haga falta');
+  }
+  function voiceUndoLast() {
+    var u = ui.voiceUndo; if (!u) return;
+    u.ids.forEach(function (id) { if (u.assigns[id]) state.assigns[id] = u.assigns[id]; else delete state.assigns[id]; });
+    ui.voiceUndo = null; save(); render(); syncHost(u.ids); toast('Deshecho');
+  }
+  var recog = null;
+  function voiceMic() {
+    if (!SR) return;
+    if (recog) { try { recog.stop(); } catch (e) {} return; }
+    recog = new SR(); recog.lang = navigator.language || 'es-CL'; recog.interimResults = false; recog.continuous = false;
+    recog.onresult = function (ev) { var t = ''; for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript + ' '; ui.voice.text = (ui.voice.text ? ui.voice.text + ' ' : '') + t.trim(); };
+    recog.onerror = function () { ui.voice.error = 'No pude escuchar. Escribe o usa el micrófono del teclado.'; };
+    recog.onend = function () { recog = null; ui.voice.listening = false; render(); };
+    ui.voice.listening = true; ui.voice.error = null; render();
+    try { recog.start(); } catch (e) { recog = null; ui.voice.listening = false; render(); }
+  }
+
   function assign() {
     var base = baseItems(), done = base.filter(isAssigned).length;
     var guest = state.share && state.share.role === 'guest';
     if (guest) return assignGuest(base);
     return top('¿Quién consumió qué?', 'people') +
-      (state.share ? sharePanel() : '') +
+      (state.share ? sharePanel() : '') + voicePanel() +
       '<div class="card"><div class="row"><b>' + done + ' de ' + base.length + ' ítems asignados</b><span class="spacer"></span><button class="btn sm" data-action="all-everything">Compartir todo</button></div>' +
       '<div class="progress" style="margin-top:10px"><i style="width:' + (base.length ? Math.round(100 * done / base.length) : 0) + '%"></i></div></div>' +
       '<div class="list">' + base.map(assignRow).join('') + '</div>' +
@@ -413,11 +477,19 @@
       case 'claim-unit': claimUnits(itemId, Number(el.dataset.d)); break;
       case 'set-payer': state.payerId = pid; save(); render(); break;
       case 'toggle-paid': togglePaid(pid); break;
+      case 'voice-open': ui.voice.open = true; render(); break;
+      case 'voice-close': ui.voice.open = false; ui.voice.preview = null; render(); break;
+      case 'voice-go': voiceInterpret(); break;
+      case 'voice-mic': voiceMic(); break;
+      case 'voice-apply': voiceApply(); break;
+      case 'voice-discard': ui.voice.preview = null; render(); break;
+      case 'voice-undo': voiceUndoLast(); break;
       case 'copy-pay': copyText(state.payInfo || ''); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
     }
   });
+  document.addEventListener('input', function (e) { if (e.target.dataset && e.target.dataset.action === 'voice-text') ui.voice.text = e.target.value; });
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
     if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
@@ -825,6 +897,12 @@
   if ('serviceWorker' in navigator && !navigator.webdriver) {
     window.addEventListener('load', function () { navigator.serviceWorker.register('/v2/sw.js', { scope: '/v2/' }).catch(function () {}); });
   }
+
+  // Prototipos: ?voz=1 los enciende en este teléfono, ?voz=0 los apaga.
+  try {
+    var vz = new URLSearchParams(location.search).get('voz');
+    if (vz === '1') localStorage.setItem('dc_voice', '1'); else if (vz === '0') localStorage.removeItem('dc_voice');
+  } catch (e) {}
 
   // ¿Llego por un link compartido? (/v2/#token)
   (function start() {

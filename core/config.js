@@ -4,6 +4,7 @@
   root.DC_CONFIG = {
     SCAN_URL: '/api/scan-receipt',
     TRANSLATE_URL: '/api/translate',
+    ASSIGN_URL: '/api/assign',   // prototipo: asignar hablando
     // Cuentas compartidas (opcional): sin esto la app funciona igual, en un solo teléfono.
     // La clave anónima es pública por diseño; quién puede ver o cambiar qué lo decide la base
     // de datos (ver supabase/migrations/20261002_shared_bills.sql).
