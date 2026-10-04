@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.b';
+  var BUILD = '2026-10-04.c';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -313,10 +313,16 @@
     if (state.share) return state.share.role === 'host' ? state.myMemberId : (state.hostPid != null ? state.hostPid : (state.people[0] && state.people[0].id));
     return state.payerId != null && person(state.payerId) ? state.payerId : (state.people[0] && state.people[0].id);
   }
+  // Los datos para transferir se recuerdan en este teléfono (solo aquí, no en la nube) para no escribirlos en cada cuenta.
+  var PAY_KEY = 'dc_pay_info';
+  function savedPayInfo() { try { return localStorage.getItem(PAY_KEY) || ''; } catch (e) { return ''; } }
+  function rememberPayInfo(v) { try { if (v) localStorage.setItem(PAY_KEY, v); else localStorage.removeItem(PAY_KEY); } catch (e) {} }
+
   function cobro(r, tiny) {
     if (state.people.length < 2) return '';
     var shared = !!state.share, host = !shared || state.share.role === 'host', me = state.myMemberId;
     var payer = payerPid(), pp = person(payer); if (!pp) return '';
+    if (host && !state.payInfo && !ui.payInfoTouched) { var sv = savedPayInfo(); if (sv) { state.payInfo = sv; save(); } }
     var debtors = r.perPerson.filter(function (p) { return p.id !== payer && p.amount > tiny; });
     var mine = shared && !host ? r.perPerson.filter(function (p) { return p.id === me; })[0] : null, meP = person(me);
     var out = '';
@@ -341,7 +347,7 @@
         '<p class="small" style="margin:8px 0 0">' + (pending > tiny ? 'Falta por pagar ' + money(pending) : '✓ Todos pagaron') + '</p>';
     }
     if (host) {
-      out += '<label class="small" style="display:block;margin-top:12px">Datos para que te transfieran (opcional)</label>' +
+      out += '<label class="small" style="display:block;margin-top:12px">Datos para que te transfieran (opcional) · se recuerdan en este teléfono</label>' +
         '<textarea name="payinfo" data-action="pay-info" rows="2" maxlength="400" placeholder="Alias, cuenta, RUT, CLABE…" style="width:100%;margin-top:4px">' + esc(state.payInfo || '') + '</textarea>';
     } else if (state.payInfo) {
       out += '<div style="margin-top:12px"><div class="small">Transferir a ' + esc(pp.name) + '</div><div style="white-space:pre-wrap;margin:4px 0 8px;font-weight:600">' + esc(state.payInfo) + '</div><button class="btn sm" data-action="copy-pay">Copiar datos</button></div>';
@@ -415,7 +421,7 @@
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
     if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
-    else if (a === 'pay-info') { state.payInfo = String(el.value || '').trim().slice(0, 400); save(); }
+    else if (a === 'pay-info') { ui.payInfoTouched = true; state.payInfo = String(el.value || '').trim().slice(0, 400); rememberPayInfo(state.payInfo); save(); }
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
