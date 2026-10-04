@@ -153,8 +153,9 @@ function parseJSON(raw) {
 // (reconciliación, auto-arreglos y segunda lectura incluidas). Sin la bandera mide solo la lectura cruda.
 const PIPELINE = process.argv.includes('--pipeline');
 let _handler = null, _ipSeq = 0;
+const modelsUsed = {};   // qué modelo respondió de verdad (la prueba no vale si no coincide con el pedido)
 async function viaHandler(fx, imgPath) {
-  if (!_handler) _handler = (await import('../../../api/scan-receipt.js')).default;
+  if (!_handler) { process.env.OCR_MODEL = MODEL; _handler = (await import('../../../api/scan-receipt.js')).default; }
   const buf = fs.readFileSync(imgPath);
   const mediaType = buf[0] === 0x89 && buf[1] === 0x50 ? 'image/png' : 'image/jpeg';
   let status = 0, body = null;
@@ -162,6 +163,7 @@ async function viaHandler(fx, imgPath) {
   await _handler({ method: 'POST', headers: { 'x-forwarded-for': '10.1.' + Math.floor(++_ipSeq / 250) + '.' + (_ipSeq % 250) },
     body: { image_base64: buf.toString('base64'), media_type: mediaType, country_hint: fx.pais } }, res);
   if (status !== 200 || !body || body.ok === false) return { ok: false, reason: (body && (body.reason || body.code || body.error)) || ('HTTP ' + status) };
+  modelsUsed[body.model_used || '?'] = (modelsUsed[body.model_used || '?'] || 0) + 1;
   return body;
 }
 
@@ -262,6 +264,11 @@ async function main() {
   const ok_ = results.filter(r => r.ok), N = results.length;
   const sum_ = k => ok_.filter(r => r[k]).length;
   console.log(`\n── TOTAL (${N} boletas${PIPELINE ? ', flujo completo de la app' : ', lectura cruda'}) ──`);
+  if (PIPELINE) {
+    const mu = Object.entries(modelsUsed).map(([m, n]) => `${m} x${n}`).join(', ');
+    console.log(`modelo que respondió: ${mu || '(ninguno)'}`);
+    if (Object.keys(modelsUsed).some(m => m !== MODEL)) console.log(`⚠ ATENCIÓN: se pidió ${MODEL} pero respondió otro: esta medición no sirve`);
+  }
   console.log(`respondió: ${ok_.length}/${N} · total impreso bien leído: ${sum_('totalOk')}/${N} · LA SUMA CUADRA: ${sum_('cuadra')}/${N} (${Math.round(100 * sum_('cuadra') / N)}%) · país: ${sum_('countryOk')}/${N} · moneda: ${sum_('currencyOk')}/${N}`);
   const im = ok_.reduce((a, r) => a + r.itemScore.matched, 0), it = ok_.reduce((a, r) => a + r.itemScore.total, 0);
   console.log(`ítems correctos (nombre+precio+cantidad): ${im}/${it} (${it ? Math.round(100 * im / it) : 0}%)`);
