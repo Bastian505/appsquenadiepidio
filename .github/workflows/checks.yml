@@ -20,6 +20,7 @@ jobs:
       - run: node tests/check-reconcile.mjs
       - run: node tests/check-retry.mjs
       - run: node tests/check-assign.mjs
+      - run: node tests/check-ocr-costs.mjs
 
   sql:
     runs-on: ubuntu-latest

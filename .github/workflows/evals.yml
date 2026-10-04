@@ -25,6 +25,10 @@ on:
         description: "true = pasar por el mismo flujo de la app (reconciliación y segunda lectura incluidas)"
         required: false
         default: "false"
+      extra_env:
+        description: "Variables extra del lector, separadas por coma (ej. OCR_CACHE=0,OCR_PROMPT_LAYOUT=split,OCR_CASCADE_MODEL=claude-sonnet-5-5,OCR_EFFORT=low)"
+        required: false
+        default: ""
 
 jobs:
   evals:
@@ -43,8 +47,13 @@ jobs:
           PIPELINE: ${{ inputs.pipeline }}
           OCR_RETRY_MODEL: ${{ inputs.retry_model }}
           OCR_RETRY: ${{ inputs.retry == 'true' && '1' || '0' }}
+          EXTRA_ENV: ${{ inputs.extra_env }}
         run: |
           set -o pipefail
+          if [ -n "$EXTRA_ENV" ]; then
+            IFS=',' read -ra KV <<< "$EXTRA_ENV"
+            for kv in "${KV[@]}"; do k="${kv%%=*}"; v="${kv#*=}"; case "$k" in OCR_*) export "$k=$v" ;; esac; done
+          fi
           ARGS="--model=$MODEL"
           if [ -n "$COUNTRY" ]; then ARGS="$ARGS --country=$COUNTRY"; fi
           if [ "$PIPELINE" = "true" ]; then ARGS="$ARGS --pipeline"; fi

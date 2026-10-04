@@ -153,7 +153,22 @@ function parseJSON(raw) {
 // (reconciliación, auto-arreglos y segunda lectura incluidas). Sin la bandera mide solo la lectura cruda.
 const PIPELINE = process.argv.includes('--pipeline');
 let _handler = null, _ipSeq = 0;
-const modelsUsed = {};   // qué modelo respondió de verdad (la prueba no vale si no coincide con el pedido)
+const modelsUsed = {};
+// Tokens reales de cada llamada (el flujo de la app los escribe en el registro) para estimar el costo por boleta.
+const usage = {};   // modelo -> { calls, input, output, cw, cr }
+// Precios de lista por millón de tokens (los que conozco; confirmar en la consola de Anthropic): entrada, salida, escritura de caché (5 min), lectura de caché.
+const PRICES = {
+  'claude-sonnet-4-6': { in: 3, out: 15, cw: 3.75, cr: 0.30 }, 'claude-sonnet-5-5': { in: 2, out: 10, cw: 2.5, cr: 0.20 },
+  'claude-haiku-4-5-20251001': { in: 1, out: 5, cw: 1.25, cr: 0.10 }, 'claude-haiku-4-5': { in: 1, out: 5, cw: 1.25, cr: 0.10 }
+};
+const origLog = console.log.bind(console);
+console.log = (...a) => {
+  if (a[0] === 'claude usage' && typeof a[1] === 'string') {
+    try { const u = JSON.parse(a[1]); const k = u.model || '?', x = usage[k] || (usage[k] = { calls: 0, input: 0, output: 0, cw: 0, cr: 0 });
+      x.calls++; x.input += u.input || 0; x.output += u.output || 0; x.cw += u.cache_write || 0; x.cr += u.cache_read || 0; } catch (e) {}
+  }
+  origLog(...a);
+};   // qué modelo respondió de verdad (la prueba no vale si no coincide con el pedido)
 async function viaHandler(fx, imgPath) {
   if (!_handler) { process.env.OCR_MODEL = MODEL; _handler = (await import('../../../api/scan-receipt.js')).default; }
   const buf = fs.readFileSync(imgPath);
@@ -267,6 +282,23 @@ async function main() {
   if (PIPELINE) {
     const mu = Object.entries(modelsUsed).map(([m, n]) => `${m} x${n}`).join(', ');
     console.log(`modelo que respondió: ${mu || '(ninguno)'}`);
+    // Costo estimado con tres escenarios de caché (todos con los mismos tokens medidos):
+    //  A) tal como salió en esta corrida (muchas lecturas seguidas → la caché se aprovecha mucho; es el escenario más barato y poco realista con poco tráfico)
+    //  B) caché fría: cada llamada escribe la caché y nunca la lee (tráfico esporádico)  C) sin caché: todo se paga como entrada normal
+    let cA = 0, cB = 0, cC = 0, calls = 0, tin = 0, tout = 0, tcache = 0;
+    for (const [m, x] of Object.entries(usage)) {
+      const pr = PRICES[m]; if (!pr) { console.log(`(sin precio para ${m}: no se estima su costo)`); continue; }
+      const M = 1e6, cache = x.cw + x.cr;
+      cA += (x.input * pr.in + x.output * pr.out + x.cw * pr.cw + x.cr * pr.cr) / M;
+      cB += (x.input * pr.in + x.output * pr.out + cache * pr.cw) / M;
+      cC += (x.input * pr.in + x.output * pr.out + cache * pr.in) / M;
+      calls += x.calls; tin += x.input; tout += x.output; tcache += cache;
+    }
+    if (calls) {
+      const per = v => '$' + (v / N).toFixed(4), cents = v => (100 * v / N).toFixed(2) + ' ¢';
+      console.log(`llamadas al modelo: ${calls} (${(calls / N).toFixed(2)} por boleta) · tokens por boleta: entrada ${Math.round(tin / N)}, prefijo de reglas ${Math.round(tcache / N)}, salida ${Math.round(tout / N)}`);
+      console.log(`costo por boleta — caché aprovechada (como en esta corrida): ${per(cA)} (${cents(cA)}) · caché fría: ${per(cB)} (${cents(cB)}) · sin caché: ${per(cC)} (${cents(cC)})`);
+    }
     if (Object.keys(modelsUsed).some(m => m !== MODEL)) console.log(`⚠ ATENCIÓN: se pidió ${MODEL} pero respondió otro: esta medición no sirve`);
   }
   console.log(`respondió: ${ok_.length}/${N} · total impreso bien leído: ${sum_('totalOk')}/${N} · LA SUMA CUADRA: ${sum_('cuadra')}/${N} (${Math.round(100 * sum_('cuadra') / N)}%) · país: ${sum_('countryOk')}/${N} · moneda: ${sum_('currencyOk')}/${N}`);
