@@ -20,7 +20,7 @@ async function run(respuestas, pais = 'AR') {
   await handler({ method: 'POST', headers: { 'x-forwarded-for': '10.2.0.' + Math.floor(Math.random() * 250) }, body: { image_base64: 'AAAA', media_type: 'image/jpeg', country_hint: pais } }, res);
   return { body, status, bodies };
 }
-const reset = () => ['OCR_MODEL', 'OCR_CACHE', 'OCR_PROMPT_LAYOUT', 'OCR_CASCADE_MODEL', 'OCR_EFFORT', 'OCR_THINKING'].forEach(k => delete process.env[k]);
+const reset = () => ['OCR_MODEL', 'OCR_CACHE', 'OCR_PROMPT_LAYOUT', 'OCR_CASCADE_MODEL', 'OCR_EFFORT', 'OCR_THINKING', 'OCR_PROFILE_RETRY'].forEach(k => delete process.env[k]);
 
 // Por defecto: exactamente lo de siempre
 reset();
@@ -67,6 +67,26 @@ r = await run([mala, lect([it('A', 10), it('B', 5)])]);
 ok(r.bodies.length === 2 && !r.body.reconciliation.cascada.mejoro && r.body.model_used === 'claude-haiku-4-5-20251001', 'cascada: si el fuerte deja la suma más lejos, se conserva la primera lectura');
 reset();
 r = await run([mala]); ok(r.bodies.length === 1, 'sin OCR_CASCADE_MODEL no hay cascada (conducta de siempre)');
+
+// Segunda lectura con las reglas del país
+process.env.OCR_PROFILE_RETRY = '1';
+async function runNoHint(resp) { // como la app: sin country_hint
+  const bodies = []; let i = 0;
+  globalThis.fetch = async (u, init) => { bodies.push(JSON.parse(init.body)); const x = resp[Math.min(i++, resp.length - 1)];
+    return { ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: JSON.stringify(x) }], usage: {} }) }; };
+  let body = null; const res = { setHeader() {}, status() { return this; }, json(b) { body = b; return this; }, end() {} };
+  await handler({ method: 'POST', headers: { 'x-forwarded-for': '10.3.0.' + Math.floor(Math.random() * 250) }, body: { image_base64: 'AAAA', media_type: 'image/jpeg' } }, res);
+  return { body, bodies };
+}
+r = await runNoHint([buena]);
+ok(r.bodies.length === 1 && !r.body.reconciliation.perfil_pais.usado, 'reglas del país: si la primera cuadra, no hay segunda lectura');
+r = await runNoHint([mala, buena]);
+ok(r.bodies.length === 2 && /País sugerido: AR/.test(r.bodies[1].system[0].text) && !/País sugerido: AR/.test(r.bodies[0].system[0].text), 'reglas del país: la segunda lectura lleva el país reconocido y la primera no');
+ok(r.body.reconciliation.perfil_pais.mejoro && Math.abs(suma(r.body) - 100) < 0.01, 'reglas del país: se adopta la segunda si deja la suma en el total');
+r = await runNoHint([mala, lect([it('A', 10)])]);
+ok(r.bodies.length === 2 && !r.body.reconciliation.perfil_pais.mejoro, 'reglas del país: si la segunda queda más lejos, se conserva la primera');
+delete process.env.OCR_PROFILE_RETRY;
+r = await runNoHint([mala]); ok(r.bodies.length === 1, 'sin OCR_PROFILE_RETRY no hay segunda lectura por país');
 
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de palancas de costo OK`);
 process.exit(fails ? 1 : 0);

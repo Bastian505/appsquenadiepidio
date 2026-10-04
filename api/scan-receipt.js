@@ -744,6 +744,31 @@ export default async function handler(req, res) {
     let normalizedBase = normalizeItems(parsed.items || [], currency);
     let recon          = reconcile(normalizedBase, parsed.total_referencia || 0, finalCountry);
 
+    // Reglas del país (OCR_PROFILE_RETRY=1, apagada por defecto): la primera lectura de una boleta nueva no sabe de qué país es (la app no manda
+    // `country_hint`), así que no lleva las reglas del país. Si la suma no cuadra y el lector reconoció el país, se vuelve a leer UNA vez con
+    // esas reglas (cuesta una llamada extra solo en ~1 de cada 10 boletas). Se adopta si deja la suma más cerca del total.
+    const perfil = { usado:false, mejoro:false, pais:null };
+    if (process.env.OCR_PROFILE_RETRY === '1' && !country_hint && !is_confirmation && recon.total > 0 && !recon.auto_fixed
+        && COUNTRY_RULES[finalCountry] && Date.now() - startMs < 25000) {
+      const tolP = new Set(DC_CURRENCIES.noDecimalCodes).has(currency) ? 1 : Math.max(0.05, (recon.total || 0) * 0.0015);
+      if (Math.abs(recon.diff) > tolP) {
+        perfil.usado = true; perfil.pais = finalCountry;
+        try {
+          const sys2 = buildV5Prompt(finalCountry, process.env.OCR_PROMPT_LAYOUT === 'split');
+          const raw2 = await callClaude(apiKey, image_base64, media_type, sys2, 'Extrae todos los ítems con sus precios de esta boleta.', model);
+          const p2 = parseJSON(raw2);
+          if (p2?.items?.length && !(p2.ok === false && p2.reason)) {
+            const nb2 = normalizeItems(p2.items, currency);
+            const total2 = p2.total_referencia || parsed.total_referencia || 0;
+            const r2 = reconcile(nb2, total2, finalCountry);
+            if (Math.abs(r2.diff) < Math.abs(recon.diff)) {
+              normalizedBase = nb2; recon = r2; parsed.items = p2.items; parsed.total_referencia = total2; perfil.mejoro = true;
+            }
+          }
+        } catch (e) { console.warn('Segunda lectura con reglas del país omitida:', e.message); }
+      }
+    }
+
     // Cascada (OCR_CASCADE_MODEL, apagada por defecto): se lee con el modelo barato y SOLO si la suma no cuadra con el total impreso
     // se vuelve a leer con el modelo más fuerte. Se adopta la segunda lectura si deja la suma más cerca del total.
     const cascade = { usado:false, mejoro:false };
@@ -879,7 +904,8 @@ export default async function handler(req, res) {
         user_action_required: recon.user_action_required || false,
         user_message:      recon.user_message || null,
         reintento:         reintento,
-        cascada:           cascade
+        cascada:           cascade,
+        perfil_pais:       perfil
       },
       warnings
     });
