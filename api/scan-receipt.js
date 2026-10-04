@@ -88,7 +88,9 @@ function detectCountry(text) {
 // ── CAPA 3: Prompt v5 universal (Opus 4.7 spec) ──────────────────────────────
 // Una sola función. Perfil del país inyectado como datos, no como prosa.
 // COUNTRY_RULES.format se usa como "hint opcional", no como espina dorsal.
-function buildV5Prompt(countryCode) {
+// parts=true (OCR_PROMPT_LAYOUT=split): devuelve { stable, context }. Las reglas, idénticas para todos los países, van primero y se
+// cachean una sola vez; lo que cambia por país va al final. Con el país al inicio hay una entrada de caché por país (48) y casi nunca se reutiliza.
+function buildV5Prompt(countryCode, parts = false) {
   const r = countryCode ? (COUNTRY_RULES[countryCode] || null) : null;
 
   const countryBlock = r ? `
@@ -101,7 +103,7 @@ Moneda esperada: detectar de la imagen
 Decimales en moneda: detectar de la imagen
 Hints específicos del país: ninguno`;
 
-  return `Eres un experto mundial en lectura de boletas de pago de cualquier país. Tu objetivo
+  const __prompt = `Eres un experto mundial en lectura de boletas de pago de cualquier país. Tu objetivo
 es extraer los ítems facturados con precisión, marcando tu nivel de confianza por
 cada ítem. NUNCA inventas datos: cuando algo es ilegible o ambiguo, lo marcas con
 confianza baja o rehúsas la boleta completa según los criterios definidos abajo.
@@ -109,7 +111,7 @@ confianza baja o rehúsas la boleta completa según los criterios definidos abaj
 ═══════════════════════════════════════════════════════════════════════════════
 CONTEXTO INYECTADO POR EL SISTEMA
 ═══════════════════════════════════════════════════════════════════════════════
-${countryBlock}
+${parts ? '(El contexto del sistema para esta boleta está al final de estas instrucciones.)' : countryBlock}
 
 Si este contexto llega vacío o con país UNKNOWN, debes detectar tú mismo todo.
 Si lo que ves en la imagen contradice el contexto (ej: contexto dice CL pero la
@@ -304,6 +306,7 @@ Escribe el JSON compacto en una sola línea, sin espacios ni saltos de línea de
 
 Caso refusal:
 {"ok":false,"reason":"illegible_image|not_a_receipt|unknown_currency","message":"Mensaje al usuario","candidates":[]}`;
+  return parts ? { stable: __prompt, context: 'CONTEXTO INYECTADO POR EL SISTEMA\n' + countryBlock } : __prompt;
 }
 
 // Alias para compatibilidad con código existente que llama buildAutoDetectPrompt
@@ -314,13 +317,38 @@ function buildGenericPrompt()     { return buildV5Prompt(null); }
 // ── CAPA 4: Llamada a Claude ──────────────────────────────────────────────────
 // Timeout 8s (Vercel hard limit = 10s; dejamos margen para parse + log Supabase)
 // Retry: 1 solo en errores transitorios 5xx. NUNCA en timeout.
+// Bloques del system prompt: una cadena (formato original) o { stable, context } (OCR_PROMPT_LAYOUT=split).
+// OCR_CACHE=0 apaga la caché: con poco tráfico escribir la caché (1,25x) cuesta más que no usarla; conviene desde ~2 lecturas por 5 minutos con el mismo prefijo.
+function systemBlocks(system) {
+  const cc = process.env.OCR_CACHE === '0' ? undefined : { type:'ephemeral' };
+  const mk = (text, cache) => (cache && cc) ? { type:'text', text, cache_control: cc } : { type:'text', text };
+  return typeof system === 'string' ? [mk(system, true)] : [mk(system.stable, true), mk(system.context, false)];
+}
+
+// Cuerpo de la petición. Los modelos 5.x no aceptan `temperature` y piden decidir cuánto "pensar":
+// para leer una boleta basta lo mínimo (Sonnet 5.5: `between_tools`; el esfuerzo se ajusta con OCR_EFFORT).
+function requestBody(model, system, imageBase64, mediaType, userText) {
+  const body = {
+    model, max_tokens: 3000, system: systemBlocks(system),
+    messages: [{ role:'user', content:[
+      { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
+      { type:'text', text:userText }
+    ]}]
+  };
+  if (/^claude-(sonnet|opus|fable|mythos)-5/.test(model)) {
+    if (model === 'claude-sonnet-5-5') {
+      if (process.env.OCR_THINKING !== 'adaptive') body.thinking = { type:'between_tools' };
+      body.output_config = { effort: process.env.OCR_EFFORT || 'high' };
+    }
+  } else body.temperature = 0;
+  return JSON.stringify(body);
+}
+
 async function callClaude(apiKey, imageBase64, mediaType, system, userText, model) {
   const controller = new AbortController();
   const timeoutId  = setTimeout(() => controller.abort(), 50000);
 
-  // El system prompt (reglas R1-R15 + perfil de país) es idéntico entre llamadas
-  // del mismo país: se marca como cacheable para pagar ~10% del input en hits.
-  const systemBlocks = [{ type:'text', text: system, cache_control:{ type:'ephemeral' } }];
+  const body = requestBody(model, system, imageBase64, mediaType, userText);
 
   let res;
   try {
@@ -332,16 +360,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
         'x-api-key':          apiKey,
         'anthropic-version':  '2023-06-01'
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 3000,
-        temperature: 0,
-        system: systemBlocks,
-        messages: [{ role:'user', content:[
-          { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
-          { type:'text', text:userText }
-        ]}]
-      })
+      body
     });
   } catch(e) {
     clearTimeout(timeoutId);
@@ -356,13 +375,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model, max_tokens: 3000, temperature: 0, system: systemBlocks,
-        messages: [{ role:'user', content:[
-          { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
-          { type:'text', text:userText }
-        ]}]
-      })
+      body
     });
   }
 
@@ -375,12 +388,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
       const res2 = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01' },
-        body: JSON.stringify({ model, max_tokens:3000, temperature:0, system: systemBlocks,
-          messages:[{ role:'user', content:[
-            { type:'image', source:{ type:'base64', media_type:mediaType, data:imageBase64 }},
-            { type:'text', text:userText }
-          ]}]
-        })
+        body
       });
       if(!res2.ok) {
         const e2 = await res2.json().catch(()=>({}));
@@ -651,7 +659,8 @@ export default async function handler(req, res) {
   try {
     // Una sola llamada. Siempre Sonnet. Prompt v5 con perfil del país inyectado.
     const model  = selectModel();
-    const system = buildV5Prompt(country_hint || null);
+    const system = buildV5Prompt(country_hint || null, process.env.OCR_PROMPT_LAYOUT === 'split');
+    let modelUsed = model;
     let raw;
 
     try {
@@ -716,6 +725,29 @@ export default async function handler(req, res) {
     // Normalizar ítems (incluye auto-created si reconcile los agrega)
     let normalizedBase = normalizeItems(parsed.items || [], currency);
     let recon          = reconcile(normalizedBase, parsed.total_referencia || 0, finalCountry);
+
+    // Cascada (OCR_CASCADE_MODEL, apagada por defecto): se lee con el modelo barato y SOLO si la suma no cuadra con el total impreso
+    // se vuelve a leer con el modelo más fuerte. Se adopta la segunda lectura si deja la suma más cerca del total.
+    const cascade = { usado:false, mejoro:false };
+    const cascadeModel = (process.env.OCR_CASCADE_MODEL || '').trim();
+    const tolNoDec = new Set(DC_CURRENCIES.noDecimalCodes).has(currency) ? 1 : Math.max(0.05, (recon.total || 0) * 0.0015);
+    if (cascadeModel && cascadeModel !== model && !is_confirmation && recon.total > 0 && !recon.auto_fixed
+        && Math.abs(recon.diff) > tolNoDec && Date.now() - startMs < 25000) {
+      cascade.usado = true;
+      try {
+        const raw2 = await callClaude(apiKey, image_base64, media_type, system, 'Extrae todos los ítems con sus precios de esta boleta.', cascadeModel);
+        const p2 = parseJSON(raw2);
+        if (p2?.items?.length && !(p2.ok === false && p2.reason)) {
+          const nb2 = normalizeItems(p2.items, currency);
+          const total2 = p2.total_referencia || parsed.total_referencia || 0;
+          const r2 = reconcile(nb2, total2, finalCountry);
+          if (Math.abs(r2.diff) < Math.abs(recon.diff)) {
+            normalizedBase = nb2; recon = r2; parsed.items = p2.items; parsed.total_referencia = total2;
+            cascade.mejoro = true; modelUsed = cascadeModel;
+          }
+        }
+      } catch (e) { console.warn('Cascada omitida:', e.message); }
+    }
 
     // Segunda lectura SOLO cuando la suma no cuadra con el total impreso (≈ 1 de cada 10 boletas): se le dice al
     // modelo cuánto falta y qué suele causarlo (importe corrido de fila en fotos inclinadas, fila repetida omitida).
@@ -791,7 +823,7 @@ export default async function handler(req, res) {
     logToSupabase({
       country_hint, country_final: finalCountry,
       pos_detected: parsed.pos_detected || 'unknown',
-      moneda: currency, model_used: model,
+      moneda: currency, model_used: modelUsed,
       prompt_version: PROMPT_VERSION,
       total_reported: parsed.total_referencia || 0,
       total_computed: Math.round(totalFinal * 100) / 100,
@@ -816,7 +848,7 @@ export default async function handler(req, res) {
       total:               Math.round(totalFinal * 100) / 100,
       total_referencia:    parsed.total_referencia ?? null,
       confianza_global:    Math.round(confianzaGlobal * 100) / 100,
-      model_used:          model,
+      model_used:          modelUsed,
       prompt_version:      PROMPT_VERSION,
       reconciliation: {
         ok:                recon.ok,
@@ -828,7 +860,8 @@ export default async function handler(req, res) {
         auto_fix_type:     recon.auto_fix_type || null,
         user_action_required: recon.user_action_required || false,
         user_message:      recon.user_message || null,
-        reintento:         reintento
+        reintento:         reintento,
+        cascada:           cascade
       },
       warnings
     });
