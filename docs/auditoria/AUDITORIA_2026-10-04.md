@@ -151,6 +151,7 @@ Lo mejor que tiene: pruebas automáticas serias (SQL con 56 comprobaciones de se
 ### Salida al mercado
 
 **M-1 · Alto · Diferenciación y mercado sin validar.** 💭 / ❓
+- **Actualización (competencia investigada, ver `COMPETENCIA_2026-10-04.md`):** hay decenas de apps que leen boletas (Tab, Splitwise Pro, Checkify, Divvy, SplitBill AI…), competidores en español casi idénticos (divídelo, Splitea) y, desde el 14 de septiembre de 2026, **Apple Wallet en iOS 27** lee boletas y reparte ítems. Leer boletas no es una ventaja; la diferenciación hay que apoyarla en boletas de cualquier país medidas, sin registro y cobro, y comprobarla con una prueba contra 3 competidores.
 - Lo que sostiene la propuesta es "foto → todos marcan → se cobra". **Corrección a lo que dije antes:** afirmé que otras apps exigen escribir cada gasto a mano; **no verifiqué los competidores**, y algunas ya leen boletas. La ventaja a defender es leer boletas de cualquier país con reglas locales y el flujo en vivo con cobro, y eso hay que comprobarlo contra alternativas reales.
 - **Recomendación:** probar 3 apps competidoras con las mismas 5 boletas, anotar diferencias, y escribir en una línea por qué alguien elegiría esta.
 
