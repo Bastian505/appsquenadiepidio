@@ -1210,6 +1210,256 @@
       ],
       "total_referencia": 461400,
       "notas": "Hallazgo de producción v2: foto curva; la columna de importes quedó desfasada una fila al final: leyó Mendel 13.000, Panettone 2x20.750, Café 4x7.750 (suma 454.800, faltan 6.600). Correcto: la columna es el IMPORTE de la línea (Mendel 41.500, Panettone x2 31.000, Café x4 19.600). Subtotal = Total = 461.400."
+    },
+    {
+      "id": "US/la-ventana-miami",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "La Ventana Restaurant (Miami Beach)",
+      "items": [
+        {
+          "nombre": "Bandeja Paisa",
+          "precio_unitario": 17.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken - Pollo champiñones",
+          "precio_unitario": 15.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bread/pan",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bottle of water",
+          "precio_unitario": 1.99,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Service Charge (18%)",
+          "precio_unitario": 7.11,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 3.55,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 50.14,
+      "notas": "Foto arrugada. 'Pollo $0.00' es un modificador sin precio: no es ítem. El Service Charge (18 %) ya viene incluido en el Total y se lista como ítem. Hallazgo de producción v2: la app leyó ítems + servicio pero omitió 'Tax 3.55' (faltaban $3,55) y no lo auto-agregó porque ya había un ítem de servicio."
+    },
+    {
+      "id": "US/la-pausa-mia-airport",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "La Pausa (Areas USA MIA, aeropuerto de Miami)",
+      "items": [
+        {
+          "nombre": "LG SAM ADAMS",
+          "precio_unitario": 11.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SGL MOSCOW MULE",
+          "precio_unitario": 14.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FISH&CHIPS",
+          "precio_unitario": 20.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BLT CHICKEN SNDW",
+          "precio_unitario": 14.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SYCMLN MT GL",
+          "precio_unitario": 10.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "18% Gratuity",
+          "precio_unitario": 12.78,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 5.68,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 89.44,
+      "notas": "'18% SERVICE CHARGE INCLUDED': la gratuity 12.78 va como ítem y el Tax 5.68 también; Total Due 89.44. Hallazgo de producción v2: la app omitió el Tax (faltaban $5,68) y no lo auto-agregó porque ya había un ítem de propina. El círculo azul y la firma a mano no son parte de la boleta."
+    },
+    {
+      "id": "US/johns-pizzeria-nyc",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "John's Pizzeria (Times Square, NYC)",
+      "items": [
+        {
+          "nombre": "Chx Milan Sand",
+          "precio_unitario": 16.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sm Traditional Grilled Chx",
+          "precio_unitario": 21.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lg Margherita Mushrooms",
+          "precio_unitario": 25.25,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lg Hawaiian",
+          "precio_unitario": 24.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pint Soda",
+          "precio_unitario": 3.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 8.54,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 104.8,
+      "notas": "Tax 8.54 (8,87 % de 96.25) y Total Due 104.80 (la suma da 104.79: un centavo de redondeo de la boleta). 'GRATUITY IS NOT INCLUDED' + gratuities sugeridas (15/18/20 %, tachadas a mano): no son ítems ni parte del total. Hallazgo de producción v2: la app omitió el Tax (faltaban $8,55): 8,2 % del total, fuera de la ventana de auto-corrección 6–8 %."
+    },
+    {
+      "id": "US/la-ventana-miami-captura",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "La Ventana Restaurant (Miami Beach)",
+      "items": [
+        {
+          "nombre": "Bandeja Paisa",
+          "precio_unitario": 17.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Chicken - Pollo champiñones",
+          "precio_unitario": 15.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bread/pan",
+          "precio_unitario": 2.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Bottle of water",
+          "precio_unitario": 1.99,
+          "cantidad": 2
+        },
+        {
+          "nombre": "Service Charge (18%)",
+          "precio_unitario": 7.11,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 3.55,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 50.14,
+      "notas": "MISMA boleta que US/la-ventana-miami pero como la subió el usuario en producción: captura completa del teléfono (con la interfaz del navegador y miniaturas), reducida a 1600 px como hace la app. Foto arrugada. 'Pollo $0.00' es un modificador sin precio: no es ítem. El Service Charge (18 %) ya viene incluido en el Total y se lista como ítem. Hallazgo de producción v2: la app leyó ítems + servicio pero omitió 'Tax 3.55' (faltaban $3,55) y no lo auto-agregó porque ya había un ítem de servicio."
+    },
+    {
+      "id": "US/la-pausa-mia-airport-captura",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "La Pausa (Areas USA MIA, aeropuerto de Miami)",
+      "items": [
+        {
+          "nombre": "LG SAM ADAMS",
+          "precio_unitario": 11.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SGL MOSCOW MULE",
+          "precio_unitario": 14.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "FISH&CHIPS",
+          "precio_unitario": 20.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "BLT CHICKEN SNDW",
+          "precio_unitario": 14.99,
+          "cantidad": 1
+        },
+        {
+          "nombre": "SYCMLN MT GL",
+          "precio_unitario": 10.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "18% Gratuity",
+          "precio_unitario": 12.78,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 5.68,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 89.44,
+      "notas": "MISMA boleta que US/la-pausa-mia-airport pero como la subió el usuario en producción: captura completa del teléfono (con la interfaz del navegador y miniaturas), reducida a 1600 px como hace la app. '18% SERVICE CHARGE INCLUDED': la gratuity 12.78 va como ítem y el Tax 5.68 también; Total Due 89.44. Hallazgo de producción v2: la app omitió el Tax (faltaban $5,68) y no lo auto-agregó porque ya había un ítem de propina. El círculo azul y la firma a mano no son parte de la boleta."
+    },
+    {
+      "id": "US/johns-pizzeria-nyc-captura",
+      "pais": "US",
+      "moneda": "USD",
+      "restaurante": "John's Pizzeria (Times Square, NYC)",
+      "items": [
+        {
+          "nombre": "Chx Milan Sand",
+          "precio_unitario": 16.0,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Sm Traditional Grilled Chx",
+          "precio_unitario": 21.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lg Margherita Mushrooms",
+          "precio_unitario": 25.25,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Lg Hawaiian",
+          "precio_unitario": 24.5,
+          "cantidad": 1
+        },
+        {
+          "nombre": "Pint Soda",
+          "precio_unitario": 3.0,
+          "cantidad": 3
+        },
+        {
+          "nombre": "Tax",
+          "precio_unitario": 8.54,
+          "cantidad": 1
+        }
+      ],
+      "total_referencia": 104.8,
+      "notas": "MISMA boleta que US/johns-pizzeria-nyc pero como la subió el usuario en producción: captura completa del teléfono (con la interfaz del navegador y miniaturas), reducida a 1600 px como hace la app. Tax 8.54 (8,87 % de 96.25) y Total Due 104.80 (la suma da 104.79: un centavo de redondeo de la boleta). 'GRATUITY IS NOT INCLUDED' + gratuities sugeridas (15/18/20 %, tachadas a mano): no son ítems ni parte del total. Hallazgo de producción v2: la app omitió el Tax (faltaban $8,55): 8,2 % del total, fuera de la ventana de auto-corrección 6–8 %."
     }
   ]
 }

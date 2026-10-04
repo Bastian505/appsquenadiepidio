@@ -43,6 +43,13 @@ ok(!reconcile([it('platos', 100), it('TPS', 5), it('TVQ', 9.975)], 129.95, 'CA')
 // Si "Taxes" ya está listado como ítem no se duplica
 const dup = reconcile([it('platos', 49200), it('Service Charge', 4920), it('Taxes', 11998.3)], 66118.3, 'LK');
 ok(!dup.auto_fixed && dup.ok, 'LK: con Taxes ya listado no se agrega otro impuesto');
+// EE. UU.: impuesto de venta omitido, también cuando ya hay propina o servicio listados (3 boletas reales de producción)
+ok(near(fixed(reconcile([it('Chx Milan Sand', 16), it('Sm Grilled Chx', 21.5), it('Lg Margherita', 25.25), it('Lg Hawaiian', 24.5), it('Pint Soda', 3, 3)], 104.8, 'US')), 8.55), 'US Nueva York: Tax 8,55 (8,2 % del total: fuera de la ventana vieja de 6–8 %)');
+ok(near(fixed(reconcile([it('LG SAM ADAMS', 11), it('SGL MOSCOW MULE', 14), it('FISH&CHIPS', 20.99), it('BLT CHICKEN', 14.99), it('SYCMLN', 10), it('18% Gratuity', 12.78)], 89.44, 'US')), 5.68), 'US Miami aeropuerto: Tax 5,68 con la gratuity ya listada');
+ok(near(fixed(reconcile([it('Bandeja Paisa', 17.5), it('Chicken Pollo', 15.5), it('Bread', 2.5), it('Water', 1.99, 2), it('Service Charge (18%)', 7.11)], 50.14, 'US')), 3.55), 'US Miami Beach: Tax 3,55 con el Service Charge ya listado');
+ok(!reconcile([it('platos', 96.25), it('Tax', 8.54)], 104.8, 'US').auto_fixed, 'US: con Tax ya listado no se agrega otro');
+ok(reconcile([it('platos', 50)], 62, 'US').auto_fix_item?.nombre !== 'Impuesto', 'US: 24 % de diferencia no es un impuesto de venta (la lógica de propina existente sigue igual)');
+ok(!reconcile([it('platos', 100)], 102, 'US').auto_fixed, 'US: 2 % de diferencia (redondeo/propina chica) → no inventa impuesto');
 // Otros países: nunca se inventa un impuesto con la misma diferencia
 for (const c of ['ES', 'CL', 'DE', 'XX']) ok(!reconcile([it('platos', 11723)], 12309.15, c).auto_fixed, `${c}: no inventa impuesto con 5% de diferencia`);
 // Austria: ítems de más (suplemento contado dos veces) → avisa, nunca "arregla"
