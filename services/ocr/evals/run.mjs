@@ -176,7 +176,7 @@ async function viaHandler(fx, imgPath) {
   let status = 0, body = null;
   const res = { setHeader() {}, status(c) { status = c; return this; }, json(b) { body = b; return this; }, end() {} };
   await _handler({ method: 'POST', headers: { 'x-forwarded-for': '10.1.' + Math.floor(++_ipSeq / 250) + '.' + (_ipSeq % 250) },
-    body: { image_base64: buf.toString('base64'), media_type: mediaType, country_hint: fx.pais } }, res);
+    body: { image_base64: buf.toString('base64'), media_type: mediaType, country_hint: process.env.EVAL_NOHINT === '1' ? undefined : fx.pais } }, res);   // EVAL_NOHINT=1: como la primera lectura en producción, sin país
   if (status !== 200 || !body || body.ok === false) return { ok: false, reason: (body && (body.reason || body.code || body.error)) || ('HTTP ' + status) };
   modelsUsed[body.model_used || '?'] = (modelsUsed[body.model_used || '?'] || 0) + 1;
   return body;

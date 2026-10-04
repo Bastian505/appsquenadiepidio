@@ -26,7 +26,7 @@ on:
         required: false
         default: "false"
       extra_env:
-        description: "Variables extra del lector, separadas por coma (ej. OCR_CACHE=0,OCR_PROMPT_LAYOUT=split,OCR_CASCADE_MODEL=claude-sonnet-5-5,OCR_EFFORT=low)"
+        description: "Variables extra del lector, separadas por coma (ej. OCR_CACHE=0,OCR_CASCADE_MODEL=claude-sonnet-5-5,EVAL_NOHINT=1)"
         required: false
         default: ""
 
@@ -52,7 +52,7 @@ jobs:
           set -o pipefail
           if [ -n "$EXTRA_ENV" ]; then
             IFS=',' read -ra KV <<< "$EXTRA_ENV"
-            for kv in "${KV[@]}"; do k="${kv%%=*}"; v="${kv#*=}"; case "$k" in OCR_*) export "$k=$v" ;; esac; done
+            for kv in "${KV[@]}"; do k="${kv%%=*}"; v="${kv#*=}"; case "$k" in OCR_*|EVAL_*) export "$k=$v" ;; esac; done
           fi
           ARGS="--model=$MODEL"
           if [ -n "$COUNTRY" ]; then ARGS="$ARGS --country=$COUNTRY"; fi
