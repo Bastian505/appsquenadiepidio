@@ -209,10 +209,18 @@
     return sb.rpc('dc_set_paid', { p_member: memberId, p_paid: !!paid }).then(function (r) { return r.error ? { error: r.error } : {}; });
   }
 
+  // Quiénes ya pagaron en una cuenta (para "Cobros pendientes"). Devuelve [] si no hay conexión o permiso.
+  function fetchMembers(billId) {
+    return init().then(function (c) {
+      if (!c || !billId) return [];
+      return c.from('dc_bill_members').select('id,name,paid_at').eq('bill_id', billId).then(function (r) { return r.error ? [] : (r.data || []); });
+    }).catch(function () { return []; });
+  }
+
   root.DC_SYNC = {
     ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
-    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid,
+    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid, fetchMembers: fetchMembers,
     get state() { return state; },
     // Para pruebas: permite reemplazar el cliente de Supabase por uno falso.
     _setClient: function (c) { sb = c; }
