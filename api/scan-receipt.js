@@ -436,6 +436,7 @@ function parseJSON(raw) {
 const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
+const DEPOSIT_COUNTRIES = new Set(['DE','AT','NL']);
 // Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (PK 5-15%, MY 6-8%, NG 7,5%, LK ~22%)
 // Canadá: impuestos por provincia (sobre el precio sin impuesto): GST 5 % (AB/TERR.), SK 11 %, BC y MB 12 %,
 // HST Ontario 13 %, Quebec TPS 5 % + TVQ 9,975 % = 14,975 %, HST Atlántico 15 %.
@@ -467,6 +468,41 @@ function reconcile(items, totalReported, countryCode) {
       return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
         auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
         user_message:`Detecté impuestos del ${(known*100).toFixed(known === 0.14975 ? 3 : 0).replace('.', ',')}% (~${monto}). Revísalo antes de dividir.` };
+    }
+  }
+
+  // Depósito de envases (DE/AT/NL): si la suma SUPERA el total, hay depósitos (Pfand) positivos y ninguna devolución leída, lo más
+  // probable es que la IA omitió la devolución (Pfandrückgabe, línea negativa). Se agrega como ítem negativo por la diferencia exacta.
+  // (Caso real: Lidl Berlín; la IA ignora las dos devoluciones aun con la regla del país en el prompt.)
+  if (DEPOSIT_COUNTRIES.has(countryCode) && diff < 0 && sum > 0) {
+    const esDeposito = it => /pfand|leergut|statiegeld|deposit/i.test(it.nombre||'');
+    const depositos = items.filter(it => esDeposito(it) && it.precio_unitario > 0)
+      .reduce((a,it) => a+it.precio_unitario*(it.cantidad||1), 0);
+    const hayDevolucion = items.some(it => it.precio_unitario < 0 || (it.cantidad||1) < 0);
+    const monto = Math.round(-diff * 100) / 100;
+    if (!hayDevolucion && depositos > 0 && monto <= depositos + 0.005) {
+      const fix = { nombre:'Pfandrückgabe', precio_unitario:-monto, cantidad:1, auto_created:true, auto_fix_type:'deposit_refund',
+        auto_fix_evidence:'La suma supera el total y hay depósitos de envases sin devolución leída', confianza:0.50 };
+      return { ok:true, sum:Math.round((sum-monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'deposit_refund', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté una devolución de envases (Pfandrückgabe) de ${monto}. Revísala antes de dividir.` };
+    }
+  }
+
+  // Tailandia: el VAT 7 % se imprime aparte, sobre la consumición (sin el cargo de servicio). Si falta y la diferencia calza con el 7 %
+  // de la consumición, es ese VAT. (Caso real: Three Monkeys; la IA leyó el servicio pero omitió la línea "VAT 7%".)
+  if (countryCode === 'TH' && diff > 0 && sum > 0 && ratio <= 0.1) {
+    const yaHayVat = items.some(it => /vat|ภาษี|tax|impuesto/i.test(it.nombre||''));
+    const consumo = items.filter(it => !/service|ค่าบริการ|servicio|propina|tip/i.test(it.nombre||''))
+      .reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
+    const rate = consumo > 0 ? diff / consumo : 0;
+    if (!yaHayVat && rate >= 0.066 && rate <= 0.074) {
+      const monto = Math.round(diff * 100) / 100;
+      const fix = { nombre:'VAT 7%', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
+        auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre la consumición = VAT 7% de Tailandia`, confianza:0.50 };
+      return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté un VAT del 7% (~${monto}). Revísalo antes de dividir.` };
     }
   }
 
@@ -918,10 +954,13 @@ export default async function handler(req, res) {
 
 // ── Helper: normalizar ítem auto-creado ──────────────────────────────────────
 function normalizeAutoFix(fix, currency) {
+  // normalizePrice descarta los negativos (los lleva a 0): una línea que resta (devolución) se representa como cantidad -1 con precio positivo,
+  // igual que las anulaciones leídas de la boleta.
+  const resta = fix.precio_unitario < 0;
   return {
     nombre:           fix.nombre,
-    precio_unitario:  normalizePrice(fix.precio_unitario, currency),
-    cantidad:         1,
+    precio_unitario:  normalizePrice(resta ? -fix.precio_unitario : fix.precio_unitario, currency),
+    cantidad:         resta ? -1 : 1,
     confianza:        0.50,
     evidencia:        fix.auto_fix_evidence || 'auto-calculado por reconciliación',
     auto_created:     true,
