@@ -284,6 +284,12 @@ await late.waitForSelector('text=Marca lo tuyo', { timeout: 8000 });
 ok(db.members.length === 3 && db.members[2].name === 'Invitada', 'quien no está en la lista entra escribiendo su nombre');
 await host.waitForFunction(() => /Conectados: Rodrigo, Tiano, Invitada/.test(document.body.innerText) || /Invitada/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve también a quien escribió su nombre'), () => ok(false, 'el anfitrión no ve a la invitada'));
 
+// Cobros pendientes con una cuenta compartida: queda anotada y el inicio se entera de quién pagó allá.
+const led = await host.evaluate(() => JSON.parse(localStorage.getItem('dc_ledger') || '[]'));
+ok(led.length === 1 && led[0].billId === 'b1' && led[0].debts.some(d => d.name === 'Tiano' && !d.paid), 'la cuenta compartida queda en "cobros pendientes" con Tiano por cobrar');
+db.members.find(m => m.id === 'm-user-guest').paid_at = new Date().toISOString();   // Tiano paga desde su teléfono
+await host.evaluate(() => localStorage.removeItem('dc_v2_draft')); await host.reload(); await host.waitForTimeout(2000);
+ok(!/Cobros pendientes/.test(await host.innerText('body')), 'el inicio se entera de que Tiano ya pagó en la cuenta compartida y lo saca de la lista');
 ok(errA.length === 0, 'anfitrión sin errores JS ' + errA.slice(0, 2).join('|'));
 ok(errB.length === 0, 'invitado sin errores JS ' + errB.slice(0, 2).join('|'));
 
