@@ -106,6 +106,14 @@ async function open(scan) {
   ok(await page.evaluate(() => localStorage.getItem('dc_pay_info')) === 'Alias: yo.pago', 'los datos para transferir se recuerdan en este teléfono');
   // Una cuenta nueva ya trae mis datos para transferir (no hay que volver a escribirlos).
   await page.evaluate(() => localStorage.removeItem('dc_v2_draft')); await page.reload(); await page.waitForTimeout(500);
+  // Cobros pendientes: la cuenta anterior queda en la pantalla de inicio con lo que aún me deben.
+  ok(/Cobros pendientes/.test(await page.innerText('body')), 'el inicio muestra "Cobros pendientes" de la cuenta anterior');
+  ok(await page.locator('[data-action=ledger-remind]').count() === 1, 'solo aparece quien aún no pagó (el otro ya estaba marcado)');
+  const openedL = await page.evaluate(() => { let u = ''; window.open = x => { u = x; }; document.querySelector('[data-action=ledger-remind]').click(); return u; });
+  const msgL = decodeURIComponent(openedL.split('text=')[1] || '');
+  ok(/tu parte es/.test(msgL) && /Alias: yo\.pago/.test(msgL), 'Recordar desde el inicio arma el mensaje con el monto y los datos para transferir');
+  await page.click('[data-action=ledger-paid]');
+  ok(!/Cobros pendientes/.test(await page.innerText('body')), 'al marcar "Ya pagó" desaparece de la lista');
   await page.click('text=Ingresar ítems a mano');
   await page.click('text=Agregar personas').catch(() => {});
   for (const nm of ['Ana', 'Beto']) { await page.fill('input[name=name]', nm); await page.press('input[name=name]', 'Enter'); }

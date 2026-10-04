@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.e';
+  var BUILD = '2026-10-04.f';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -65,6 +65,7 @@
   // ── pantallas ──────────────────────────────────────────────────────────────
   function render() {
     var app = document.getElementById('app');
+    if (state.step === 'summary') recordLedger(); else if (state.step === 'home') ledgerRefresh();
     var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary, join: join, share: shareScreen }[state.step] || home)();
     app.innerHTML = html;
     var ph = document.getElementById('photo');
@@ -88,6 +89,75 @@
   }
   function footer(inner) { return '<div class="footer"><div class="inner">' + inner + '</div></div>'; }
 
+  // ── Cobros pendientes: lo que me deben de cuentas anteriores, guardado en este teléfono ──────────────
+  var LEDGER_KEY = 'dc_ledger', LEDGER_DAYS = 45;
+  function ledgerLoad() {
+    try { var a = JSON.parse(localStorage.getItem(LEDGER_KEY)); if (!Array.isArray(a)) return []; var lim = Date.now() - LEDGER_DAYS * 864e5; return a.filter(function (e) { return e && e.ts > lim && Array.isArray(e.debts); }); }
+    catch (e) { return []; }
+  }
+  function ledgerSave(a) { try { localStorage.setItem(LEDGER_KEY, JSON.stringify(a.slice(0, 30))); } catch (e) {} }
+  function recordLedger() {
+    if (state.step !== 'summary' || state.people.length < 2 || (state.share && state.share.role === 'guest')) return;
+    var r = split(), payer = person(payerPid()); if (!payer) return;
+    var tiny = C.decimals(state.currency) ? 0.005 : 0.5;
+    var debts = r.perPerson.filter(function (p) { return p.id !== payer.id && p.amount > tiny; }).map(function (p) {
+      var q = person(p.id); return { name: p.name, amount: Math.round(p.amount * 100) / 100, paid: !!(q && q.paid) };
+    });
+    if (!debts.length) return;
+    if (!state.billKey) { state.billKey = state.share && state.share.billId ? String(state.share.billId) : 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); save(); }
+    var all = ledgerLoad(), prev = all.filter(function (e) { return e.key === state.billKey; })[0];
+    var entry = { key: state.billKey, ts: prev ? prev.ts : Date.now(), restaurant: state.restaurant || '', currency: state.currency, total: r.grandTotal, payer: payer.name,
+      payInfo: state.payInfo || '', billId: state.share && state.share.billId ? state.share.billId : null, debts: debts };
+    // conserva el vínculo con la cuenta compartida (mid) de cada persona
+    if (prev) entry.debts.forEach(function (d) { var o = prev.debts.filter(function (x) { return x.name === d.name; })[0]; if (o && o.mid) d.mid = o.mid; });
+    var same = prev && JSON.stringify(Object.assign({}, prev, { ts: 0 })) === JSON.stringify(Object.assign({}, entry, { ts: 0 }));
+    if (same) return;
+    ledgerSave([entry].concat(all.filter(function (e) { return e.key !== state.billKey; })));
+  }
+  function ledgerRefresh() {
+    if (ui.ledgerRefreshed || !SYNC || !SYNC.fetchMembers) return; ui.ledgerRefreshed = true;
+    var all = ledgerLoad(), shared = all.filter(function (e) { return e.billId && e.debts.some(function (d) { return !d.paid; }); });
+    if (!shared.length) return;
+    Promise.all(shared.map(function (e) { return SYNC.fetchMembers(e.billId).then(function (ms) { return { e: e, ms: ms }; }); })).then(function (rs) {
+      var changed = false, now = ledgerLoad();
+      rs.forEach(function (x) {
+        var cur = now.filter(function (e) { return e.key === x.e.key; })[0]; if (!cur) return;
+        cur.debts.forEach(function (d) {
+          var m = x.ms.filter(function (mm) { return String(mm.name).toLowerCase() === String(d.name).toLowerCase(); })[0];
+          if (m) { if (d.mid !== m.id) { d.mid = m.id; changed = true; } if (m.paid_at && !d.paid) { d.paid = true; changed = true; } }
+        });
+      });
+      if (changed) { ledgerSave(now); if (state.step === 'home') render(); }
+    });
+  }
+  function pendingCard() {
+    var list = ledgerLoad().filter(function (e) { return e.debts.some(function (d) { return !d.paid; }); });
+    if (!list.length) return '';
+    return '<div class="card" style="margin-top:14px"><b>Cobros pendientes</b><p class="small" style="margin:4px 0 0">Lo que aún te deben de cuentas anteriores.</p>' + list.map(function (e) {
+      var date = new Date(e.ts).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
+      return '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><div class="small">' + esc(e.restaurant || 'Cuenta') + ' · ' + esc(date) + '</div>' +
+        e.debts.map(function (d, i) {
+          if (d.paid) return '';
+          return '<div class="row" style="padding:6px 0;flex-wrap:wrap;gap:6px"><span style="flex:1;min-width:120px">' + esc(d.name) + ' <span class="small num">' + money(d.amount, e.currency) + '</span></span>' +
+            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">💬 Recordar</button>' +
+            '<button class="btn sm" data-action="ledger-paid" data-key="' + esc(e.key) + '" data-i="' + i + '">Ya pagó</button></div>';
+        }).join('') + '</div>';
+    }).join('') + '</div>';
+  }
+  function ledgerRemind(key, i) {
+    var e = ledgerLoad().filter(function (x) { return x.key === key; })[0], d = e && e.debts[i]; if (!d) return;
+    var info = e.payInfo || savedPayInfo();
+    var lines = ['Hola ' + d.name + '! 👋 La cuenta' + (e.restaurant ? ' de ' + e.restaurant : '') + ' fue ' + money(e.total, e.currency) + ' y tu parte es ' + money(d.amount, e.currency) + '.'];
+    if (info) lines.push('', 'Para transferir a ' + e.payer + ':', info);
+    lines.push('', '¡Gracias!');
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener');
+  }
+  function ledgerPaid(key, i) {
+    var all = ledgerLoad(), e = all.filter(function (x) { return x.key === key; })[0], d = e && e.debts[i]; if (!d) return;
+    d.paid = true; ledgerSave(all); render();
+    if (SYNC && d.mid) SYNC.setPaid(d.mid, true);   // si era una cuenta compartida, también se avisa allá (si sigue abierta)
+  }
+
   function home() {
     return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
       '<section class="hero"><span class="badge accent">Boletas de más de 40 países</span>' +
@@ -95,6 +165,7 @@
       '<label class="cta-scan" for="photo"><span class="ic" aria-hidden="true">📷</span><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></label>' +
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
+      pendingCard() +
       (ui.error ? '<div class="banner danger" style="margin-top:12px">' + esc(ui.error) + '</div>' : '') +
       ((trace.length && (debugOn() || traceFailed())) ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
       (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
@@ -487,6 +558,8 @@
       case 'voice-discard': ui.voice.preview = null; render(); break;
       case 'voice-undo': voiceUndoLast(); break;
       case 'remind': remindPay(pid); break;
+      case 'ledger-remind': ledgerRemind(el.dataset.key, Number(el.dataset.i)); break;
+      case 'ledger-paid': ledgerPaid(el.dataset.key, Number(el.dataset.i)); break;
       case 'copy-pay': copyText(state.payInfo || ''); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
@@ -496,7 +569,7 @@
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
     if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
-    else if (a === 'pay-info') { ui.payInfoTouched = true; state.payInfo = String(el.value || '').trim().slice(0, 400); rememberPayInfo(state.payInfo); save(); }
+    else if (a === 'pay-info') { ui.payInfoTouched = true; state.payInfo = String(el.value || '').trim().slice(0, 400); rememberPayInfo(state.payInfo); save(); recordLedger(); }
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
