@@ -51,11 +51,18 @@ window.supabase = { createClient: () => ({
     q.then = (res, rej) => run().then(rows => ({ data: rows, error: null })).then(res, rej);
     return q;
   },
-  channel: () => ({ on() { return this; }, subscribe() { return this; } }),
+  channel: (name) => { const hs = []; const ch = {
+    on(type, cfg, cb) { if (type === 'broadcast') hs.push([cfg.event, cb]); return ch; },
+    subscribe(cb) { window.__bcHandlers = window.__bcHandlers || {}; window.__bcHandlers[name] = hs; setTimeout(() => cb && cb('SUBSCRIBED'), 0); return ch; },
+    send(m) { window.__bcSend(name, m.event); return Promise.resolve('ok'); } }; return ch; },
   removeChannel: () => {}
 }) };`;
 
+const registry = [];
 async function wire(page, uid) {
+  registry.push(page);
+  await page.exposeFunction('__bcSend', (name, ev) => { registry.filter(p => p !== page).forEach(p => p.evaluate(([n, e]) => { ((window.__bcHandlers || {})[n] || []).forEach(([evn, cb]) => { if (evn === e) cb({}); }); }, [name, ev]).catch(() => {})); });
+  await page.addInitScript('window.__DC_POLL_MS = 60000;');   // sin consulta periódica: lo que se vea rápido es por el tiempo real
   await page.addInitScript(`window.__uid = ${JSON.stringify(uid)};`);
   await page.exposeFunction('__rpc', async (fn, args) => {
     if (fn === 'dc_create_bill') {
@@ -186,9 +193,11 @@ ok(await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-a
 await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="-1"]').click();
 await guest.waitForTimeout(400);
 db.claims.push({ bill_id: 'b1', member_id: 'm-user-host', item_id: '2', units: 1 });   // el anfitrión se queda con la otra
+await guest.evaluate(() => window.dispatchEvent(new Event('focus')));   // el cambio lo hace la prueba directo en la base: se simula que el teléfono vuelve a primer plano
 await guest.waitForFunction(() => /También: Rodrigo \(1\)/.test(document.body.innerText), null, { timeout: 9000 }).catch(() => {});
 ok(await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').isDisabled(), 'si otro ya tomó la otra unidad, el + queda desactivado (no se pasan)');
 db.claims.splice(db.claims.findIndex(c => c.member_id === 'm-user-host' && c.item_id === '2'), 1);
+await guest.evaluate(() => window.dispatchEvent(new Event('focus')));
 await guest.waitForFunction(() => /Nadie más lo marcó/.test([...document.querySelectorAll('.assign')].find(x => /Cerveza/.test(x.innerText)).innerText), null, { timeout: 9000 }).catch(() => {});
 await guest.locator('.assign', { hasText: 'Cerveza' }).locator('button[data-action=claim-unit][data-d="1"]').click();
 await guest.waitForTimeout(500);
@@ -227,6 +236,11 @@ await guest.waitForFunction(() => { const r = [...document.querySelectorAll('.as
 await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
 await host.waitForTimeout(700);
 ok(!db.claims.some(c => c.member_id === 'm-user-host' && c.item_id === '1'), 'si el anfitrión desmarca, también se quita en la base');
+await guest.waitForFunction(() => !/También: Rodrigo/.test(document.body.innerText), null, { timeout: 1500 }).then(() => ok(true, 'el invitado ve el cambio en menos de 1,5 s (tiempo real, sin esperar la consulta periódica)'), () => ok(false, 'el invitado ve el cambio en menos de 1,5 s (tiempo real, sin esperar la consulta periódica)'));
+await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
+await guest.waitForFunction(() => /También: Rodrigo/.test(document.body.innerText), null, { timeout: 1500 }).then(() => ok(true, 'y al marcar de nuevo también llega al instante'), () => ok(false, 'y al marcar de nuevo también llega al instante'));
+await hostAssign('Pizza').locator('.pbtn', { hasText: 'Rodrigo' }).click();
+await host.waitForTimeout(500);
 
 // El detalle abierto no se cierra solo cuando llega un cambio de otro teléfono.
 await host.click('text=Ver cuánto paga cada uno').catch(() => {});
