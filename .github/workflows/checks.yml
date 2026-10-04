@@ -19,6 +19,7 @@ jobs:
       - run: node tests/check-split-core.mjs
       - run: node tests/check-reconcile.mjs
       - run: node tests/check-retry.mjs
+      - run: node tests/check-assign.mjs
 
   sql:
     runs-on: ubuntu-latest
@@ -51,6 +52,7 @@ jobs:
       - run: E2E_OUT=e2e-capturas node tests/e2e-shared.mjs
       - run: node tests/e2e-boot.mjs
       - run: node tests/e2e-pwa.mjs
+      - run: node tests/e2e-voz.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
