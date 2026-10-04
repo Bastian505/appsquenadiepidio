@@ -91,6 +91,13 @@ async function wire(page, uid) {
       }
       return [{ out_bill_id: bill.id, out_member_id: m.id }];
     }
+    if (fn === 'dc_set_paid') {
+      const m = db.members.find(x => x.id === args.p_member);
+      const bill = m && db.bills.find(b => b.id === m.bill_id);
+      if (!m || !bill || (m.user_id !== uid && bill.host_id !== uid)) throw new Error('NO_PERMITIDO');
+      m.paid_at = args.p_paid ? new Date().toISOString() : null;
+      return null;
+    }
     throw new Error('rpc desconocida: ' + fn);
   });
   await page.exposeFunction('__db', async (table, op, payload, filters) => {
@@ -229,6 +236,31 @@ await guest.locator('.assign', { hasText: 'Cerveza' }).locator('.pbtn').first().
 await host.waitForTimeout(3500);
 ok(await host.locator('details').first().evaluate(d => d.open), 'el detalle abierto sigue abierto tras un cambio de otro teléfono');
 await host.click('[data-action=go][data-to=assign]').catch(() => {});
+
+// ── Cierre de pagos ─────────────────────────────────────────────────────────
+db.claims.push({ bill_id: 'b1', member_id: 'm-user-guest', item_id: '1', units: null }, { bill_id: 'b1', member_id: 'm-user-guest', item_id: '2', units: 2 }, { bill_id: 'b1', member_id: 'm-user-host', item_id: '1', units: null });
+await host.waitForTimeout(2600);
+await host.click('text=Ver cuánto paga cada uno').catch(() => {});
+await host.waitForSelector('text=Cobro', { timeout: 5000 });
+ok(/Pagó Rodrigo/.test(await host.innerText('body')), 'el anfitrión figura como quien pagó la cuenta');
+await host.fill('textarea[name=payinfo]', 'Alias: rodrigo.pagos');
+await host.locator('textarea[name=payinfo]').blur();
+await host.waitForTimeout(900);
+ok(db.bills[0].pay_info === 'Alias: rodrigo.pagos', 'los datos para transferir se guardan en la cuenta');
+await guest.click('text=Ver el total').catch(() => {});
+await guest.waitForSelector('text=Le debes', { timeout: 9000 });
+let gtxt = await guest.innerText('body');
+ok(/Le debes/.test(gtxt) && /a Rodrigo/.test(gtxt), 'el invitado ve cuánto le debe a quién');
+await guest.waitForFunction(() => /Alias: rodrigo\.pagos/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'y ve los datos para transferir'), () => ok(false, 'y ve los datos para transferir'));
+await guest.click('button[data-action=toggle-paid]');
+await guest.waitForTimeout(700);
+ok(!!db.members.find(m => m.id === 'm-user-guest').paid_at, 'el invitado marca "Ya pagué" y queda guardado');
+await host.waitForFunction(() => /✓ Pagó/.test(document.body.innerText), null, { timeout: 9000 }).then(() => ok(true, 'el anfitrión ve que Tiano pagó, sin recargar'), () => ok(false, 'el anfitrión ve que Tiano pagó, sin recargar'));
+await host.locator('button[data-action=toggle-paid]').first().click();
+await host.waitForTimeout(700);
+ok(!db.members.find(m => m.id === 'm-user-guest').paid_at, 'el anfitrión puede desmarcar el pago');
+ok(/WhatsApp/.test(await host.innerText('body')), 'y sigue disponible el mensaje por WhatsApp');
+await guest.click('text=Marca lo tuyo').catch(() => {});
 
 // ── Un link inválido no deja entrar ─────────────────────────────────────────
 const ctxC = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'es-CL' });

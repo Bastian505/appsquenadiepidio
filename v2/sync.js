@@ -69,12 +69,13 @@
       if (withExtras) row = Object.assign({}, base, {
         // La lista de nombres (para que el invitado elija el suyo) y lo que ya se marcó a quienes aún no entran.
         people: (bill.people || []).map(function (p) { return { id: String(p.id), name: p.name }; }),
-        pre_assigns: preAssigns(bill)
+        pre_assigns: preAssigns(bill),
+        pay_info: bill.payInfo ? String(bill.payInfo).slice(0, 400) : null
       });
       return sb.from('dc_bills').update(row).eq('id', state.billId);
     }
     return send(extrasOk).then(function (r) {
-      if (r.error && extrasOk && /people|pre_assigns|column/i.test(r.error.message)) { extrasOk = false; return send(false); }
+      if (r.error && extrasOk && /people|pre_assigns|pay_info|column/i.test(r.error.message)) { extrasOk = false; return send(false); }
       return r;
     }).then(function (r) { if (r && r.error) console.warn('pushBill:', r.error.message); });
   }
@@ -202,10 +203,16 @@
     }).catch(function () { return null; });
   }
 
+  // Marcar que alguien ya pagó (él mismo, o el anfitrión por él). Devuelve { error } si la base lo rechaza.
+  function setPaid(memberId, paid) {
+    if (!sb || !memberId) return Promise.resolve({ error: { message: 'SIN_CONEXION' } });
+    return sb.rpc('dc_set_paid', { p_member: memberId, p_paid: !!paid }).then(function (r) { return r.error ? { error: r.error } : {}; });
+  }
+
   root.DC_SYNC = {
     ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
-    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill,
+    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid,
     get state() { return state; },
     // Para pruebas: permite reemplazar el cliente de Supabase por uno falso.
     _setClient: function (c) { sb = c; }
