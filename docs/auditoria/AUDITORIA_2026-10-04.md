@@ -63,7 +63,7 @@ Lo mejor que tiene: pruebas automáticas serias (SQL con 56 comprobaciones de se
 - **Recomendación:** añadir cabeceras en `vercel.json` (CSP restringida a tu dominio, Supabase y los CDN que queden). **Esfuerzo:** S–M (hay que probar que no rompa nada).
 
 **S-4 · Medio · Sin cuotas por usuario anónimo ni limpieza de datos.** ✅
-- `dc_create_bill` no limita cuántas cuentas crea cada sesión; `items` de la cuenta es un JSON sin tope de tamaño; los usuarios anónimos se pueden fabricar sin límite.
+- `dc_create_bill` no limita cuántas cuentas crea cada sesión; `items` de la cuenta es un JSON sin tope de tamaño; crear usuarios anónimos solo está frenado por los límites por defecto de Supabase (❓ no los verifiqué).
 - No existe ningún trabajo que borre cuentas, miembros, marcas ni intentos fallidos vencidos: `expires_at` solo impide usarlas (`20261002_shared_bills.sql:29`).
 - **Impacto:** crecimiento indefinido de la base y retención eterna de nombres y datos de pago. **Corrección a lo dicho antes:** al presentar el cierre de pagos dije que los datos "se borran con la cuenta"; hoy **la cuenta no se borra nunca**.
 - **Recomendación:** tarea programada (`pg_cron` o Edge Function) que borre cuentas vencidas hace más de N días, tope de tamaño para `items`/`pay_info`, y cuota de cuentas por usuario. **Esfuerzo:** M.
