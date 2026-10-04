@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.d';
+  var BUILD = '2026-10-04.e';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -404,9 +404,11 @@
       var pending = debtors.filter(function (p) { var q = person(p.id); return !(q && q.paid); }).reduce(function (s, p) { return s + p.amount; }, 0);
       out += '<div style="margin-top:12px">' + debtors.map(function (p) {
         var q = person(p.id), isPaid = !!(q && q.paid), can = !shared || host || p.id === me;
-        return '<div class="row" style="padding:6px 0">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + ' <span class="small num">' + money(p.amount) + '</span></span>' +
-          (can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>'
-            : '<span class="badge' + (isPaid ? ' ok' : '') + '">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>';
+        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">💬 Recordar</button>' : '';
+        var paidBtn = can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" style="flex:1" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>' : '';
+        return '<div style="padding:8px 0;border-top:1px solid var(--border)"><div class="row">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + '</span><span class="num" style="font-weight:700">' + money(p.amount) + '</span>' +
+          (can ? '' : '<span class="badge' + (isPaid ? ' ok' : '') + '" style="margin-left:8px">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>' +
+          (remindBtn || paidBtn ? '<div style="display:flex;gap:8px;margin-top:8px">' + remindBtn + paidBtn + '</div>' : '') + '</div>';
       }).join('') + '</div>' +
         '<p class="small" style="margin:8px 0 0">' + (pending > tiny ? 'Falta por pagar ' + money(pending) : '✓ Todos pagaron') + '</p>';
     }
@@ -484,6 +486,7 @@
       case 'voice-apply': voiceApply(); break;
       case 'voice-discard': ui.voice.preview = null; render(); break;
       case 'voice-undo': voiceUndoLast(); break;
+      case 'remind': remindPay(pid); break;
       case 'copy-pay': copyText(state.payInfo || ''); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
@@ -807,6 +810,20 @@
   function othersUnits(itemId, me) {
     var a = state.assigns[itemId]; if (!a) return 0;
     return (a.people || []).reduce(function (t, pid) { return pid === me ? t : t + ((a.units && a.units[pid]) || 0); }, 0);
+  }
+
+  // Mensaje listo para recordarle el pago a una persona; WhatsApp deja elegir el contacto y la persona lo revisa antes de enviar.
+  function remindText(pid) {
+    var r = split(), row = r.perPerson.filter(function (p) { return p.id === pid; })[0], payer = person(payerPid());
+    if (!row) return '';
+    var lines = ['Hola ' + row.name + '! 👋 La cuenta' + (state.restaurant ? ' de ' + state.restaurant : '') + ' fue ' + money(r.grandTotal) + ' y tu parte es ' + money(row.amount) + '.'];
+    if (state.payInfo) lines.push('', 'Para transferir' + (payer ? ' a ' + payer.name : '') + ':', state.payInfo);
+    lines.push('', '¡Gracias!');
+    return lines.join('\n');
+  }
+  function remindPay(pid) {
+    var t = remindText(pid); if (!t) return;
+    window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank', 'noopener');
   }
 
   function togglePaid(pid) {

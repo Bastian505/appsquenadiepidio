@@ -95,6 +95,12 @@ async function open(scan) {
   await page.locator('[data-action=toggle-paid]').first().click();
   ok(/✓ Pagó/.test(await page.innerText('body')), 'se puede marcar que alguien ya pagó');
   await page.fill('textarea[name=payinfo]', 'Alias: yo.pago'); await page.locator('textarea[name=payinfo]').blur();
+  // Recordar por WhatsApp: mensaje personalizado con nombre, monto y datos para transferir; solo a quien no ha pagado.
+  const remindBtns = await page.locator('[data-action=remind]').count();
+  ok(remindBtns === 1, 'hay botón "Recordar" solo para quien aún no paga (uno ya está marcado como pagado): ' + remindBtns);
+  const opened = await page.evaluate(() => { let u = ''; window.open = x => { u = x; }; document.querySelector('[data-action=remind]').click(); return u; });
+  const msg = decodeURIComponent(opened.split('text=')[1] || '');
+  ok(/^https:\/\/wa\.me\/\?text=/.test(opened) && /Hola \S+!/.test(msg) && /tu parte es/.test(msg) && /Alias: yo\.pago/.test(msg), 'el recordatorio abre WhatsApp con el nombre, el monto y los datos para transferir');
   const shared = await page.evaluate(() => { let t = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: x => { t = x; return Promise.resolve(); } } }); document.querySelector('[data-action=copy]').click(); return new Promise(r => setTimeout(() => r(t), 100)); });
   ok(/Pagó /.test(shared) && /Alias: yo\.pago/.test(shared) && /✓ pagó/.test(shared), 'el mensaje dice quién pagó, los datos para transferir y quién ya pagó');
   ok(await page.evaluate(() => localStorage.getItem('dc_pay_info')) === 'Alias: yo.pago', 'los datos para transferir se recuerdan en este teléfono');
