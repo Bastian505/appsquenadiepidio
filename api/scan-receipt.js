@@ -954,10 +954,13 @@ export default async function handler(req, res) {
 
 // ── Helper: normalizar ítem auto-creado ──────────────────────────────────────
 function normalizeAutoFix(fix, currency) {
+  // normalizePrice descarta los negativos (los lleva a 0): una línea que resta (devolución) se representa como cantidad -1 con precio positivo,
+  // igual que las anulaciones leídas de la boleta.
+  const resta = fix.precio_unitario < 0;
   return {
     nombre:           fix.nombre,
-    precio_unitario:  normalizePrice(fix.precio_unitario, currency),
-    cantidad:         1,
+    precio_unitario:  normalizePrice(resta ? -fix.precio_unitario : fix.precio_unitario, currency),
+    cantidad:         resta ? -1 : 1,
     confianza:        0.50,
     evidencia:        fix.auto_fix_evidence || 'auto-calculado por reconciliación',
     auto_created:     true,

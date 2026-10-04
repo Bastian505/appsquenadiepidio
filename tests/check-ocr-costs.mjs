@@ -87,6 +87,14 @@ r = await runNoHint([mala, lect([it('A', 10)])]);
 ok(r.bodies.length === 2 && !r.body.reconciliation.perfil_pais.mejoro, 'reglas del país: si la segunda queda más lejos, se conserva la primera');
 delete process.env.OCR_PROFILE_RETRY;
 r = await runNoHint([mala]); ok(r.bodies.length === 1, 'sin OCR_PROFILE_RETRY no hay segunda lectura por país');
+// Alemania (Lidl): la IA omite la devolución de envases; la app la agrega como línea que RESTA (cantidad -1, precio positivo), no en 0 €
+reset();
+const lidl = lect([it('Wasser medium', 0.29, 6), it('Pfand 0,25 EM', 0.25, 6), it('Mineralwasser still', 1.29, 2), it('Pfand 2,25 EM', 2.25, 2)], 6.82, 'DE');
+lidl.moneda = 'EUR';
+r = await run([lidl], 'DE');
+const dev = (r.body.items || []).find(x => x.auto_created);
+ok(dev && dev.cantidad === -1 && Math.abs(dev.precio_unitario - 3.5) < 0.001 && /Pfandr/.test(dev.nombre), 'Lidl: la devolución agregada resta 3,50 (cantidad -1), no queda en 0 €');
+ok(Math.abs(r.body.items.reduce((a, x) => a + x.precio_unitario * x.cantidad, 0) - 6.82) < 0.01, 'Lidl: con la devolución agregada la suma de la respuesta cuadra con 6,82');
 
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de palancas de costo OK`);
 process.exit(fails ? 1 : 0);
