@@ -77,7 +77,7 @@
     return send(extrasOk).then(function (r) {
       if (r.error && extrasOk && /people|pre_assigns|pay_info|column/i.test(r.error.message)) { extrasOk = false; return send(false); }
       return r;
-    }).then(function (r) { if (r && r.error) console.warn('pushBill:', r.error.message); });
+    }).then(function (r) { if (r && r.error) console.warn('pushBill:', r.error.message); else ping(); });
   }
 
   // Marcas del anfitrión para personas que todavía no entran: {idPersona: {idÍtem: unidades|null}}.
@@ -136,20 +136,37 @@
     });
   }
 
+  // Tiempo real: cada cambio que hace un teléfono avisa por el canal de la cuenta ("cambió algo", sin datos) y los demás releen
+  // con sus propios permisos. Así se ve en una fracción de segundo; la consulta periódica de la app queda como respaldo.
+  var live = false, refetchTimer = null;
+  function isLive() { return live; }
+  function ping() {
+    try { if (channel && live) channel.send({ type: 'broadcast', event: 'changed', payload: {} }); } catch (e) {}
+  }
+  function refetchSoon() {   // junta varios avisos seguidos en una sola lectura
+    clearTimeout(refetchTimer);
+    refetchTimer = setTimeout(function () { fetchAll().then(function (d) { if (d && onChange) onChange(d); }); }, 80);
+  }
+
   function subscribe(cb) {
     onChange = cb;
     if (!sb || !state.billId || channel) return;
-    channel = sb.channel('bill-' + state.billId);
+    channel = sb.channel('bill-' + state.billId, { config: { broadcast: { self: false } } });
     ['dc_bills', 'dc_bill_members', 'dc_claims'].forEach(function (table) {
       channel.on('postgres_changes',
         { event: '*', schema: 'public', table: table, filter: (table === 'dc_bills' ? 'id=eq.' : 'bill_id=eq.') + state.billId },
-        function () { fetchAll().then(function (d) { if (d && onChange) onChange(d); }); });
+        refetchSoon);
     });
-    channel.subscribe();
+    channel.on('broadcast', { event: 'changed' }, refetchSoon);
+    channel.subscribe(function (status) {
+      live = status === 'SUBSCRIBED';
+      if (live) ping();   // "acabo de entrar": el anfitrión me ve al instante
+    });
   }
 
   function leave() {
     if (channel && sb) { sb.removeChannel(channel); channel = null; }
+    live = false;
     state = { billId: null, memberId: null, token: null, role: null };
   }
 
@@ -161,26 +178,26 @@
     if (!sb || !state.billId || !mid) return Promise.resolve();
     return sb.from('dc_claims').upsert({
       bill_id: state.billId, member_id: mid, item_id: String(itemId), units: units == null ? null : units
-    }, { onConflict: 'bill_id,member_id,item_id' }).then(function (r) { if (r.error) { console.warn('setClaim:', r.error.message); return { error: r.error }; } });
+    }, { onConflict: 'bill_id,member_id,item_id' }).then(function (r) { if (r.error) { console.warn('setClaim:', r.error.message); return { error: r.error }; } ping(); });
   }
   function clearClaim(itemId, memberId) {
     var mid = memberId || state.memberId;
     if (!sb || !state.billId || !mid) return Promise.resolve();
     return sb.from('dc_claims').delete()
       .eq('bill_id', state.billId).eq('member_id', mid).eq('item_id', String(itemId))
-      .then(function (r) { if (r.error) { console.warn('clearClaim:', r.error.message); return { error: r.error }; } });
+      .then(function (r) { if (r.error) { console.warn('clearClaim:', r.error.message); return { error: r.error }; } ping(); });
   }
   // El anfitrión marca cuál de la lista es él; y puede sacar a alguien de la cuenta.
   function setPersonKey(key) {
     if (!sb || !state.memberId) return Promise.resolve();
     // OJO: las consultas de supabase-js no se envían hasta el .then().
     return sb.from('dc_bill_members').update({ person_key: String(key) }).eq('id', state.memberId)
-      .then(function (r) { if (r.error) console.warn('setPersonKey:', r.error.message); });
+      .then(function (r) { if (r.error) console.warn('setPersonKey:', r.error.message); else ping(); });
   }
   function removeMember(memberId) {
     if (!sb || !memberId || state.role !== 'host') return Promise.resolve();
     return sb.from('dc_bill_members').delete().eq('id', memberId)
-      .then(function (r) { if (r.error) console.warn('removeMember:', r.error.message); });
+      .then(function (r) { if (r.error) console.warn('removeMember:', r.error.message); else ping(); });
   }
   function closeBill() {
     if (!sb || !state.billId || state.role !== 'host') return Promise.resolve();
@@ -206,7 +223,7 @@
   // Marcar que alguien ya pagó (él mismo, o el anfitrión por él). Devuelve { error } si la base lo rechaza.
   function setPaid(memberId, paid) {
     if (!sb || !memberId) return Promise.resolve({ error: { message: 'SIN_CONEXION' } });
-    return sb.rpc('dc_set_paid', { p_member: memberId, p_paid: !!paid }).then(function (r) { return r.error ? { error: r.error } : {}; });
+    return sb.rpc('dc_set_paid', { p_member: memberId, p_paid: !!paid }).then(function (r) { if (r.error) return { error: r.error }; ping(); return {}; });
   }
 
   // Quiénes ya pagaron en una cuenta (para "Cobros pendientes"). Devuelve [] si no hay conexión o permiso.
@@ -220,7 +237,7 @@
   root.DC_SYNC = {
     ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
-    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid, fetchMembers: fetchMembers,
+    setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid, fetchMembers: fetchMembers, isLive: isLive,
     get state() { return state; },
     // Para pruebas: permite reemplazar el cliente de Supabase por uno falso.
     _setClient: function (c) { sb = c; }

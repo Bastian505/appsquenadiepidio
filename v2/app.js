@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.f';
+  var BUILD = '2026-10-04.g';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -793,7 +793,13 @@
     if (!SYNC) return;
     SYNC.subscribe(function (d) { syncSig = sigOf(d); applyRemote(d); render(); });
     if (!pollTimer) {
-      pollTimer = setInterval(function () { if (!document.hidden) pull(false); }, 2000);
+      // Con el tiempo real conectado la consulta periódica es solo un respaldo (cada ~8 s); sin él, cada 2 s.
+      var pollN = 0;
+      pollTimer = setInterval(function () {
+        if (document.hidden) return; pollN++;
+        if (SYNC.isLive && SYNC.isLive() && pollN % 4) return;
+        pull(false);
+      }, window.__DC_POLL_MS || 2000);
       document.addEventListener('visibilitychange', function () { if (!document.hidden) pull(true); });
       window.addEventListener('focus', function () { pull(true); });
       window.addEventListener('online', function () { pull(true); });
