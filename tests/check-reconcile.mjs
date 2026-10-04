@@ -59,6 +59,10 @@ ok(!reconcile([it('Wasser', 1.74), it('Pfand 0,25 EM', 1.5), it('Pfandrückgabe'
 ok(!reconcile([it('Wasser', 10), it('Bier', 5)], 12, 'DE').auto_fixed, 'DE: sin depósitos, suma > total → no inventa devolución');
 ok(!reconcile([it('Pfand', 1), it('Wasser', 10)], 6, 'DE').auto_fixed, 'DE: la diferencia supera los depósitos → no inventa devolución');
 ok(!reconcile([it('Wasser', 1.74), it('Pfand', 1.5)], 1.74, 'ES').auto_fixed, 'ES: la misma situación en otro país no se toma por devolución de envases');
+// Tailandia: VAT 7 % omitido (Three Monkeys real) y sin inventarlo cuando el IVA va incluido
+ok(near(fixed(reconcile([it('a', 250), it('b', 499, 2), it('c', 150), it('d', 180), it('e', 220), it('f', 230), it('Smoothie', 150), it('Water', 30, 2), it('ค่าบริการ 10%', 239.47)], 2634, 'TH')), 156.53), 'TH Three Monkeys: VAT 7% 156,53');
+ok(!reconcile([it('a', 250), it('ค่าบริการ 10%', 25), it('VAT 7%', 17.5)], 292.5, 'TH').auto_fixed, 'TH: con VAT ya listado no agrega otro');
+ok(!reconcile([it('a', 100)], 110, 'TH').auto_fixed, 'TH: 10 % de diferencia no es VAT 7 %');
 // Austria: ítems de más (suplemento contado dos veces) → avisa, nunca "arregla"
 const at = reconcile([it('Hirter', 4, 2), it('Prosecco', 5.2, 2), it('Venezia', 13.1), it('San Daniele', 13.2)], 43.5, 'AT');
 ok(!at.auto_fixed && at.diff < 0, 'AT: suma > total → sin auto-fix');

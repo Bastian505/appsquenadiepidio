@@ -489,6 +489,23 @@ function reconcile(items, totalReported, countryCode) {
     }
   }
 
+  // Tailandia: el VAT 7 % se imprime aparte, sobre la consumición (sin el cargo de servicio). Si falta y la diferencia calza con el 7 %
+  // de la consumición, es ese VAT. (Caso real: Three Monkeys; la IA leyó el servicio pero omitió la línea "VAT 7%".)
+  if (countryCode === 'TH' && diff > 0 && sum > 0 && ratio <= 0.1) {
+    const yaHayVat = items.some(it => /vat|ภาษี|tax|impuesto/i.test(it.nombre||''));
+    const consumo = items.filter(it => !/service|ค่าบริการ|servicio|propina|tip/i.test(it.nombre||''))
+      .reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
+    const rate = consumo > 0 ? diff / consumo : 0;
+    if (!yaHayVat && rate >= 0.066 && rate <= 0.074) {
+      const monto = Math.round(diff * 100) / 100;
+      const fix = { nombre:'VAT 7%', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
+        auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre la consumición = VAT 7% de Tailandia`, confianza:0.50 };
+      return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté un VAT del 7% (~${monto}). Revísalo antes de dividir.` };
+    }
+  }
+
   // EE. UU.: el impuesto de venta se imprime aparte (≈ 3–11 % de la CONSUMICIÓN). Si falta y la diferencia calza con esa tasa sobre la
   // consumición (sin contar la propina ni el cargo de servicio ya listados), es el impuesto, aunque ya haya un ítem de servicio.
   // (Caso real: 3 boletas de Miami y Nueva York a las que la app les omitió el "Tax" y no lo corrigió por tener ya la propina listada.)
