@@ -257,7 +257,11 @@ R19. TOTAL FINAL: total_referencia = el MONTO FINAL A PAGAR = subtotal + impuest
      etiquetas varían ("Net Amount" a veces es el subtotal y a veces el final):
      decide por la aritmética, no por la etiqueta. NO uses subtotales, líneas de
      pago (Cash / Payment / Change) ni conteos ("No. of Items 12  Total Qty 21  7280.00":
-     ese 7280 es el subtotal).
+     ese 7280 es el subtotal). Si hay DOS totales según la forma de pago ("Cash Total" y
+     "Credit Total", este último con un cargo de tarjeta "CC Fee"), usa el de TARJETA
+     (Credit Total) y lista el cargo como ítem: "Sbtl w/Chgs" (subtotal con cargos) es
+     ese mismo monto. NUNCA tomes como total un "Subtotal" si debajo hay impuestos o
+     cargos impresos (Tax, Liquor Tax, CC Fee, HST, GST, PST...).
 
 R20. CÓDIGOS DE ÍTEM: no incluyas el código numérico del producto al inicio del
      nombre ("2201 KABULI PULLAO" → nombre "KABULI PULLAO").
@@ -506,15 +510,15 @@ function reconcile(items, totalReported, countryCode) {
     }
   }
 
-  // EE. UU.: el impuesto de venta se imprime aparte (≈ 3–11 % de la CONSUMICIÓN). Si falta y la diferencia calza con esa tasa sobre la
+  // EE. UU. y Canadá: el impuesto de venta se imprime aparte (≈ 3–11 % de la CONSUMICIÓN). Si falta y la diferencia calza con esa tasa sobre la
   // consumición (sin contar la propina ni el cargo de servicio ya listados), es el impuesto, aunque ya haya un ítem de servicio.
   // (Caso real: 3 boletas de Miami y Nueva York a las que la app les omitió el "Tax" y no lo corrigió por tener ya la propina listada.)
-  if (countryCode === 'US' && diff > 0 && sum > 0 && ratio <= 0.22) {
-    const yaHayImpuesto = items.some(it => /impuesto|tax|sst|gst|vat/i.test(it.nombre||''));
+  if ((countryCode === 'US' || countryCode === 'CA') && diff > 0 && sum > 0 && ratio <= 0.22) {
+    const yaHayImpuesto = items.some(it => /impuesto|tax|sst|gst|hst|vat/i.test(it.nombre||''));
     const consumo = items.filter(it => !/propina|tip|gratuity|servicio|service/i.test(it.nombre||''))
       .reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
     const rate = consumo > 0 ? diff / consumo : 0;
-    if (!yaHayImpuesto && rate >= 0.03 && rate <= 0.115) {
+    if (!yaHayImpuesto && rate >= 0.03 && rate <= (countryCode === 'CA' ? 0.09 : 0.115)) {
       const monto = Math.round(diff * 100) / 100;
       const fix = { nombre:'Impuesto', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
         auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre la consumición = impuesto de venta de EE. UU.`, confianza:0.50 };
