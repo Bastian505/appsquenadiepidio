@@ -470,6 +470,24 @@ function reconcile(items, totalReported, countryCode) {
     }
   }
 
+  // EE. UU.: el impuesto de venta se imprime aparte (≈ 3–11 % de la CONSUMICIÓN). Si falta y la diferencia calza con esa tasa sobre la
+  // consumición (sin contar la propina ni el cargo de servicio ya listados), es el impuesto, aunque ya haya un ítem de servicio.
+  // (Caso real: 3 boletas de Miami y Nueva York a las que la app les omitió el "Tax" y no lo corrigió por tener ya la propina listada.)
+  if (countryCode === 'US' && diff > 0 && sum > 0 && ratio <= 0.22) {
+    const yaHayImpuesto = items.some(it => /impuesto|tax|sst|gst|vat/i.test(it.nombre||''));
+    const consumo = items.filter(it => !/propina|tip|gratuity|servicio|service/i.test(it.nombre||''))
+      .reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
+    const rate = consumo > 0 ? diff / consumo : 0;
+    if (!yaHayImpuesto && rate >= 0.03 && rate <= 0.115) {
+      const monto = Math.round(diff * 100) / 100;
+      const fix = { nombre:'Impuesto', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
+        auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre la consumición = impuesto de venta de EE. UU.`, confianza:0.50 };
+      return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté un impuesto de venta de ~${(rate*100).toFixed(1).replace('.', ',')}% (~${monto}). Revísalo antes de dividir.` };
+    }
+  }
+
   // 3-6%: warning leve, no crear ítem (salvo PK: un 5% sumado encima es ~4,8% del total)
   if (ratio < 0.06 && !(TAX_ON_TOP_HIGH.has(countryCode) && diff > 0 && ratio >= 0.04)) {
     return { ok:true, sum, total:totalReported, diff, ratio,
