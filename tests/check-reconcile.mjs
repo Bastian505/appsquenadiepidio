@@ -63,6 +63,10 @@ ok(!reconcile([it('Wasser', 1.74), it('Pfand', 1.5)], 1.74, 'ES').auto_fixed, 'E
 ok(near(fixed(reconcile([it('a', 250), it('b', 499, 2), it('c', 150), it('d', 180), it('e', 220), it('f', 230), it('Smoothie', 150), it('Water', 30, 2), it('ค่าบริการ 10%', 239.47)], 2634, 'TH')), 156.53), 'TH Three Monkeys: VAT 7% 156,53');
 ok(!reconcile([it('a', 250), it('ค่าบริการ 10%', 25), it('VAT 7%', 17.5)], 292.5, 'TH').auto_fixed, 'TH: con VAT ya listado no agrega otro');
 ok(reconcile([it('a', 100)], 110, 'TH').auto_fix_item?.nombre !== 'VAT 7%', 'TH: 10 % de diferencia no es VAT 7 % (sigue la regla de servicio de siempre)');
+// Canadá: impuesto omitido que no es una tasa provincial exacta (BC: PST solo sobre licor + GST 5 %; Ontario con cargos y propina incluida)
+ok(near(fixed(reconcile([it('Pop', 3.99, 3), it('Peach Lemonade', 7.99), it('Pulled Pork', 20.99), it('Chicken BLT', 29.49), it('Whiskey BBQ', 26.49), it('Chicken BLT', 22.99), it('Open Food', 2.5), it('Open Food', 3), it('Ice Cream', 6.49), it('Sticky Toffee', 11.99, 2)], 165.08, 'CA')), 9.19), 'CA BFF (BC): impuestos 9,19 = 5,9 % de la consumición');
+ok(near(fixed(reconcile([it('Calamari', 19.95, 2), it('Truffle Fries', 10.95), it('Riley Pizza', 14.95), it('Chicken Thai', 29.95, 2), it('Elderberry', 21.95), it('Cranberry', 21.95, 2), it('Gin Fizz', 16.95), it('Village Enhancement', 1.92), it('e payment processing', 4.17), it('Gratuity 18%', 37.53)], 267.76, 'CA')), 15.64), 'CA Ontario: HST omitido con la gratuity incluida');
+ok(reconcile([it('platos', 100), it('HST', 13)], 113, 'CA').ok, 'CA: con HST ya listado y la suma cuadrando no agrega nada');
 // Austria: ítems de más (suplemento contado dos veces) → avisa, nunca "arregla"
 const at = reconcile([it('Hirter', 4, 2), it('Prosecco', 5.2, 2), it('Venezia', 13.1), it('San Daniele', 13.2)], 43.5, 'AT');
 ok(!at.auto_fixed && at.diff < 0, 'AT: suma > total → sin auto-fix');
