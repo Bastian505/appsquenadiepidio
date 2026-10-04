@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.a';
+  var BUILD = '2026-10-04.b';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -308,6 +308,47 @@
       '<div class="state row"><span style="flex:1">' + stateTxt + '</span>' + (state.people.length > 1 ? '<button class="pbtn all' + (all ? ' on' : '') + '" data-action="toggle-all" data-item="' + it.id + '" aria-pressed="' + all + '">' + (all ? 'Quitar todos' : 'Todos') + '</button>' : '') + '</div></div>';
   }
 
+  // ── cobro: quién pagó la cuenta y quién ya le pagó ─────────────────────────
+  function payerPid() {
+    if (state.share) return state.share.role === 'host' ? state.myMemberId : (state.hostPid != null ? state.hostPid : (state.people[0] && state.people[0].id));
+    return state.payerId != null && person(state.payerId) ? state.payerId : (state.people[0] && state.people[0].id);
+  }
+  function cobro(r, tiny) {
+    if (state.people.length < 2) return '';
+    var shared = !!state.share, host = !shared || state.share.role === 'host', me = state.myMemberId;
+    var payer = payerPid(), pp = person(payer); if (!pp) return '';
+    var debtors = r.perPerson.filter(function (p) { return p.id !== payer && p.amount > tiny; });
+    var mine = shared && !host ? r.perPerson.filter(function (p) { return p.id === me; })[0] : null, meP = person(me);
+    var out = '';
+    if (mine && me !== payer && mine.amount > tiny) {
+      out += '<div class="banner ' + (meP && meP.paid ? 'ok' : 'warn') + '">' + (meP && meP.paid ? '✓ Ya le pagaste a <b>' + esc(pp.name) + '</b>' : 'Le debes <b>' + money(mine.amount) + '</b> a <b>' + esc(pp.name) + '</b>') + '</div>';
+    }
+    out += '<div class="card"><b>Cobro</b>';
+    if (!shared) {
+      out += '<p class="small" style="margin:8px 0">¿Quién pagó la cuenta?</p><div class="who">' + state.people.map(function (p) {
+        var on = p.id === payer;
+        return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="set-payer" data-person="' + p.id + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
+      }).join('') + '</div>';
+    } else out += '<p class="small" style="margin:6px 0 0">Pagó ' + esc(pp.name) + ': a esa persona se le paga.</p>';
+    if (debtors.length) {
+      var pending = debtors.filter(function (p) { var q = person(p.id); return !(q && q.paid); }).reduce(function (s, p) { return s + p.amount; }, 0);
+      out += '<div style="margin-top:12px">' + debtors.map(function (p) {
+        var q = person(p.id), isPaid = !!(q && q.paid), can = !shared || host || p.id === me;
+        return '<div class="row" style="padding:6px 0">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + ' <span class="small num">' + money(p.amount) + '</span></span>' +
+          (can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>'
+            : '<span class="badge' + (isPaid ? ' ok' : '') + '">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>';
+      }).join('') + '</div>' +
+        '<p class="small" style="margin:8px 0 0">' + (pending > tiny ? 'Falta por pagar ' + money(pending) : '✓ Todos pagaron') + '</p>';
+    }
+    if (host) {
+      out += '<label class="small" style="display:block;margin-top:12px">Datos para que te transfieran (opcional)</label>' +
+        '<textarea name="payinfo" data-action="pay-info" rows="2" maxlength="400" placeholder="Alias, cuenta, RUT, CLABE…" style="width:100%;margin-top:4px">' + esc(state.payInfo || '') + '</textarea>';
+    } else if (state.payInfo) {
+      out += '<div style="margin-top:12px"><div class="small">Transferir a ' + esc(pp.name) + '</div><div style="white-space:pre-wrap;margin:4px 0 8px;font-weight:600">' + esc(state.payInfo) + '</div><button class="btn sm" data-action="copy-pay">Copiar datos</button></div>';
+    }
+    return out + '</div>';
+  }
+
   function summary() {
     var r = split(), paid = r.perPerson.reduce(function (s, p) { return s + p.amount; }, 0) + r.unassigned;
     var cuadra = Math.abs(paid - r.grandTotal) < (C.decimals(state.currency) === 0 ? 1 : 0.01);
@@ -319,6 +360,7 @@
       '<div class="card summary-total"><div class="small">Total de la cuenta</div><div class="amount num">' + money(r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
       '<div style="margin-top:8px">' + seal + '</div></div>' +
       (r.unassigned ? '<div class="banner warn"><b>Falta asignar ' + money(r.unassigned) + ':</b> ' + esc(r.unassignedNames.join(', ')) + '<div class="actions"><button class="btn sm" data-action="go" data-to="assign">Asignar</button></div></div>' : '') +
+      cobro(r, tiny) +
       r.perPerson.map(function (p) {
         var ppl = person(p.id);
         return '<div class="card pcard"><div class="row">' + avatar(ppl) + '<b style="flex:1">' + esc(p.name) + '</b><div><div class="amount num">' + money(p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
@@ -363,6 +405,9 @@
       case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
       case 'claim': toggleClaim(itemId); break;
       case 'claim-unit': claimUnits(itemId, Number(el.dataset.d)); break;
+      case 'set-payer': state.payerId = pid; save(); render(); break;
+      case 'toggle-paid': togglePaid(pid); break;
+      case 'copy-pay': copyText(state.payInfo || ''); break;
       case 'copy': copyText(shareText()); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
     }
@@ -370,6 +415,7 @@
   document.addEventListener('change', function (e) {
     var el = e.target, a = el.dataset.action;
     if (a === 'edit') editItem(Number(el.dataset.id), el.dataset.field, el.value);
+    else if (a === 'pay-info') { state.payInfo = String(el.value || '').trim().slice(0, 400); save(); }
     else if (a === 'tip-fixed') { var v = parseNum(el.value); state.tip = v > 0 ? { fixed: v } : null; save(); render(); }
     else if (a === 'pref') { try { localStorage.setItem('dc_preferred_currency', el.value); } catch (x) {} ui.fx = null; render(); }
   });
@@ -576,7 +622,7 @@
   // el anfitrión se va a WhatsApp a mandar el link), así que además se consulta cada pocos segundos y al volver.
   var syncSig = '', pollTimer = null;
   function sigOf(d) {
-    return JSON.stringify([d.bill.updated_at, d.members.map(function (m) { return m.id + m.name; }),
+    return JSON.stringify([d.bill.updated_at, d.bill.pay_info, d.members.map(function (m) { return m.id + m.name + (m.paid_at ? '1' : '0'); }),
       d.claims.map(function (c) { return c.member_id + ':' + c.item_id + ':' + c.units; })]);
   }
   function pull(force) {
@@ -632,6 +678,14 @@
     state.people = linked;
     localOnly.forEach(function (p) { state.people.push(p); });
     var byMember = {}; state.people.forEach(function (p) { if (p.memberId != null) byMember[p.memberId] = p.id; });
+    // Pagos: quién ya pagó, quién es el anfitrión (a quien se le paga) y los datos para transferir.
+    d.members.forEach(function (m) {
+      var pp = state.people.filter(function (x) { return x.memberId === m.id; })[0];
+      if (pp) pp.paid = !!m.paid_at;
+      if (m.user_id && d.bill.host_id && m.user_id === d.bill.host_id) state.hostPid = byMember[m.id];
+    });
+    if (state.share && state.share.role === 'guest') state.payInfo = d.bill.pay_info || '';
+    else if (!state.payInfo && d.bill.pay_info) state.payInfo = d.bill.pay_info;
     if (mineUser && byMember[mineUser]) state.myMemberId = byMember[mineUser];
     state.assigns = {};
     d.claims.forEach(function (c) {
@@ -675,6 +729,18 @@
   function othersUnits(itemId, me) {
     var a = state.assigns[itemId]; if (!a) return 0;
     return (a.people || []).reduce(function (t, pid) { return pid === me ? t : t + ((a.units && a.units[pid]) || 0); }, 0);
+  }
+
+  function togglePaid(pid) {
+    var p = person(pid); if (!p) return;
+    var next = !p.paid;
+    p.paid = next; save(); render();
+    if (SYNC && state.share && p.memberId) {
+      SYNC.setPaid(p.memberId, next).then(function (r) {
+        if (r && r.error) toast('No se pudo guardar el pago');
+        return pull(true);
+      });
+    }
   }
 
   function toggleClaim(itemId) {
@@ -730,7 +796,9 @@
   // ── compartir ──────────────────────────────────────────────────────────────
   function shareText() {
     var r = split(), lines = ['🧾 ' + (state.restaurant || 'Cuenta') + ' — total ' + money(r.grandTotal), ''];
-    r.perPerson.forEach(function (p) { lines.push('• ' + p.name + ': ' + money(p.amount)); });
+    var payer = state.people.length > 1 ? person(payerPid()) : null;
+    r.perPerson.forEach(function (p) { var q = person(p.id); lines.push('• ' + p.name + ': ' + money(p.amount) + (payer && p.id !== payer.id && q && q.paid ? ' ✓ pagó' : '')); });
+    if (payer) lines.push('', 'Pagó ' + payer.name + (state.payInfo ? '. Para transferir: ' + state.payInfo : ''));
     if (r.extrasTotal) lines.push('', 'Impuesto y cargos repartidos según lo que consumió cada uno.');
     lines.push('', 'Dividido con DiviCuenta · ' + location.origin + '/v2/');
     return lines.join('\n');

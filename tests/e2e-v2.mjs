@@ -88,6 +88,15 @@ async function open(scan) {
   await page.locator('.pcard summary').first().click();
   await shot(page, 'v2-6-cobro.png');
   ok(/Impuesto y cargos \(/.test(await page.innerText('body')), 'detalle con impuesto y cargos');
+  // Cobro en un solo teléfono: se elige quién pagó, se marca quién ya le pagó y el mensaje lo dice.
+  ok(/Cobro/.test(await page.innerText('body')) && /¿Quién pagó la cuenta\?/.test(await page.innerText('body')), 'hay sección de cobro con "¿Quién pagó la cuenta?"');
+  const first = await page.locator('[data-action=toggle-paid]').count();
+  ok(first === 2, 'quedan dos personas por cobrarle al que pagó: ' + first);
+  await page.locator('[data-action=toggle-paid]').first().click();
+  ok(/✓ Pagó/.test(await page.innerText('body')), 'se puede marcar que alguien ya pagó');
+  await page.fill('textarea[name=payinfo]', 'Alias: yo.pago'); await page.locator('textarea[name=payinfo]').blur();
+  const shared = await page.evaluate(() => { let t = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: x => { t = x; return Promise.resolve(); } } }); document.querySelector('[data-action=copy]').click(); return new Promise(r => setTimeout(() => r(t), 100)); });
+  ok(/Pagó /.test(shared) && /Alias: yo\.pago/.test(shared) && /✓ pagó/.test(shared), 'el mensaje dice quién pagó, los datos para transferir y quién ya pagó');
   ok(errs.length === 0, 'sin errores JS ' + errs.join('|'));
   // persistencia: recarga y sigue en el resumen
   await page.reload(); await page.waitForTimeout(400);

@@ -201,6 +201,35 @@ begin;
       format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '3', 1)$$, get('bill'), get('guest_member'))));
 commit;
 
+\echo '── Cierre de pagos ──'
+begin;
+  select note('el invitado marca que ya pagó',
+    not denied('22222222-2222-2222-2222-222222222222', format($$select dc_set_paid(%L, true)$$, get('guest_member'))));
+  select note('queda registrada la fecha', (select paid_at is not null from dc_bill_members where id = get('guest_member')::uuid));
+  select note('el invitado no marca por el anfitrión',
+    denied('22222222-2222-2222-2222-222222222222', format($$select dc_set_paid(%L, true)$$, get('host_member'))));
+  select note('el extraño no marca pagos de esta cuenta',
+    denied('33333333-3333-3333-3333-333333333333', format($$select dc_set_paid(%L, true)$$, get('guest_member'))));
+  select note('el anfitrión puede desmarcar a un invitado (le pagó en efectivo, se equivocó, etc.)',
+    not denied('11111111-1111-1111-1111-111111111111', format($$select dc_set_paid(%L, false)$$, get('guest_member'))));
+  select note('y el invitado queda otra vez pendiente', (select paid_at is null from dc_bill_members where id = get('guest_member')::uuid));
+  select note('el anfitrión no marca pagos de otra cuenta',
+    denied('11111111-1111-1111-1111-111111111111', format($$select dc_set_paid(%L, true)$$, get('member2'))));
+  select note('el anfitrión escribe los datos para transferir',
+    not denied('11111111-1111-1111-1111-111111111111', format($$update dc_bills set pay_info = 'Alias: rodrigo.pagos' where id = %L$$, get('bill'))));
+  select note('el invitado no cambia los datos de pago',
+    denied('22222222-2222-2222-2222-222222222222', format($$update dc_bills set pay_info = 'Alias: estafa' where id = %L$$, get('bill'))));
+  select as_user('22222222-2222-2222-2222-222222222222');
+  select note('el invitado ve los datos para transferir',
+    (select pay_info = 'Alias: rodrigo.pagos' from dc_bills where id = get('bill')::uuid));
+  reset role;
+  select as_user('33333333-3333-3333-3333-333333333333');
+  select note('el extraño no ve los datos de pago', (select count(*) = 0 from dc_bills where id = get('bill')::uuid));
+  reset role;
+  select note('el texto de pago tiene tope de largo',
+    denied('11111111-1111-1111-1111-111111111111', format($$update dc_bills set pay_info = repeat('x', 401) where id = %L$$, get('bill'))));
+commit;
+
 \echo '── Cuenta cerrada ──'
 begin;
   select as_user('11111111-1111-1111-1111-111111111111');
@@ -211,6 +240,8 @@ begin;
   select note('cerrada: el invitado ya no puede marcar',
     denied('22222222-2222-2222-2222-222222222222',
       format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '9', 1)$$, get('bill'), get('guest_member'))));
+  select note('cerrada: ya no se registran pagos',
+    denied('22222222-2222-2222-2222-222222222222', format($$select dc_set_paid(%L, true)$$, get('guest_member'))));
   select note('cerrada: ni el anfitrión puede marcar por otros',
     denied('11111111-1111-1111-1111-111111111111',
       format($$insert into dc_claims (bill_id, member_id, item_id, units) values (%L, %L, '9', 1)$$, get('bill'), get('guest_member'))));
