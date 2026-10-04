@@ -97,6 +97,15 @@ async function open(scan) {
   await page.fill('textarea[name=payinfo]', 'Alias: yo.pago'); await page.locator('textarea[name=payinfo]').blur();
   const shared = await page.evaluate(() => { let t = ''; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: x => { t = x; return Promise.resolve(); } } }); document.querySelector('[data-action=copy]').click(); return new Promise(r => setTimeout(() => r(t), 100)); });
   ok(/Pagó /.test(shared) && /Alias: yo\.pago/.test(shared) && /✓ pagó/.test(shared), 'el mensaje dice quién pagó, los datos para transferir y quién ya pagó');
+  ok(await page.evaluate(() => localStorage.getItem('dc_pay_info')) === 'Alias: yo.pago', 'los datos para transferir se recuerdan en este teléfono');
+  // Una cuenta nueva ya trae mis datos para transferir (no hay que volver a escribirlos).
+  await page.evaluate(() => localStorage.removeItem('dc_v2_draft')); await page.reload(); await page.waitForTimeout(500);
+  await page.click('text=Ingresar ítems a mano');
+  await page.click('text=Agregar personas').catch(() => {});
+  for (const nm of ['Ana', 'Beto']) { await page.fill('input[name=name]', nm); await page.press('input[name=name]', 'Enter'); }
+  await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('dc_v2_draft')); d.items = [{ id: 1, name: 'Pizza', price: 100, qty: 1 }]; d.assigns = { 1: { people: [d.people[0].id], units: {} } }; d.step = 'summary'; localStorage.setItem('dc_v2_draft', JSON.stringify(d)); });
+  await page.reload(); await page.waitForSelector('textarea[name=payinfo]', { timeout: 5000 });
+  ok(await page.inputValue('textarea[name=payinfo]') === 'Alias: yo.pago', 'una cuenta nueva ya trae los datos para transferir guardados');
   ok(errs.length === 0, 'sin errores JS ' + errs.join('|'));
   // persistencia: recarga y sigue en el resumen
   await page.reload(); await page.waitForTimeout(400);
