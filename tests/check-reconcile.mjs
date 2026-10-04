@@ -8,7 +8,7 @@ function fn(name) {
   const i = src.indexOf('function ' + name + '('); let d = 0, j = src.indexOf('{', i);
   for (let k = j; k < src.length; k++) { if (src[k] === '{') d++; if (src[k] === '}' && --d === 0) return src.slice(i, k + 1); }
 }
-const reconcile = new Function(['TAX_COUNTRIES','CA_TAX_RATES','TAX_ON_TOP_HIGH','SERVICE_CHARGE_COUNTRIES','TIP_COUNTRIES'].map(line).join('\n') + '\n' + fn('reconcile') + '\nreturn reconcile;')();
+const reconcile = new Function(['TAX_COUNTRIES','DEPOSIT_COUNTRIES','CA_TAX_RATES','TAX_ON_TOP_HIGH','SERVICE_CHARGE_COUNTRIES','TIP_COUNTRIES'].map(line).join('\n') + '\n' + fn('reconcile') + '\nreturn reconcile;')();
 
 let fails = 0, n = 0;
 const ok = (c, m) => { n++; if (!c) { fails++; console.log('✗ ' + m); } };
@@ -52,6 +52,13 @@ ok(reconcile([it('platos', 50)], 62, 'US').auto_fix_item?.nombre !== 'Impuesto',
 ok(!reconcile([it('platos', 100)], 102, 'US').auto_fixed, 'US: 2 % de diferencia (redondeo/propina chica) → no inventa impuesto');
 // Otros países: nunca se inventa un impuesto con la misma diferencia
 for (const c of ['ES', 'CL', 'DE', 'XX']) ok(!reconcile([it('platos', 11723)], 12309.15, c).auto_fixed, `${c}: no inventa impuesto con 5% de diferencia`);
+// Alemania: la IA omite la devolución de envases (Pfandrückgabe) aun con la regla en el prompt (Lidl Berlín real)
+const pf = reconcile([it('Wasser medium', 0.29, 6), it('Pfand 0,25 EM', 0.25, 6), it('Mineralwasser still', 1.29, 2), it('Pfand 2,25 EM', 2.25, 2)], 6.82, 'DE');
+ok(pf.auto_fixed && near(pf.auto_fix_item.precio_unitario, -3.5) && pf.auto_fix_item.auto_fix_type === 'deposit_refund', 'DE Lidl: agrega la devolución de envases por -3,50');
+ok(!reconcile([it('Wasser', 1.74), it('Pfand 0,25 EM', 1.5), it('Pfandrückgabe', -1.5)], 4, 'DE').auto_fixed, 'DE: con devolución ya leída no agrega otra');
+ok(!reconcile([it('Wasser', 10), it('Bier', 5)], 12, 'DE').auto_fixed, 'DE: sin depósitos, suma > total → no inventa devolución');
+ok(!reconcile([it('Pfand', 1), it('Wasser', 10)], 6, 'DE').auto_fixed, 'DE: la diferencia supera los depósitos → no inventa devolución');
+ok(!reconcile([it('Wasser', 1.74), it('Pfand', 1.5)], 1.74, 'ES').auto_fixed, 'ES: la misma situación en otro país no se toma por devolución de envases');
 // Austria: ítems de más (suplemento contado dos veces) → avisa, nunca "arregla"
 const at = reconcile([it('Hirter', 4, 2), it('Prosecco', 5.2, 2), it('Venezia', 13.1), it('San Daniele', 13.2)], 43.5, 'AT');
 ok(!at.auto_fixed && at.diff < 0, 'AT: suma > total → sin auto-fix');

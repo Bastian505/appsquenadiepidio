@@ -436,6 +436,7 @@ function parseJSON(raw) {
 const SERVICE_CHARGE_COUNTRIES = new Set(['GB','SG','TH','CO','IT','AE','SA']);
 const TIP_COUNTRIES             = new Set(['US','CA','MX']);
 const TAX_COUNTRIES             = new Set(['US','CA']);
+const DEPOSIT_COUNTRIES = new Set(['DE','AT','NL']);
 // Países donde el impuesto se suma ENCIMA del subtotal con tasa alta (PK 5-15%, MY 6-8%, NG 7,5%, LK ~22%)
 // Canadá: impuestos por provincia (sobre el precio sin impuesto): GST 5 % (AB/TERR.), SK 11 %, BC y MB 12 %,
 // HST Ontario 13 %, Quebec TPS 5 % + TVQ 9,975 % = 14,975 %, HST Atlántico 15 %.
@@ -467,6 +468,24 @@ function reconcile(items, totalReported, countryCode) {
       return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
         auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
         user_message:`Detecté impuestos del ${(known*100).toFixed(known === 0.14975 ? 3 : 0).replace('.', ',')}% (~${monto}). Revísalo antes de dividir.` };
+    }
+  }
+
+  // Depósito de envases (DE/AT/NL): si la suma SUPERA el total, hay depósitos (Pfand) positivos y ninguna devolución leída, lo más
+  // probable es que la IA omitió la devolución (Pfandrückgabe, línea negativa). Se agrega como ítem negativo por la diferencia exacta.
+  // (Caso real: Lidl Berlín; la IA ignora las dos devoluciones aun con la regla del país en el prompt.)
+  if (DEPOSIT_COUNTRIES.has(countryCode) && diff < 0 && sum > 0) {
+    const esDeposito = it => /pfand|leergut|statiegeld|deposit/i.test(it.nombre||'');
+    const depositos = items.filter(it => esDeposito(it) && it.precio_unitario > 0)
+      .reduce((a,it) => a+it.precio_unitario*(it.cantidad||1), 0);
+    const hayDevolucion = items.some(it => it.precio_unitario < 0 || (it.cantidad||1) < 0);
+    const monto = Math.round(-diff * 100) / 100;
+    if (!hayDevolucion && depositos > 0 && monto <= depositos + 0.005) {
+      const fix = { nombre:'Pfandrückgabe', precio_unitario:-monto, cantidad:1, auto_created:true, auto_fix_type:'deposit_refund',
+        auto_fix_evidence:'La suma supera el total y hay depósitos de envases sin devolución leída', confianza:0.50 };
+      return { ok:true, sum:Math.round((sum-monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'deposit_refund', auto_fix_item:fix, user_action_required:true,
+        user_message:`Detecté una devolución de envases (Pfandrückgabe) de ${monto}. Revísala antes de dividir.` };
     }
   }
 
