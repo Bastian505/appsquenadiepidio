@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-03.m';
+  var BUILD = '2026-10-04.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -746,6 +746,11 @@
     try { sessionStorage.setItem('dc_splash', '1'); } catch (e) {}
     setTimeout(function () { el.className += ' hidden'; setTimeout(function () { el.className += ' gone'; }, 450); }, 1600);
   })();
+
+  // App instalable: el service worker deja abrirla sin señal. No se registra bajo automatización (las pruebas usan red simulada).
+  if ('serviceWorker' in navigator && !navigator.webdriver) {
+    window.addEventListener('load', function () { navigator.serviceWorker.register('/v2/sw.js', { scope: '/v2/' }).catch(function () {}); });
+  }
 
   // ¿Llego por un link compartido? (/v2/#token)
   (function start() {

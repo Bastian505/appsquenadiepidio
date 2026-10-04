@@ -50,6 +50,7 @@ jobs:
       - run: E2E_OUT=e2e-capturas E2E_DARK=1 node tests/e2e-v2.mjs
       - run: E2E_OUT=e2e-capturas node tests/e2e-shared.mjs
       - run: node tests/e2e-boot.mjs
+      - run: node tests/e2e-pwa.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

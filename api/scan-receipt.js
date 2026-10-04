@@ -52,8 +52,10 @@ const COUNTRY_RULES = globalThis.DC_COUNTRY_RULES;
 // ── Selección de modelo — siempre Sonnet hasta tener corpus de eval validado ──
 // (Opus 4.7 spec: "Con 0 usuarios, el riesgo de marcar mal complexity:simple
 //  es mayor que el ahorro. Cuando tengas datos, mover países simples a Haiku.")
+// OCR_MODEL (variable de entorno) cambia el modelo sin tocar código; los evals lo usan para medir otros modelos.
 function selectModel() {
-  return MODEL_SONNET;
+  const m = (process.env.OCR_MODEL || '').trim();
+  return /^claude-[a-z0-9.-]+$/.test(m) ? m : MODEL_SONNET;
 }
 
 // ── CAPA 2: Detección de país ─────────────────────────────────────────────────
