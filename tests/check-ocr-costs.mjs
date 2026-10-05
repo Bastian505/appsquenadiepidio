@@ -87,6 +87,14 @@ r = await runNoHint([mala, lect([it('A', 10)])]);
 ok(r.bodies.length === 2 && !r.body.reconciliation.perfil_pais.mejoro, 'reglas del país: si la segunda queda más lejos, se conserva la primera');
 delete process.env.OCR_PROFILE_RETRY;
 r = await runNoHint([mala]); ok(r.bodies.length === 1, 'sin OCR_PROFILE_RETRY no hay segunda lectura por país');
+// Propina sugerida impresa: porcentaje directo, calculada desde el monto, o descartada si no es plausible
+reset();
+const conSug = x => ({ ...lect([it('A', 60), it('B', 40)], 100), ...x });
+r = await run([conSug({ propina_sugerida_pct: 10 })]); ok(r.body.propina_sugerida_pct === 10, 'propina sugerida: el porcentaje impreso pasa tal cual');
+r = await run([conSug({ propina_sugerida_monto: 9.99 })]); ok(r.body.propina_sugerida_pct === 10, 'propina sugerida: solo con monto se calcula contra el total (9,99 de 100 = 10 %)');
+r = await run([conSug({ propina_sugerida_pct: 80 })]); ok(r.body.propina_sugerida_pct === null, 'propina sugerida: un porcentaje absurdo se descarta');
+r = await run([buena]); ok(r.body.propina_sugerida_pct === null, 'propina sugerida: sin sugerencia en la boleta, null');
+
 // Alemania (Lidl): la IA omite la devolución de envases; la app la agrega como línea que RESTA (cantidad -1, precio positivo), no en 0 €
 reset();
 const lidl = lect([it('Wasser medium', 0.29, 6), it('Pfand 0,25 EM', 0.25, 6), it('Mineralwasser still', 1.29, 2), it('Pfand 2,25 EM', 2.25, 2)], 6.82, 'DE');
