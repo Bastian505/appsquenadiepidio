@@ -67,6 +67,10 @@ ok(reconcile([it('a', 100)], 110, 'TH').auto_fix_item?.nombre !== 'VAT 7%', 'TH:
 ok(near(fixed(reconcile([it('Pop', 3.99, 3), it('Peach Lemonade', 7.99), it('Pulled Pork', 20.99), it('Chicken BLT', 29.49), it('Whiskey BBQ', 26.49), it('Chicken BLT', 22.99), it('Open Food', 2.5), it('Open Food', 3), it('Ice Cream', 6.49), it('Sticky Toffee', 11.99, 2)], 165.08, 'CA')), 9.19), 'CA BFF (BC): impuestos 9,19 = 5,9 % de la consumición');
 ok(near(fixed(reconcile([it('Calamari', 19.95, 2), it('Truffle Fries', 10.95), it('Riley Pizza', 14.95), it('Chicken Thai', 29.95, 2), it('Elderberry', 21.95), it('Cranberry', 21.95, 2), it('Gin Fizz', 16.95), it('Village Enhancement', 1.92), it('e payment processing', 4.17), it('Gratuity 18%', 37.53)], 267.76, 'CA')), 15.64), 'CA Ontario: HST omitido con la gratuity incluida');
 ok(reconcile([it('platos', 100), it('HST', 13)], 113, 'CA').ok, 'CA: con HST ya listado y la suma cuadrando no agrega nada');
+// Tailandia: VAT 7 % calculado sobre consumición + servicio (Ippudo y The Local reales, fallaban en producción)
+ok(near(fixed(reconcile([it('Coke', 45), it('Ippu Mineral Water', 30), it('Kuro Ramen', 240, 3), it('Service', 79.5)], 935.72, 'TH')), 61.22), 'TH Ippudo: VAT 61,22 = 7 % de ítems + servicio');
+ok(near(fixed(reconcile([it('Appetizer set', 250), it('Pomelo Salad', 250), it('Bai cha kram', 250, 2), it('Grill Beef', 850), it('Chicken Pandanus', 220), it('Rice', 40, 2), it('Mango Blended', 120), it('Cold Butt&Passion', 85), it('Soda', 55), it('Service Charge 10%', 241)], 2836.57, 'TH')), 185.57), 'TH The Local: VAT 185,57 = 7 % de ítems + servicio');
+ok(!reconcile([it('a', 100), it('Service', 10)], 125, 'TH').auto_fix_item || reconcile([it('a', 100), it('Service', 10)], 125, 'TH').auto_fix_item.nombre !== 'VAT 7%', 'TH: 13,6 % de diferencia no es VAT 7 %');
 // Austria: ítems de más (suplemento contado dos veces) → avisa, nunca "arregla"
 const at = reconcile([it('Hirter', 4, 2), it('Prosecco', 5.2, 2), it('Venezia', 13.1), it('San Daniele', 13.2)], 43.5, 'AT');
 ok(!at.auto_fixed && at.diff < 0, 'AT: suma > total → sin auto-fix');
