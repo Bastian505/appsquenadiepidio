@@ -499,11 +499,13 @@ function reconcile(items, totalReported, countryCode) {
     const yaHayVat = items.some(it => /vat|ภาษี|tax|impuesto/i.test(it.nombre||''));
     const consumo = items.filter(it => !/service|ค่าบริการ|servicio|propina|tip/i.test(it.nombre||''))
       .reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
-    const rate = consumo > 0 ? diff / consumo : 0;
-    if (!yaHayVat && rate >= 0.066 && rate <= 0.074) {
+    // El VAT 7 % se calcula sobre la consumición (Three Monkeys) o sobre consumición + servicio (Ippudo, The Local): se prueban las dos bases.
+    const rate = consumo > 0 ? diff / consumo : 0, rateTodo = diff / sum;
+    const calza = r => r >= 0.066 && r <= 0.074;
+    if (!yaHayVat && (calza(rate) || calza(rateTodo))) {
       const monto = Math.round(diff * 100) / 100;
       const fix = { nombre:'VAT 7%', precio_unitario:monto, cantidad:1, auto_created:true, auto_fix_type:'tax',
-        auto_fix_evidence:`Diferencia de ${(rate*100).toFixed(1)}% sobre la consumición = VAT 7% de Tailandia`, confianza:0.50 };
+        auto_fix_evidence:`Diferencia de ${((calza(rate) ? rate : rateTodo)*100).toFixed(1)}% = VAT 7% de Tailandia`, confianza:0.50 };
       return { ok:true, sum:Math.round((sum+monto)*100)/100, total:totalReported, diff:0, ratio:0, note:null, auto_fixed:true,
         auto_fix_type:'tax', auto_fix_item:fix, user_action_required:true,
         user_message:`Detecté un VAT del 7% (~${monto}). Revísalo antes de dividir.` };
