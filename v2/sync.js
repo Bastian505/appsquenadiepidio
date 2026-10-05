@@ -234,7 +234,16 @@
     }).catch(function () { return []; });
   }
 
+  // Sesión anónima del usuario (jwt) para identificarlo ante /api/scan-receipt (cuota de lecturas). null si no hay conexión; nunca rechaza.
+  function accessToken() {
+    return init().then(function (c) {
+      if (!c) return null;
+      return c.auth.getSession().then(function (r) { return (r.data && r.data.session && r.data.session.access_token) || null; });
+    }).catch(function () { return null; });
+  }
+
   root.DC_SYNC = {
+    accessToken: accessToken,
     ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
     setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid, fetchMembers: fetchMembers, isLive: isLive,

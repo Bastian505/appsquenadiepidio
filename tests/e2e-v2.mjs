@@ -34,8 +34,8 @@ async function open(scan) {
   const ctx = await browser.newContext({ locale: 'es-CL', viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, colorScheme: DARK ? 'dark' : 'light' });
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
   const sent = [], translated = [];
-  page._translated = translated;
-  await page.route('**/api/scan-receipt', async rt => { sent.push(JSON.parse(rt.request().postData())); await new Promise(r => setTimeout(r, 2500)); await rt.fulfill({ status: scan.status, contentType: 'application/json', body: JSON.stringify(scan.body) }); });
+  page._translated = translated; page._scanHeaders = [];
+  await page.route('**/api/scan-receipt', async rt => { sent.push(JSON.parse(rt.request().postData())); page._scanHeaders.push(rt.request().headers()); await new Promise(r => setTimeout(r, 2500)); await rt.fulfill({ status: scan.status, contentType: 'application/json', body: JSON.stringify(scan.body) }); });
   await page.route('**/api/translate', async rt => { const b = JSON.parse(rt.request().postData()); translated.push(b); await rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, translations: b.names.map(n => n === 'Gosht Hyderabadi Biryani' ? 'Biryani de cordero' : n === 'French Fries' ? 'Papas fritas' : n) }) }); });
   await page.route(/^https?:\/\/(?!localhost)/, r => r.abort());
   await page.goto(BASE); return { page, errs, sent };
@@ -150,6 +150,25 @@ async function open(scan) {
     ok(on === esperado, `propina sugerida ${etiqueta}: queda marcada "${esperado}" (vi "${on}")`);
     ok(errs.length === 0, 'sin errores JS');
   }
+}
+// 5) Cuota de lecturas: el escaneo viaja con la sesión anónima; con la cuota agotada se muestra el aviso
+{
+  const { page, errs } = await open({ status: 200, body: SCAN });
+  await page.evaluate(() => window.DC_SYNC._setClient({ auth: { getSession: () => Promise.resolve({ data: { session: { access_token: 'aaa.bbb.ccc' } } }) } }));
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.chips', { timeout: 9000 });
+  ok(page._scanHeaders[0] && page._scanHeaders[0].authorization === 'Bearer aaa.bbb.ccc', 'el escaneo manda la sesión anónima en Authorization');
+  ok(errs.length === 0, 'sin errores JS');
+}
+{
+  const { page } = await open({ status: 429, body: { error: 'Llegaste al límite de 30 lecturas de este mes. Puedes ingresar los ítems a mano.', code: 'QUOTA_EXCEEDED', used: 30, limit: 30 } });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.danger', { timeout: 9000 });
+  const body = await page.innerText('body');
+  ok(/límite de 30 lecturas/.test(body) && /Ingresar ítems a mano/.test(body), 'cuota agotada: avisa el límite y ofrece ingresar a mano');
+}
+{
+  const { page } = await open({ status: 200, body: { ...SCAN, quota: { used: 29, limit: 30 } } });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.chips', { timeout: 9000 });
+  ok(/te quedan 1 lectura este mes/.test(await page.innerText('body')), 'quedando 1 lectura: lo avisa');
 }
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} comprobaciones v2 OK`);

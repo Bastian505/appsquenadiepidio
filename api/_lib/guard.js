@@ -12,7 +12,7 @@ export function guard(req, res, { limit = 20, windowMs = 60_000, name = 'api' } 
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Secret');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Secret, Authorization');
   if (req.method === 'OPTIONS') { res.status(200).end(); return false; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return false; }
   if (APP_SHARED_SECRET && req.headers['x-app-secret'] !== APP_SHARED_SECRET) {
