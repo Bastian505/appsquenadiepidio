@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Política de privacidad · DiviCuenta</title><meta name="description" content="Qué datos usa DiviCuenta, para qué, con quién se comparten, cuánto tiempo se guardan y cómo ejercer tus derechos."><meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#fff;--fg:#14171f;--mut:#5a6070;--line:#e3e6ee;--acc:#2f5fe0;--card:#f5f7fb}
+@media (prefers-color-scheme:dark){:root{--bg:#0b0e14;--fg:#e9ecf3;--mut:#9aa1b2;--line:#252b38;--acc:#7da2ff;--card:#141924}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:1.7rem;line-height:1.2;margin:.4em 0 .2em}h2{font-size:1.15rem;margin:1.8em 0 .4em}
+p,li{color:var(--fg)}.mut{color:var(--mut);font-size:.9rem}a{color:var(--acc)}
+.top a{font-size:.95rem;text-decoration:none}
+table{width:100%;border-collapse:collapse;margin:.6em 0;font-size:.93rem}th,td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}th{background:var(--card)}
+.box{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:1em 0}
+@media (max-width:560px){table,thead,tbody,tr,th,td{display:block}thead{display:none}td{border:0;border-bottom:1px solid var(--line)}tr{border:1px solid var(--line);border-radius:10px;margin:8px 0;overflow:hidden}td:first-child{background:var(--card);font-weight:600}}
+</style></head><body><main>
+<p class="top"><a href="/v2/">← Volver a DiviCuenta</a></p>
+
+<h1>Política de privacidad</h1>
+<p class="mut">Vigente desde el 5 de octubre de 2026 · Última actualización: 5 de octubre de 2026</p>
+
+<div class="box"><strong>En resumen.</strong> DiviCuenta lee la foto de tu boleta para dividir la cuenta. <strong>No tiene publicidad, no vende datos y no usa cookies de seguimiento.</strong>
+No te pedimos registrarte. La foto se envía a un servicio de inteligencia artificial para leerla y no la guardamos nosotros.
+Las cuentas que compartes con tus amigos se borran a los 30 días.</div>
+
+<h2>1. Quién es el responsable</h2>
+<p>El responsable del tratamiento de tus datos es <strong>{{TITULAR}}</strong> (“nosotros”), que opera DiviCuenta en <a href="https://yporqueno.vercel.app">yporqueno.vercel.app</a>.
+Para cualquier consulta o para ejercer tus derechos escríbenos a <a href="mailto:{{CORREO}}">{{CORREO}}</a>.</p>
+
+<h2>2. Qué datos usamos, para qué y dónde quedan</h2>
+<table>
+<thead><tr><th>Dato</th><th>Para qué</th><th>Dónde queda</th></tr></thead>
+<tbody>
+<tr><td>Foto de la boleta</td><td>Leer los ítems y el total. Puede mostrar el nombre del local, la fecha y, si la boleta lo imprime, datos de otras personas o de una tarjeta.</td><td>Se envía a nuestro servidor y de ahí al proveedor de IA (Anthropic) solo para leerla. <strong>No la guardamos.</strong> Tu teléfono la muestra mientras trabajas y después la descarta.</td></tr>
+<tr><td>Ítems, precios, totales y propina</td><td>Calcular cuánto paga cada persona.</td><td>En tu teléfono (almacenamiento local del navegador). Si compartes la cuenta, también en nuestra base de datos (Supabase).</td></tr>
+<tr><td>Nombres de las personas</td><td>Repartir la cuenta. Son los nombres o apodos que escribes tú o tus amigos.</td><td>En tu teléfono; y en la base de datos solo si compartes la cuenta con un enlace.</td></tr>
+<tr><td>Datos para que te transfieran (texto libre)</td><td>Mostrárselos a quienes comparten la cuenta. <strong>Es opcional.</strong> Puede incluir nombre, RUT, banco y número de cuenta si tú los escribes.</td><td>En tu teléfono (para recordarlos) y, si compartes la cuenta, en la base de datos, donde <strong>los ven todas las personas que entraron a esa cuenta</strong>. No escribas nada que no quieras que vean.</td></tr>
+<tr><td>Identificador anónimo</td><td>Que la base de datos sepa quién eres dentro de una cuenta compartida y limitar el uso para evitar abusos. No incluye tu nombre ni tu correo.</td><td>En tu teléfono y en nuestra base de datos.</td></tr>
+<tr><td>Registro de uso de lecturas</td><td>Medir el servicio: país, modelo de IA usado, si la suma cuadró, cantidad de ítems y costo estimado. <strong>No incluye la boleta ni su contenido.</strong></td><td>Base de datos. Se asocia a tu identificador anónimo.</td></tr>
+<tr><td>Dirección IP y datos técnicos de la conexión</td><td>Seguridad y límite de solicitudes por minuto.</td><td>Registros técnicos de nuestro proveedor de alojamiento (Vercel), por tiempo breve.</td></tr>
+</tbody></table>
+
+<h2>3. Con quién los compartimos</h2>
+<p>Solo con los proveedores que hacen funcionar el servicio, y únicamente lo necesario:</p>
+<ul>
+<li><strong>Anthropic</strong> (inteligencia artificial): recibe la foto de la boleta y los nombres de los ítems (para traducirlos). Se rige por sus propios términos de uso de la API.</li>
+<li><strong>Supabase</strong> (base de datos): guarda las cuentas compartidas y el registro de uso.</li>
+<li><strong>Vercel</strong> (alojamiento): sirve la aplicación y procesa las solicitudes.</li>
+<li><strong>Servicios de tipo de cambio</strong> (open.er-api.com y jsDelivr): reciben solo las dos monedas que consultas (por ejemplo, “USD a CLP”) y tu dirección IP.</li>
+<li><strong>jsDelivr y Cloudflare (cdnjs)</strong> (redes de distribución): entregan librerías de la aplicación (la de las cuentas compartidas y la que dibuja el código QR) y, por eso, ven tu dirección IP.</li>
+<li><strong>Las personas con quienes compartes una cuenta</strong>: ven los ítems, los nombres, los totales y, si los escribiste, tus datos de transferencia.</li>
+</ul>
+<p>No vendemos tus datos ni los usamos para publicidad. Podemos revelarlos si una autoridad competente lo exige legalmente.</p>
+
+<h2>4. Transferencias internacionales</h2>
+<p>Nuestros proveedores operan en otros países, entre ellos Estados Unidos. Al usar DiviCuenta, tus datos pueden tratarse fuera de tu país. Elegimos proveedores que aplican medidas de seguridad reconocidas.</p>
+
+<h2>5. Cuánto tiempo los guardamos</h2>
+<ul>
+<li><strong>Cuentas compartidas</strong> (ítems, personas, marcas y datos de transferencia): el acceso por enlace se cierra a las 24 horas, y la cuenta completa <strong>se borra automáticamente a los 30 días</strong>.</li>
+<li><strong>Registro de uso de lecturas</strong>: 12 meses y luego se borra.</li>
+<li><strong>La foto de la boleta</strong>: no la guardamos. El proveedor de IA puede conservar las solicitudes por un tiempo limitado según sus términos.</li>
+<li><strong>En tu teléfono</strong>: hasta que tú los borres (cerrando la cuenta en la app o borrando los datos del navegador).</li>
+</ul>
+
+<h2>6. Cookies y almacenamiento local</h2>
+<p>No usamos cookies de publicidad ni de analítica de terceros. Usamos el almacenamiento local de tu navegador para guardar tu borrador de cuenta, tu historial de cobros, los datos de transferencia que quieras recordar, tu moneda preferida y el último tipo de cambio. Sirve solo para que la aplicación funcione y está en tu dispositivo.</p>
+
+<h2>7. Tus derechos</h2>
+<p>Puedes pedirnos <strong>acceso</strong> a tus datos, <strong>rectificarlos</strong>, <strong>eliminarlos</strong>, <strong>oponerte</strong> a su tratamiento o <strong>llevártelos</strong> en un formato usable. Escríbenos a <a href="mailto:{{CORREO}}">{{CORREO}}</a> y te responderemos en un plazo máximo de 30 días.</p>
+<p>Como no te pedimos registrarte, para encontrar tus datos en el servidor podemos necesitar que nos indiques el enlace de la cuenta compartida o la fecha aproximada. Si no podemos identificarte, te lo explicaremos. Si consideras que tus derechos no fueron respetados, también puedes recurrir a la autoridad de protección de datos de tu país.</p>
+
+<h2>8. Seguridad</h2>
+<p>Las conexiones van cifradas. La base de datos aplica reglas de acceso para que cada persona vea solo las cuentas en las que participa. Ningún sistema es infalible, pero trabajamos para reducir los riesgos.</p>
+
+<h2>9. Terceros en tus fotos y menores</h2>
+<p>Antes de fotografiar una boleta, evita que aparezcan datos de tarjetas o de otras personas. DiviCuenta no está dirigida a menores de edad sin la autorización de sus padres o tutores.</p>
+
+<h2>10. Cambios a esta política</h2>
+<p>Si cambiamos algo importante, actualizaremos la fecha de arriba y lo avisaremos en la aplicación. Si seguimos usando tus datos para algo nuevo, te pediremos tu consentimiento cuando la ley lo exija.</p>
+
+<p class="mut" style="margin-top:2em">Ver también los <a href="/v2/terminos.html">Términos de uso</a>.</p>
+</main></body></html>
