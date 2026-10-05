@@ -140,6 +140,17 @@ async function open(scan) {
   await page.setInputFiles('#photo', IMG); await page.waitForSelector('text=¿De qué país es la boleta?', { timeout: 8000 });
   ok(await page.locator('.chip', { hasText: 'Canadá' }).count() === 1, 'ofrece elegir país');
 }
+// 4) Propina sugerida impresa en la boleta: queda preseleccionada
+{
+  const base = { ok: true, restaurante: 'Tquila', moneda: 'CLP', pais: 'CL', pais_nombre: 'Chile', items: [{ nombre: 'Churros', precio_unitario: 6490, cantidad: 1 }, { nombre: 'Agua', precio_unitario: 2990, cantidad: 2 }], reconciliation: { ok: true, total_boleta: 12470 } };
+  for (const [sug, esperado, etiqueta] of [[10, '10% · sugerida', 'del 10 %'], [18, '18% · sugerida', 'del 18 % (no está entre los botones fijos)'], [null, 'Sin propina', 'sin sugerencia']]) {
+    const { page, errs } = await open({ status: 200, body: { ...base, propina_sugerida_pct: sug } });
+    await page.setInputFiles('#photo', IMG); await page.waitForSelector('.chips', { timeout: 9000 });
+    const on = (await page.locator('.chips .chip.on').first().innerText()).trim();
+    ok(on === esperado, `propina sugerida ${etiqueta}: queda marcada "${esperado}" (vi "${on}")`);
+    ok(errs.length === 0, 'sin errores JS');
+  }
+}
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} comprobaciones v2 OK`);
 process.exit(fails ? 1 : 0);

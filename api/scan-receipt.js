@@ -207,7 +207,11 @@ R9. PROPINAS — incluir SOLO en estos casos:
     · Aparece como línea EN LA BOLETA con un MONTO específico y forma parte
       del total final cobrado → incluir como ítem "Propina".
     · Si solo aparece como sugerencia ("Suggested tip 15%: $X") y el total
-      final NO la incluye → IGNORAR.
+      final NO la incluye → IGNORAR como ítem, pero si la boleta propone UNA
+      sola propina (ej. "Propina sugerida $9.999" o "Sugerida 10%"), devuélvela
+      en "propina_sugerida_pct" (el porcentaje impreso) o, si solo hay monto,
+      en "propina_sugerida_monto". Si ofrece varias opciones (guía 15/18/20 %)
+      o no hay sugerencia, deja ambos en null.
     · Si el restaurante tiene servicio obligatorio (UK service charge, coperto
       italiano) → siempre incluir como "Servicio".
 
@@ -305,7 +309,7 @@ OUTPUT JSON
 Responde SOLO con JSON válido. Sin markdown, sin backticks, sin texto extra.
 
 Caso éxito:
-{"ok":true,"restaurante":"nombre o null","pos_detected":"touchbistro|toast|square|clover|lightspeed|tpv_es|nfe_br|sii_cl|generic|unknown","pais":"ISO_2_o_UNKNOWN","moneda":"ISO_3_o_AMBIGUOUS_DOLLAR_o_AMBIGUOUS_YEN","monedas_candidatas":[],"items":[{"nombre":"Coffee","precio_unitario":4.00,"cantidad":3,"confianza":0.95},{"nombre":"Cake","precio_unitario":6.50,"cantidad":1,"confianza":0.65,"evidencia":"Cke 6.5"}],"items_dudosos":[],"total_referencia":18.50,"razonamiento":"máx. 12 palabras","confianza_global":0.92}
+{"ok":true,"restaurante":"nombre o null","pos_detected":"touchbistro|toast|square|clover|lightspeed|tpv_es|nfe_br|sii_cl|generic|unknown","pais":"ISO_2_o_UNKNOWN","moneda":"ISO_3_o_AMBIGUOUS_DOLLAR_o_AMBIGUOUS_YEN","monedas_candidatas":[],"items":[{"nombre":"Coffee","precio_unitario":4.00,"cantidad":3,"confianza":0.95},{"nombre":"Cake","precio_unitario":6.50,"cantidad":1,"confianza":0.65,"evidencia":"Cke 6.5"}],"items_dudosos":[],"total_referencia":18.50,"propina_sugerida_pct":null,"propina_sugerida_monto":null,"razonamiento":"máx. 12 palabras","confianza_global":0.92}
 Escribe el JSON compacto en una sola línea, sin espacios ni saltos de línea de más, y sin texto fuera del JSON.
 
 Caso refusal:
@@ -930,6 +934,7 @@ export default async function handler(req, res) {
       items_dudosos:       itemsDudosos,
       total:               Math.round(totalFinal * 100) / 100,
       total_referencia:    parsed.total_referencia ?? null,
+      propina_sugerida_pct: propinaSugeridaPct(parsed),
       confianza_global:    Math.round(confianzaGlobal * 100) / 100,
       model_used:          modelUsed,
       prompt_version:      PROMPT_VERSION,
@@ -954,6 +959,19 @@ export default async function handler(req, res) {
     console.error('Pipeline error:', err);
     return res.status(500).json({ error:'Error interno', code:'INTERNAL' });
   }
+}
+
+// Propina sugerida impresa (no incluida en el total): porcentaje entero entre 3 y 30, o null. Si solo hay monto, se calcula contra el total impreso.
+function propinaSugeridaPct(parsed) {
+  const num = v => { const n = Number(v); return Number.isFinite(n) && n > 0 ? n : null; };
+  let pct = num(parsed.propina_sugerida_pct);
+  if (pct == null) {
+    const monto = num(parsed.propina_sugerida_monto), total = num(parsed.total_referencia);
+    if (monto != null && total != null) pct = (monto / total) * 100;
+  }
+  if (pct == null) return null;
+  pct = Math.round(pct);
+  return pct >= 3 && pct <= 30 ? pct : null;
 }
 
 // ── Helper: normalizar ítem auto-creado ──────────────────────────────────────

@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-04.g';
+  var BUILD = '2026-10-05.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -237,7 +237,8 @@
     var t = state.tip, on = function (p) { return t && t.pct === p ? ' on' : ''; };
     return '<div class="chips">' +
       '<button class="chip' + (!t ? ' on' : '') + '" data-action="tip" data-pct="0">Sin propina</button>' +
-      [10, 15, 20].map(function (p) { return '<button class="chip' + on(p) + '" data-action="tip" data-pct="' + p + '">' + p + '%</button>'; }).join('') +
+      (state.tipSuggested && [10, 15, 20].indexOf(state.tipSuggested) < 0 ? [state.tipSuggested] : []).concat([10, 15, 20]).sort(function (a, b) { return a - b; })
+        .map(function (p) { return '<button class="chip' + on(p) + '" data-action="tip" data-pct="' + p + '">' + p + '%' + (p === state.tipSuggested ? ' · sugerida' : '') + '</button>'; }).join('') +
       (ui.customTip || (t && t.fixed != null)
         ? '<input class="chip-input num" inputmode="decimal" placeholder="Monto" value="' + (t && t.fixed != null ? t.fixed : '') + '" data-action="tip-fixed" data-autofocus aria-label="Propina en monto">'
         : '<button class="chip" data-action="tip-custom">Otro monto</button>') + '</div>';
@@ -672,6 +673,8 @@
       state.items.push({ id: state.nextId++, name: it.nombre || 'Ítem', price: Number(it.precio_unitario) || 0, qty: Math.max(1, Number(it.cantidad) || 1), confidence: it.confianza == null ? null : Number(it.confianza) });
     });
     state.nextId = Math.max(state.nextId, 1 + state.people.reduce(function (m, p) { return Math.max(m, p.id); }, 0));
+    var sug = Number(d.propina_sugerida_pct);
+    if (sug >= 3 && sug <= 30) { state.tip = { pct: sug }; state.tipSuggested = sug; }
     state.step = 'review'; ui.photo = null; save(); render();
     toast('Boleta leída · ' + state.items.length + ' líneas');
     translateNames();
