@@ -22,6 +22,7 @@ jobs:
       - run: node tests/check-assign.mjs
       - run: node tests/check-ocr-costs.mjs
       - run: node tests/check-quota.mjs
+      - run: node tests/check-legal.mjs
 
   sql:
     runs-on: ubuntu-latest

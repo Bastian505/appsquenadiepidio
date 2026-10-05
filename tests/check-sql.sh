@@ -22,6 +22,7 @@ OUT=$(psql -h "$SOCK" -p "$PORT" -U "$USER_" -d "$DB" -v ON_ERROR_STOP=1 -q \
   -f supabase/migrations/20261005_host_marks_for_members.sql \
   -f supabase/migrations/20261006_payments.sql \
   -f supabase/migrations/20261007_scan_quota.sql \
+  -f supabase/migrations/20261008_purge_old_data.sql \
   -f tests/sql/test_shared_bills.sql 2>&1)
 echo "$OUT" | grep -E '(NOTICE:|WARNING:|ERROR:|FATAL:|^──|^✓|^✗)' | sed -E 's/^psql:[^ ]+ //; s/^NOTICE:  //; s/^WARNING:  /FALLA> /'
 # Debe pasar TODO y no puede haber ningún error de SQL (una prueba que no corre no es una prueba que pasa).

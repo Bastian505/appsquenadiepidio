@@ -343,6 +343,25 @@ begin;
   reset role;
 commit;
 
+\echo '── Borrado automático de datos viejos ──'
+begin;
+  select as_user('11111111-1111-1111-1111-111111111111');
+  insert into ctx values ('bill_new', (select out_bill_id::text from dc_create_bill('Reciente', 'CLP')));
+  reset role;
+  -- una cuenta de hace 40 días (con sus miembros) y registros de uso de hace 14 meses y de hoy
+  update dc_bills set created_at = now() - interval '40 days' where id = get('bill')::uuid;
+  insert into dc_scan_log (user_id, status, created_at) values ('99999999-9999-9999-9999-999999999999', 'ok', now() - interval '14 months'), ('99999999-9999-9999-9999-999999999999', 'ok', now());
+  select note('borrado: nadie desde la app puede ejecutarlo', denied('11111111-1111-1111-1111-111111111111', 'select * from dc_purge_old()'));
+  select note('borrado: la cuenta de 40 días existe antes de correrlo', (select count(*) = 1 from dc_bills where id = get('bill')::uuid));
+  create temp table purge_out as select * from dc_purge_old();
+  select note('borrado: elimina la cuenta de más de 30 días', (select count(*) = 0 from dc_bills where id = get('bill')::uuid));
+  select note('borrado: se llevan sus miembros en cascada', (select count(*) = 0 from dc_bill_members where bill_id = get('bill')::uuid));
+  select note('borrado: la cuenta reciente se conserva', (select count(*) = 1 from dc_bills where id = get('bill_new')::uuid));
+  select note('borrado: elimina el registro de uso de más de 12 meses y conserva el de hoy',
+    (select count(*) = 1 from dc_scan_log where user_id = '99999999-9999-9999-9999-999999999999'));
+  select note('borrado: informa cuántos borró', (select out_bills >= 1 and out_scans >= 1 from purge_out));
+commit;
+
 \pset tuples_only off
 select case when count(*) = 0 then '✓ todas las comprobaciones de seguridad pasaron'
             else '✗ FALLARON ' || count(*) || ': ' || string_agg(label, ' · ') end as resultado
