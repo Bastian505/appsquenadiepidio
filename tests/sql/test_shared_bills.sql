@@ -279,6 +279,70 @@ begin;
   reset role;
 commit;
 
+\echo '── Cuota de escaneos y registro de uso ──'
+begin;
+  select as_user('55555555-5555-5555-5555-555555555555');
+  select note('cuota: 1.er escaneo permitido (usa 1 de 2)', (select out_allowed and out_used = 1 from dc_consume_scan(2)));
+  select note('cuota: 2.º escaneo permitido (usa 2 de 2)', (select out_allowed and out_used = 2 from dc_consume_scan(2)));
+  select note('cuota: el 3.º se rechaza por el límite mensual', (select not out_allowed and out_reason = 'user_month' from dc_consume_scan(2)));
+  select note('cuota: sin límite (0) siempre deja pasar', (select out_allowed from dc_consume_scan(0)));
+  reset role;
+  select note('cuota: no puede leer la tabla de uso directamente', denied('55555555-5555-5555-5555-555555555555', 'select * from dc_scan_log'));
+  select note('cuota: no puede escribir en la tabla de uso directamente', denied('55555555-5555-5555-5555-555555555555', $$insert into dc_scan_log (user_id) values ('55555555-5555-5555-5555-555555555555')$$));
+  select note('cuota: no puede borrar su historial', denied('55555555-5555-5555-5555-555555555555', 'delete from dc_scan_log'));
+commit;
+begin;
+  -- Cada usuario tiene su propia cuota
+  select as_user('66666666-6666-6666-6666-666666666666');
+  select note('cuota: otro usuario parte de cero', (select out_allowed and out_used = 1 from dc_consume_scan(2)));
+  reset role;
+  insert into ctx values ('scan_b', (select id::text from dc_scan_log where user_id = '66666666-6666-6666-6666-666666666666' limit 1));
+commit;
+begin;
+  -- Un usuario no puede cerrar el escaneo de otro
+  select as_user('55555555-5555-5555-5555-555555555555');
+  select dc_finish_scan(get('scan_b')::uuid, true, 'CL', 'm', true, 1.5, 3);
+  reset role;
+  select note('cuota: no puede cerrar el escaneo de otro usuario', (select status = 'started' from dc_scan_log where id = get('scan_b')::uuid));
+commit;
+begin;
+  select as_user('66666666-6666-6666-6666-666666666666');
+  select dc_finish_scan(get('scan_b')::uuid, true, 'CL', 'claude-sonnet-5-5', true, 1.234, 7);
+  reset role;
+  select note('registro: el dueño lo cierra con país, modelo, costo y si cuadró',
+    (select status = 'ok' and country = 'CL' and model = 'claude-sonnet-5-5' and cuadra and cost_cents = 1.234 and n_items = 7 from dc_scan_log where id = get('scan_b')::uuid));
+  select as_user('66666666-6666-6666-6666-666666666666');
+  select dc_finish_scan(get('scan_b')::uuid, false, 'XX', 'otro', false, 99, 1);
+  reset role;
+  select note('registro: un escaneo ya cerrado no se puede reescribir', (select status = 'ok' and country = 'CL' from dc_scan_log where id = get('scan_b')::uuid));
+commit;
+begin;
+  -- Un escaneo fallido se devuelve y no cuenta contra la cuota
+  select as_user('77777777-7777-7777-7777-777777777777');
+  select note('fallido: reserva el único escaneo (límite 1)', (select out_allowed from dc_consume_scan(1)));
+  select note('fallido: con el cupo usado, se rechaza', (select not out_allowed from dc_consume_scan(1)));
+  reset role;
+  insert into ctx values ('scan_c', (select id::text from dc_scan_log where user_id = '77777777-7777-7777-7777-777777777777' limit 1));
+  select as_user('77777777-7777-7777-7777-777777777777');
+  select dc_finish_scan(get('scan_c')::uuid, false);
+  select note('fallido: tras fallar, el cupo se devuelve y puede reintentar', (select out_allowed from dc_consume_scan(1)));
+  reset role;
+commit;
+begin;
+  -- Tope diario global (toda la app)
+  insert into ctx values ('global_n', (select count(*)::text from dc_scan_log where status <> 'failed' and created_at >= date_trunc('day', now() at time zone 'utc') at time zone 'utc'));
+  select as_user('88888888-8888-8888-8888-888888888888');
+  select note('tope global: en el tope exacto se rechaza', (select not out_allowed and out_reason = 'global_day' from dc_consume_scan(0, get('global_n')::int)));
+  select note('tope global: con un cupo más se permite', (select out_allowed from dc_consume_scan(0, get('global_n')::int + 1)));
+  reset role;
+commit;
+begin;
+  set local role authenticated;
+  select set_config('request.jwt.claim.sub', '', true);
+  select note('cuota: sin sesión se rechaza (no_auth)', (select not out_allowed and out_reason = 'no_auth' from dc_consume_scan(5)));
+  reset role;
+commit;
+
 \pset tuples_only off
 select case when count(*) = 0 then '✓ todas las comprobaciones de seguridad pasaron'
             else '✗ FALLARON ' || count(*) || ': ' || string_agg(label, ' · ') end as resultado

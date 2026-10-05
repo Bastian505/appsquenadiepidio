@@ -1,5 +1,7 @@
 import '../core/currencies.js';    // define globalThis.DC_CURRENCIES (fuente única de monedas)
 import '../core/country-rules.js'; // define globalThis.DC_COUNTRY_RULES (fuente única de reglas por país)
+import { AsyncLocalStorage } from 'node:async_hooks';
+import { quotaEnabled, bearerToken, consumeScan, finishScan, estimateCostCents } from './_lib/quota.js';
 const DC_CURRENCIES = globalThis.DC_CURRENCIES;
 // api/scan-receipt.js — DiviCuenta v5
 // Arquitectura diseñada por Claude Opus 4.7 — spec: divicuenta_ocr_v5_spec.md
@@ -413,6 +415,7 @@ async function callClaude(apiKey, imageBase64, mediaType, system, userText, mode
 
   const d = await res.json();
   if (d.usage) {
+    const st = requestStore.getStore(); if (st) st.costCents += estimateCostCents(model, d.usage);
     console.log('claude usage', JSON.stringify({
       model,
       input: d.usage.input_tokens,
@@ -678,7 +681,39 @@ function normalizeItems(items, currency) {
 }
 
 // ── PIPELINE PRINCIPAL v5 ────────────────────────────────────────────────────
+// Estado por solicitud (cuota y costo): AsyncLocalStorage evita mezclar solicitudes que comparten instancia.
+const requestStore = new AsyncLocalStorage();
+
+// Envuelve el flujo de lectura: captura la respuesta, y al final cierra el escaneo reservado (país, modelo, costo, si cuadró).
 export default async function handler(req, res) {
+  const ctx = { jwt: bearerToken(req), scanId: null, costCents: 0, status: 200, body: null, quota: null };
+  const origStatus = res.status.bind(res), origJson = res.json.bind(res);
+  res.status = c => { ctx.status = c; return origStatus(c); };
+  res.json = b => { ctx.body = b; return origJson(ctx.quota && b && typeof b === 'object' && !Array.isArray(b) && b.ok ? { ...b, quota: ctx.quota } : b); };
+  await requestStore.run(ctx, () => handleScan(req, res));
+  if (ctx.scanId) {
+    const b = ctx.body || {};
+    await finishScan(ctx.jwt, ctx.scanId, { ok: ctx.status < 400, country: b.pais, model: b.model_used, cuadra: b.reconciliation ? b.reconciliation.ok : null, costCents: ctx.costCents, items: Array.isArray(b.items) ? b.items.length : null });
+  }
+}
+
+// Cuota por usuario (solo si SCAN_QUOTA_PER_MONTH > 0). Devuelve false si ya respondió con el rechazo.
+async function quotaGate(req, res) {
+  if (!quotaEnabled()) return true;
+  const ctx = requestStore.getStore();
+  if (!ctx.jwt) { res.status(401).json({ error: 'Para leer boletas necesitamos identificarte. Abre la app con conexión a internet e intenta de nuevo.', code: 'AUTH_REQUIRED' }); return false; }
+  const q = await consumeScan(ctx.jwt);
+  if (q.authFailed) { res.status(401).json({ error: 'Tu sesión venció. Recarga la app e intenta de nuevo.', code: 'AUTH_REQUIRED' }); return false; }
+  if (q.allowed === false) {
+    if (q.reason === 'global_day') res.status(429).json({ error: 'La lectura automática alcanzó su límite de hoy. Vuelve mañana o ingresa los ítems a mano.', code: 'DAILY_LIMIT' });
+    else res.status(429).json({ error: `Llegaste al límite de ${q.limit} lecturas de este mes. Puedes ingresar los ítems a mano.`, code: 'QUOTA_EXCEEDED', used: q.used, limit: q.limit });
+    return false;
+  }
+  if (q.allowed) { ctx.scanId = q.scanId; ctx.quota = { used: q.used, limit: q.limit }; }
+  return true;
+}
+
+async function handleScan(req, res) {
   const startMs = Date.now();
 
   const origin = req.headers.origin;
@@ -687,7 +722,7 @@ export default async function handler(req, res) {
     res.setHeader('Vary', 'Origin');
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Secret');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-App-Secret, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error:'Method not allowed' });
 
@@ -719,6 +754,8 @@ export default async function handler(req, res) {
   if (!image_base64) return res.status(400).json({ error:'image_base64 requerido' });
   if (image_base64.length > 4_000_000) return res.status(413).json({
     error:'Imagen muy grande. Máximo ~3MB.', code:'IMAGE_TOO_LARGE' });
+
+  if (!(await quotaGate(req, res))) return;
 
   try {
     // Una sola llamada. Siempre Sonnet. Prompt v5 con perfil del país inyectado.

@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-05.a';
+  var BUILD = '2026-10-05.b';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -648,7 +648,13 @@
     var t0 = Date.now(); tlog('enviando al servidor…');
     ui.scanTimer = setInterval(function () { var s = (Date.now() - t0) / 1000; var st = s < 2 ? 0 : s < 14 ? 1 : 2; if (st !== ui.scanStage && state.step === 'scanning' && !ui.confirm) { ui.scanStage = st; render(); } }, 500);
     var ctrl = new AbortController(), timeout = setTimeout(function () { ctrl.abort(); }, 75000);
-    fetch(CFG.SCAN_URL, { method: 'POST', signal: ctrl.signal, headers: { 'Content-Type': 'application/json', 'X-App-Secret': CFG.APP_SHARED_SECRET }, body: JSON.stringify(payload) })
+    // La sesión anónima identifica al usuario ante la cuota de lecturas; si tarda o no hay conexión, se envía sin ella (el servidor decide).
+    var tokenP = SYNC && SYNC.accessToken ? Promise.race([SYNC.accessToken(), new Promise(function (r) { setTimeout(function () { r(null); }, 3000); })]) : Promise.resolve(null);
+    tokenP.then(function (tok) {
+      var headers = { 'Content-Type': 'application/json', 'X-App-Secret': CFG.APP_SHARED_SECRET };
+      if (tok) headers.Authorization = 'Bearer ' + tok;
+      return fetch(CFG.SCAN_URL, { method: 'POST', signal: ctrl.signal, headers: headers, body: JSON.stringify(payload) });
+    })
       .then(function (res) { return res.json().catch(function () { return {}; }).then(function (d) { return { res: res, d: d }; }); })
       .then(function (x) {
         clearTimeout(timeout); clearInterval(ui.scanTimer);
@@ -676,7 +682,8 @@
     var sug = Number(d.propina_sugerida_pct);
     if (sug >= 3 && sug <= 30) { state.tip = { pct: sug }; state.tipSuggested = sug; }
     state.step = 'review'; ui.photo = null; save(); render();
-    toast('Boleta leída · ' + state.items.length + ' líneas');
+    var left = d.quota && d.quota.limit > 0 ? d.quota.limit - d.quota.used : null;
+    toast(left != null && left <= 2 ? 'Boleta leída · te quedan ' + left + ' lectura' + (left === 1 ? '' : 's') + ' este mes' : 'Boleta leída · ' + state.items.length + ' líneas');
     translateNames();
   }
 
