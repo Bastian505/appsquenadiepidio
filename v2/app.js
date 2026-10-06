@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-05.b';
+  var BUILD = '2026-10-06.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -58,6 +58,24 @@
   function baseItems() { return state.items.filter(function (i) { return !S.isExtra(i); }); }
   function extraItems() { return state.items.filter(S.isExtra); }
   function split() { return S.compute({ items: state.items, people: state.people, assigns: state.assigns, tip: state.tip, currency: state.currency }); }
+  // Métricas sin contenido: solo pasos, números y códigos (ver docs/CUOTA_Y_USO.md). Nunca ítems, nombres ni precios.
+  function track(ev, props) { try { if (SYNC && SYNC.track) SYNC.track(ev, props || {}); } catch (e) {} }
+  // ¿La suma de los ítems cuadra con el total impreso? (tolerancia: redondeos de centavos no son un error de lectura)
+  function recon() {
+    var r = split(), printed = state.receiptTotal, sum = r.baseTotal + r.extrasTotal, diff = printed ? printed - sum : 0;
+    var tol = C.decimals(state.currency) === 0 ? 1 : Math.max(0.05, (printed || 0) * 0.0015);
+    return { r: r, printed: printed, sum: sum, diff: diff, tol: tol, bad: !!(printed && Math.abs(diff) > tol), ok: !!(printed && Math.abs(diff) <= tol) };
+  }
+  // Si sobra plata (los ítems suman más que la boleta), ¿hay un ítem que explique justo la diferencia?
+  function suspects(diff) {
+    var out = {}, abs = Math.abs(diff), t2 = C.decimals(state.currency) === 0 ? 1 : 0.02;
+    if (diff >= 0) return out;
+    state.items.forEach(function (it) {
+      if (Math.abs(it.price * it.qty - abs) <= t2) out[it.id] = { kind: 'sobra', msg: 'Si este ítem no va, la suma cuadra.' };
+      else if (it.qty > 1 && Math.abs(it.price - abs) <= t2) out[it.id] = { kind: 'qty', msg: '¿Es una unidad menos? Con ' + (it.qty - 1) + ' cuadra.' };
+    });
+    return out;
+  }
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 2600); }
   function go(step) { state.step = step; save(); render(); window.scrollTo(0, 0); }
   function avatar(p, cls) { return '<span class="avatar ' + (cls || '') + '" style="background:' + p.color + '">' + esc(initials(p.name)) + '</span>'; }
@@ -65,7 +83,7 @@
   // ── pantallas ──────────────────────────────────────────────────────────────
   function render() {
     var app = document.getElementById('app');
-    if (state.step === 'summary') recordLedger(); else if (state.step === 'home') ledgerRefresh();
+    if (state.step === 'summary') { recordLedger(); if (!state.splitTracked) { state.splitTracked = true; track('split_viewed', { p: state.people.length, n: state.items.length }); } } else if (state.step === 'home') ledgerRefresh();
     var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary, join: join, share: shareScreen }[state.step] || home)();
     app.innerHTML = html;
     var ph = document.getElementById('photo');
@@ -75,6 +93,7 @@
         var pf = ph.files && ph.files[0];
         if (!pf) { tlog('el selector se cerró sin entregar ninguna foto'); return; }
         tlog('foto elegida: ' + (pf.name || 'sin nombre') + ' · ' + (pf.type || 'tipo desconocido') + ' · ' + Math.round(pf.size / 1024) + ' KB');
+        if (state.step === 'review') track('retake', { bad: recon().bad });
         startScan(pf);
       });
     }
@@ -195,13 +214,21 @@
   }
 
   function review() {
-    var r = split(), base = baseItems(), extras = extraItems();
-    var printed = state.receiptTotal, diff = printed ? printed - (r.baseTotal + r.extrasTotal) : 0;
-    // Tolerancia: redondeos de centavos ("Round Amt", ajustes de 0,13) no son un error de lectura.
-    var tol = C.decimals(state.currency) === 0 ? 1 : Math.max(0.05, (printed || 0) * 0.0015);
+    var c = recon(), r = c.r, base = baseItems(), extras = extraItems(), diff = c.diff, printed = c.printed;
+    ui.suspects = c.bad ? suspects(diff) : {};
+    // Métricas (una vez por boleta): se mostró el aviso de que no cuadra / el usuario lo arregló.
+    if (c.bad && !state.mmShown) { state.mmShown = true; track('mismatch_shown', { pct: Math.round(Math.abs(diff) / printed * 100), dir: diff > 0 ? 'falta' : 'sobra' }); }
+    if (c.ok && state.mmShown && !state.mmFixed) { state.mmFixed = true; track('mismatch_fix', { via: ui.lastFix || 'manual', edits: state.edits || 0 }); }
     var banner = '';
-    if (printed && Math.abs(diff) > tol) banner = '<div class="banner warn"><b>Los ítems no cuadran con la boleta.</b> Total impreso ' + money(printed) + ', ítems ' + money(r.baseTotal + r.extrasTotal) + ' (' + (diff > 0 ? 'faltan ' : 'sobran ') + money(Math.abs(diff)) + '). Revisa los precios marcados o agrega lo que falte.</div>';
-    else if (printed) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ').</div>';
+    if (c.bad) {
+      var nSus = Object.keys(ui.suspects).length;
+      banner = '<div class="banner warn"><b>La suma no coincide con la boleta.</b> Total impreso ' + money(printed) + ', ítems ' + money(c.sum) + ' (' + (diff > 0 ? 'faltan ' : 'sobran ') + money(Math.abs(diff)) + ', ' + Math.round(Math.abs(diff) / printed * 100) + '%). ' +
+        (nSus ? 'Marqué en rojo lo que explica la diferencia.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
+        '<div class="actions">' +
+        (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
+        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">📷 Sacar otra foto</label>' +
+        '</div></div>';
+    } else if (c.ok) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ').</div>';
 
     return top(esc(state.restaurant || 'Tu cuenta'), 'home') +
       '<p class="muted" style="margin:-6px 4px 12px">' + esc(state.country ? state.country + ' · ' : '') + esc(state.currency) + ' · toca un nombre o precio para corregirlo</p>' +
@@ -222,15 +249,16 @@
   }
 
   function itemRow(it) {
-    var low = it.confidence != null && it.confidence < 0.8;
-    return '<div class="item' + (low ? ' low' : '') + '">' +
+    var low = it.confidence != null && it.confidence < 0.8, sus = (ui.suspects || {})[it.id];
+    return '<div class="item' + (sus ? ' suspect' : low ? ' low' : '') + '">' +
       '<span class="namebox"><input class="name" value="' + esc(it.name) + '" data-action="edit" data-id="' + it.id + '" data-field="name" aria-label="Nombre">' +
       (it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? '<span class="tr">' + esc(it.tr) + '</span>' : (ui.translating && it.needsTr ? '<span class="tr muted-tr">traduciendo…</span>' : '')) + '</span>' +
       '<span class="total num">' + money(it.price * it.qty) + '</span>' +
       '<span class="meta"><input class="qty num" inputmode="numeric" value="' + it.qty + '" data-action="edit" data-id="' + it.id + '" data-field="qty" aria-label="Cantidad">×' +
       '<input class="num" inputmode="decimal" value="' + inputNum(it.price) + '" data-action="edit" data-id="' + it.id + '" data-field="price" aria-label="Precio unitario">' +
       (low ? '<span class="badge">revisar</span>' : '') + '</span>' +
-      '<button class="del" data-action="del-item" data-id="' + it.id + '" aria-label="Eliminar ' + esc(it.name) + '">✕</button></div>';
+      '<button class="del" data-action="del-item" data-id="' + it.id + '" aria-label="Eliminar ' + esc(it.name) + '">✕</button>' +
+      (sus ? '<div class="hint"><span>' + esc(sus.msg) + '</span>' + (sus.kind === 'qty' ? '<button class="btn sm" data-action="fix-qty" data-id="' + it.id + '">Dejar en ' + (it.qty - 1) + '</button>' : '<button class="btn sm" data-action="del-item" data-id="' + it.id + '" data-fix="1">Quitar ítem</button>') + '</div>' : '') + '</div>';
   }
 
   function tipChips() {
@@ -526,12 +554,14 @@
     var el = e.target.closest('[data-action]'); if (!el || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'FORM') return;
     var a = el.dataset.action, id = Number(el.dataset.id), itemId = Number(el.dataset.item), pid = Number(el.dataset.person);
     switch (a) {
-      case 'go': go(el.dataset.to); break;
+      case 'go': if (el.dataset.to === 'people' && state.step === 'review') { var rc = recon(); track('review_done', { edits: state.edits || 0, ok: rc.ok, bad: rc.bad }); } go(el.dataset.to); break;
       case 'reset': if (confirm('¿Empezar una cuenta nueva? Se borra la actual.')) { state = fresh(); ui.error = null; save(); render(); } break;
       case 'manual': state = fresh(); state.currency = prefCurrency(); state.step = 'review'; addItem('Ítem 1', 0); save(); render(); break;
-      case 'add-item': addItem('Nuevo ítem', 0); save(); render(); break;
+      case 'add-item': state.edits = (state.edits || 0) + 1; addItem('Nuevo ítem', 0); save(); render(); break;
+      case 'add-missing': var miss = recon().diff; if (miss > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'agregar'; addItem('Ítem que faltaba', C.decimals(state.currency) === 0 ? Math.round(miss) : Math.round(miss * 100) / 100); save(); render(); toast('Agregué lo que falta. Toca el nombre para corregirlo.'); } break;
+      case 'fix-qty': var fq = item(id); if (fq && fq.qty > 1) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'cantidad'; fq.qty -= 1; if (state.assigns[id]) state.assigns[id].units = {}; save(); render(); } break;
       case 'add-extra': addItem('Impuesto', 0); save(); render(); break;
-      case 'del-item': state.items = state.items.filter(function (i) { return i.id !== id; }); delete state.assigns[id]; save(); render(); break;
+      case 'del-item': state.edits = (state.edits || 0) + 1; if (el.dataset.fix) ui.lastFix = 'quitar'; state.items = state.items.filter(function (i) { return i.id !== id; }); delete state.assigns[id]; save(); render(); break;
       case 'tip': ui.customTip = false; state.tip = Number(el.dataset.pct) ? { pct: Number(el.dataset.pct) } : null; save(); render(); break;
       case 'tip-custom': ui.customTip = true; render(); break;
       case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
@@ -599,7 +629,7 @@
     if (field === 'name') { var nn = value.trim(); if (nn && nn !== it.name) { it.name = nn; it.tr = null; it.needsTr = false; } }
     if (field === 'price') it.price = Math.max(0, parseNum(value));
     if (field === 'qty') { it.qty = Math.max(1, Math.round(parseNum(value)) || 1); var a = state.assigns[id]; if (a) a.units = {}; }
-    it.confidence = null; save(); render();
+    it.confidence = null; state.edits = (state.edits || 0) + 1; save(); render();
   }
   // Quien ya entró desde su teléfono marca lo suyo allí; el anfitrión no lo cambia por él.
   function removePerson(id) {
@@ -659,14 +689,14 @@
       .then(function (x) {
         clearTimeout(timeout); clearInterval(ui.scanTimer);
         var d = x.d; tlog('respuesta del servidor: HTTP ' + x.res.status + ' en ' + Math.round((Date.now() - t0) / 100) / 10 + ' s' + (d && d.code ? ' · ' + d.code : '') + (x.res.ok ? '' : ' · ' + String((d && (d.error || d.message)) || '').slice(0, 80)));
-        if (!x.res.ok) return fail(d.error || (x.res.status === 429 ? 'Demasiados escaneos seguidos. Espera un minuto.' : 'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.'));
+        if (!x.res.ok) return fail(d.error || (x.res.status === 429 ? 'Demasiados escaneos seguidos. Espera un minuto.' : 'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.'), d.code || 'HTTP' + x.res.status);
         if (d.needs_confirmation) { ui.confirm = d; render(); return; }
         if (!d.ok || !d.items || !d.items.length) return fail(d.message || d.error || 'No encontramos ítems. Prueba con una foto más nítida y con la boleta completa.');
         loadReceipt(d);
       })
       .catch(function (err) { clearTimeout(timeout); clearInterval(ui.scanTimer); tlog('✗ error de red: ' + (err && (err.name + ' ' + err.message))); fail(err && err.name === 'AbortError' ? 'La lectura tardó demasiado. Intenta de nuevo.' : 'Sin conexión. Revisa tu internet e intenta de nuevo.'); });
   }
-  function fail(msg) { ui.error = msg; state.step = 'home'; save(); render(); }
+  function fail(msg, code) { track('scan_fail', { code: String(code || 'local').slice(0, 24) }); ui.error = msg; state.step = 'home'; save(); render(); }
 
   function loadReceipt(d) {
     var keep = state.people;
@@ -681,6 +711,7 @@
     state.nextId = Math.max(state.nextId, 1 + state.people.reduce(function (m, p) { return Math.max(m, p.id); }, 0));
     var sug = Number(d.propina_sugerida_pct);
     if (sug >= 3 && sug <= 30) { state.tip = { pct: sug }; state.tipSuggested = sug; }
+    var c0 = recon(); track('scan_ok', { c: String(d.pais || '').slice(0, 3), cur: String(d.moneda || '').slice(0, 4), n: state.items.length, ok: c0.ok, bad: c0.bad });
     state.step = 'review'; ui.photo = null; save(); render();
     var left = d.quota && d.quota.limit > 0 ? d.quota.limit - d.quota.used : null;
     toast(left != null && left <= 2 ? 'Boleta leída · te quedan ' + left + ' lectura' + (left === 1 ? '' : 's') + ' este mes' : 'Boleta leída · ' + state.items.length + ' líneas');
@@ -734,7 +765,7 @@
     toast('Creando el link…');
     SYNC.createBill(me ? me.name : 'Yo', state)
       .then(function (st) {
-        state.share = { role: 'host', token: st.token, billId: st.billId };
+        state.share = { role: 'host', token: st.token, billId: st.billId }; track('shared', { p: state.people.length });
         state.myMemberId = me ? me.id : null;
         if (me) { me.memberId = st.memberId; SYNC.setPersonKey(me.id); }
         // Lo que el anfitrión ya había marcado para sí mismo pasa a la cuenta compartida.
@@ -919,6 +950,7 @@
     var p = person(pid); if (!p) return;
     var next = !p.paid;
     p.paid = next; save(); render();
+    if (next) { track('paid', {}); if (state.people.every(function (x) { return x.paid; })) track('all_paid', { p: state.people.length }); }
     if (SYNC && state.share && p.memberId) {
       SYNC.setPaid(p.memberId, next).then(function (r) {
         if (r && r.error) toast('No se pudo guardar el pago');

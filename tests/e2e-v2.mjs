@@ -170,6 +170,51 @@ async function open(scan) {
   await page.setInputFiles('#photo', IMG); await page.waitForSelector('.chips', { timeout: 9000 });
   ok(/te quedan 1 lectura este mes/.test(await page.innerText('body')), 'quedando 1 lectura: lo avisa');
 }
+// 6) Cuando la boleta no cuadra: guía para arreglarla y métricas sin contenido
+const FAKE_SB = () => window.DC_SYNC._setClient({ auth: { getSession: () => Promise.resolve({ data: { session: { access_token: 'aaa.bbb.ccc' } } }) }, rpc: (n, a) => { (window.__rpc = window.__rpc || []).push([n, a]); return Promise.resolve({ data: null }); } });
+const evs = page => page.evaluate(() => (window.__rpc || []).filter(x => x[0] === 'dc_track_event').map(x => ({ e: x[1].p_event, p: x[1].p_props })));
+{ // faltan 32: agregar lo que falta
+  const { page, errs, sent } = await open({ status: 200, body: { ...SCAN, reconciliation: { ok: false, total_boleta: 560.44 } } });
+  await page.evaluate(FAKE_SB);
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  let body = await page.innerText('.banner.warn');
+  ok(/La suma no coincide/.test(body) && /faltan/.test(body) && /Agregar lo que falta/.test(body) && /Sacar otra foto/.test(body), 'faltan montos: avisa cuánto, ofrece agregar lo que falta y sacar otra foto');
+  // sacar otra foto desde la revisión
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(sent.length === 2, 'sacar otra foto desde la revisión vuelve a leer la boleta');
+  await page.click('[data-action="add-missing"]'); await page.waitForSelector('.banner.ok', { timeout: 4000 });
+  ok(await page.locator('input.name[value="Ítem que faltaba"]').count() === 1 && /Cuadra con el total/.test(await page.innerText('.banner.ok')), 'agregar lo que falta: cuadra y el ítem queda editable');
+  await page.waitForTimeout(300);
+  const e = await evs(page), names = e.map(x => x.e);
+  ok(names.includes('scan_ok') && names.includes('mismatch_shown') && names.includes('retake') && names.includes('mismatch_fix'), 'métricas: escaneo, aviso, nueva foto y arreglo registrados (' + names.join(', ') + ')');
+  ok(e.find(x => x.e === 'mismatch_fix').p.via === 'agregar', 'métricas: dice cómo se arregló (agregar)');
+  ok(!/Heineken|Guinness|Biryani|Burger|Pub KL/.test(JSON.stringify(e)), 'métricas: ningún nombre de ítem ni de local viaja en los eventos');
+  ok(errs.length === 0, 'sin errores JS');
+}
+{ // sobran: marca al sospechoso y deja quitarlo
+  const body = { ok: true, restaurante: 'Tquila', moneda: 'CLP', pais: 'CL', pais_nombre: 'Chile', items: [{ nombre: 'Churros', precio_unitario: 6490, cantidad: 1 }, { nombre: 'Agua', precio_unitario: 2990, cantidad: 2 }, { nombre: 'Duplicado', precio_unitario: 5980, cantidad: 1 }], reconciliation: { ok: false, total_boleta: 12470 } };
+  const { page } = await open({ status: 200, body });
+  await page.evaluate(FAKE_SB);
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(/sobran/.test(await page.innerText('.banner.warn')) && /Marqué en rojo/.test(await page.innerText('.banner.warn')), 'sobran montos: avisa y dice que marcó lo sospechoso');
+  ok(await page.locator('.item.suspect').count() === 2 && await page.locator('.hint', { hasText: 'Si este ítem no va' }).count() === 2, 'marca en rojo los ítems que explican la diferencia');
+  await page.locator('.item.suspect:has(input.name[value="Duplicado"]) [data-fix="1"]').click(); await page.waitForSelector('.banner.ok', { timeout: 4000 });
+  ok(await page.locator('.item.suspect').count() === 0, 'al quitar el sospechoso cuadra y desaparece la marca');
+  await page.waitForTimeout(300);
+  const e = await evs(page);
+  ok(e.find(x => x.e === 'mismatch_fix') && e.find(x => x.e === 'mismatch_fix').p.via === 'quitar', 'métricas: arreglo por quitar el ítem');
+  await page.click('[data-action="go"][data-to="people"]'); await page.waitForTimeout(300);
+  const e2 = await evs(page); const rd = e2.find(x => x.e === 'review_done');
+  ok(rd && rd.p.ok === true && rd.p.edits >= 1, 'métricas: review_done dice que cuadró y cuántas correcciones hubo');
+}
+{ // unidades de más: sugiere dejar una menos
+  const body = { ok: true, restaurante: 'X', moneda: 'CLP', pais: 'CL', pais_nombre: 'Chile', items: [{ nombre: 'Cerveza', precio_unitario: 3000, cantidad: 3 }, { nombre: 'Pizza', precio_unitario: 9000, cantidad: 1 }], reconciliation: { ok: false, total_boleta: 15000 } };
+  const { page } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(await page.locator('.hint', { hasText: 'una unidad menos' }).count() === 1, 'una unidad de más: lo sugiere');
+  await page.click('[data-action="fix-qty"]'); await page.waitForSelector('.banner.ok', { timeout: 4000 });
+  ok(/Cuadra/.test(await page.innerText('.banner.ok')), 'dejar una unidad menos: cuadra');
+}
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} comprobaciones v2 OK`);
 process.exit(fails ? 1 : 0);

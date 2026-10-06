@@ -111,6 +111,9 @@ button { cursor: pointer; }
 .item .del { grid-column: 2; justify-self: end; border: 0; background: transparent; color: var(--text-3); font-size: 14px; width: 32px; height: 28px; border-radius: 8px; }
 .item .del:hover { background: var(--danger-soft); color: var(--danger); }
 .item.low { box-shadow: inset 3px 0 0 var(--warn); }
+.item.suspect { box-shadow: inset 3px 0 0 var(--danger); background: var(--danger-soft); }
+.item .hint { grid-column: 1 / -1; display: flex; gap: 10px; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-top: 6px; font-size: 13px; color: var(--danger); }
+.btn.sm.photo-btn { cursor: pointer; }
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--warn-soft); color: var(--warn); }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
 .badge.accent { background: var(--accent-soft); color: var(--accent); }

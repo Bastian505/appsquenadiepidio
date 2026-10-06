@@ -242,8 +242,13 @@
     }).catch(function () { return null; });
   }
 
+  // Métricas de uso sin contenido (ver supabase/migrations/20261009_events.sql). Silencioso: nunca interrumpe ni muestra errores.
+  function track(ev, props) {
+    (sb ? Promise.resolve(sb) : init()).then(function (c) { return c && c.rpc('dc_track_event', { p_event: ev, p_props: props || {} }); }).catch(function () {});
+  }
+
   root.DC_SYNC = {
-    accessToken: accessToken,
+    track: track, accessToken: accessToken,
     ready: ready, init: init, resume: resume, createBill: createBill, pushBill: pushBill, peekBill: peekBill, joinBill: joinBill, setPersonKey: setPersonKey, removeMember: removeMember,
     fetchAll: fetchAll, subscribe: subscribe, leave: leave,
     setClaim: setClaim, clearClaim: clearClaim, closeBill: closeBill, setPaid: setPaid, fetchMembers: fetchMembers, isLive: isLive,
