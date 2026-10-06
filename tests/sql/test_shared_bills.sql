@@ -343,6 +343,37 @@ begin;
   reset role;
 commit;
 
+\echo '── Métricas de uso (eventos) ──'
+begin;
+  select as_user('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa');
+  select dc_track_event('scan_ok', '{"c":"CL","n":6,"ok":true}');
+  select dc_track_event('evento_inventado', '{"x":1}');
+  select dc_track_event(null, '{}');
+  select dc_track_event('review_done', ('{"x":"' || repeat('z', 500) || '"}')::jsonb);
+  select dc_track_event('mismatch_shown', '[1,2]'::jsonb);
+  reset role;
+  select note('eventos: guarda uno válido con sus datos', (select count(*) = 1 from dc_events where user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa' and event = 'scan_ok' and props->>'c' = 'CL'));
+  select note('eventos: ignora los que no están en la lista (inventado y nulo)', (select count(*) = 0 from dc_events where event = 'evento_inventado' or event is null));
+  select note('eventos: datos demasiado grandes se guardan vacíos', (select props = '{}'::jsonb from dc_events where event = 'review_done' and user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
+  select note('eventos: datos que no son un objeto se guardan vacíos', (select props = '{}'::jsonb from dc_events where event = 'mismatch_shown' and user_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'));
+  select note('eventos: nadie lee la tabla desde la app', denied('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'select * from dc_events'));
+  select note('eventos: nadie escribe directo en la tabla', denied('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', $$insert into dc_events (user_id, event) values ('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'scan_ok')$$));
+  select note('eventos: nadie borra su historial', denied('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', 'delete from dc_events'));
+commit;
+begin;
+  -- Tope diario por usuario (300)
+  select as_user('bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb');
+  select dc_track_event('paid', '{}') from generate_series(1, 320);
+  reset role;
+  select note('eventos: tope de 300 por usuario y día', (select count(*) = 300 from dc_events where user_id = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'));
+  insert into ctx values ('events_before', (select count(*)::text from dc_events));
+  set local role authenticated;
+  select set_config('request.jwt.claim.sub', '', true);
+  select dc_track_event('scan_ok', '{}');
+  reset role;
+  select note('eventos: sin sesión no se guarda nada', (select count(*)::text = get('events_before') from dc_events));
+commit;
+
 \pset tuples_only off
 select case when count(*) = 0 then '✓ todas las comprobaciones de seguridad pasaron'
             else '✗ FALLARON ' || count(*) || ': ' || string_agg(label, ' · ') end as resultado
