@@ -104,7 +104,7 @@
     var i = STEPS.indexOf(state.step);
     return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">←</button>' : '') +
       '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">✕</button></header>' +
-      (i > -1 ? '<div class="steps" aria-label="Paso ' + (i + 1) + ' de 4">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
+      (i > -1 ? '<div class="steps" role="img" aria-label="Paso ' + (i + 1) + ' de 4">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
   }
   function footer(inner) { return '<div class="footer"><div class="inner">' + inner + '</div></div>'; }
 
@@ -189,7 +189,7 @@
       ((trace.length && (debugOn() || traceFailed())) ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
       (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
       '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>' +
-      '<p class="small" style="text-align:center;margin:18px 0 6px;opacity:.6">DiviCuenta v2 · ' + BUILD + '</p>';
+      '<p class="small" style="text-align:center;margin:18px 0 6px">DiviCuenta v2 · ' + BUILD + '</p>';
   }
 
   function scanning() {
