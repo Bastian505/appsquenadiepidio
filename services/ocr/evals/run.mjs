@@ -221,7 +221,8 @@ async function main() {
       }
       const itemScore = scoreItems(fx.items, parsed.items || []);
       const totalDiff = Math.abs((parsed.total_referencia ?? 0) - fx.total_referencia);
-      const totalOk = totalDiff <= Math.max(1, fx.total_referencia * 0.02);
+      // total_visible:false = la foto está cortada y el total final NO se ve: lo correcto es no inventarlo (null/0); también vale la suma de los ítems.
+      const totalOk = fx.total_visible === false && !parsed.total_referencia ? true : totalDiff <= Math.max(1, fx.total_referencia * 0.02);
       const countryOk = parsed.pais === fx.pais;
       const cq = cuadra(parsed.items, parsed.total_referencia, parsed.moneda || fx.moneda);
       const currencyOk = parsed.moneda === fx.moneda;
