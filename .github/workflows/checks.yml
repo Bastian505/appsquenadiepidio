@@ -46,7 +46,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install --no-save --no-package-lock playwright@1.56.1
+      - run: npm install --no-save --no-package-lock playwright@1.56.1 axe-core@4
       - run: npx playwright install --with-deps chromium
       - run: mkdir -p e2e-capturas && E2E_OUT=e2e-capturas node tests/e2e.mjs
       - run: E2E_OUT=e2e-capturas node tests/e2e-v2.mjs
@@ -55,6 +55,7 @@ jobs:
       - run: node tests/e2e-boot.mjs
       - run: node tests/e2e-pwa.mjs
       - run: node tests/e2e-voz.mjs
+      - run: node tests/a11y-v2.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

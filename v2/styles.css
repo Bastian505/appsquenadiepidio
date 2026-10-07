@@ -6,12 +6,13 @@
   --surface-2: #f1f3f6;
   --text: #0f1115;
   --text-2: #5b6170;
-  --text-3: #8b91a0;
+  --text-3: #646b79;
   --border: #e4e7ec;
   --accent: #2563eb;
+  --accent-fill: #2563eb;   /* fondo de botones con texto blanco (≥ 4,5:1) */
   --accent-2: #1d4ed8;
   --accent-soft: #e8efff;
-  --ok: #0f9d58;
+  --ok: #0b7a43;
   --ok-soft: #e6f6ee;
   --warn: #b45309;
   --warn-soft: #fff4e5;
@@ -27,7 +28,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #0b0d12; --surface: #14171f; --surface-2: #1b1f29; --text: #f2f4f8; --text-2: #a7adbb;
-    --text-3: #747b8b; --border: #262b37; --accent: #5b8cff; --accent-2: #7aa2ff; --accent-soft: #1a2440;
+    --text-3: #939aaa; --border: #262b37; --accent: #5b8cff; --accent-fill: #3b6fe0; --accent-2: #7aa2ff; --accent-soft: #1a2440;
     --ok: #34c77b; --ok-soft: #12291e; --warn: #f0a845; --warn-soft: #2d2213; --danger: #ff6b6b;
     --danger-soft: #2e1616; --shadow: none; color-scheme: dark;
   }
@@ -67,10 +68,10 @@ button { cursor: pointer; }
 .hero { padding: 28px 4px 8px; }
 .hero h1 { font-size: 30px; line-height: 1.1; margin: 10px 0 8px; letter-spacing: -.03em; }
 .hero p { color: var(--text-2); font-size: 16px; margin: 0; line-height: 1.45; }
-.cta-scan { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 22px 0 12px; padding: 28px 16px; border-radius: 20px; border: 0; background: var(--accent); color: #fff; box-shadow: 0 8px 24px rgba(37, 99, 235, .3); }
+.cta-scan { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 22px 0 12px; padding: 28px 16px; border-radius: 20px; border: 0; background: var(--accent-fill); color: #fff; box-shadow: 0 8px 24px rgba(37, 99, 235, .3); }
 .cta-scan .ic { font-size: 34px; }
 .cta-scan strong { font-size: 18px; }
-.cta-scan span { opacity: .85; font-size: 13px; }
+.cta-scan span { font-size: 13px; }
 .how { display: grid; gap: 10px; margin-top: 18px; }
 .how div { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: var(--text-2); }
 .how b { flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; font-size: 13px; }
@@ -78,7 +79,7 @@ button { cursor: pointer; }
 /* Botones */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 14px; border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: 15px; }
 .btn.block { width: 100%; }
-.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
 .btn.primary:disabled { opacity: .45; }
 .btn.ghost { background: transparent; border-color: transparent; color: var(--accent); }
 .btn.sm { min-height: 36px; padding: 0 12px; font-size: 13px; border-radius: 10px; }
@@ -116,7 +117,7 @@ button { cursor: pointer; }
 .btn.sm.photo-btn { cursor: pointer; }
 .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--warn-soft); color: var(--warn); }
 .badge.ok { background: var(--ok-soft); color: var(--ok); }
-.badge.accent { background: var(--accent-soft); color: var(--accent); }
+.badge.accent { background: var(--accent-soft); color: var(--accent-2); }
 
 .banner { border-radius: var(--radius-sm); padding: 12px 14px; font-size: 14px; margin-bottom: 12px; line-height: 1.4; }
 .banner.warn { background: var(--warn-soft); color: var(--warn); }
@@ -126,7 +127,7 @@ button { cursor: pointer; }
 
 .chips { display: flex; gap: 8px; flex-wrap: wrap; }
 .chip { min-height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); font-weight: 600; font-size: 14px; }
-.chip.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.chip.on { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
 .chip-input { width: 110px; min-height: 36px; border-radius: 999px; border: 1px solid var(--accent); padding: 0 12px; background: var(--surface); }
 
 .totals { display: grid; gap: 6px; font-size: 14px; }
