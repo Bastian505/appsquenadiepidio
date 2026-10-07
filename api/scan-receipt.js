@@ -268,6 +268,11 @@ R19. TOTAL FINAL: total_referencia = el MONTO FINAL A PAGAR = subtotal + impuest
      (Credit Total) y lista el cargo como ítem: "Sbtl w/Chgs" (subtotal con cargos) es
      ese mismo monto. NUNCA tomes como total un "Subtotal" si debajo hay impuestos o
      cargos impresos (Tax, Liquor Tax, CC Fee, HST, GST, PST...).
+     FOTO CORTADA: si la imagen termina antes del total final (no se ve el monto a pagar
+     impreso), devuelve total_referencia = null. NUNCA lo calcules restando un
+     "Discount Total" ni sumando impuestos que no se ven. "Food Total", "Alcohol Total",
+     "Non-Alc Total" y "Discount Total" son RESÚMENES POR CATEGORÍA informativos de lo
+     ya listado: no son ítems ni se restan otra vez. Líneas en $0.00 (cortesías) no son ítems.
 
 R20. CÓDIGOS DE ÍTEM: no incluyas el código numérico del producto al inicio del
      nombre ("2201 KABULI PULLAO" → nombre "KABULI PULLAO").
