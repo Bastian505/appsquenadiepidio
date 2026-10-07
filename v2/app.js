@@ -5,11 +5,11 @@
   'use strict';
   var C = window.DC_CURRENCIES, S = window.DC_SPLIT, CFG = window.DC_CONFIG;
   var SYNC = window.DC_SYNC || null;   // cuentas compartidas (opcional)
-  var COLORS = ['#2563eb', '#db2777', '#059669', '#d97706', '#7c3aed', '#0891b2', '#dc2626', '#65a30d'];
+  var COLORS = ['#c2410c', '#0f766e', '#4f46e5', '#a21caf', '#4d7c0f', '#1d4ed8', '#b45309', '#be123c'];
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-06.a';
+  var BUILD = '2026-10-07.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -78,6 +78,16 @@
   }
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 2600); }
   function go(step) { state.step = step; save(); render(); window.scrollTo(0, 0); }
+  // Íconos SVG (trazo, heredan el color del texto). Reemplazan a los emojis, que cambian según el teléfono.
+  var ICONS = {
+    camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    close: '<path d="M18 6L6 18M6 6l12 12"/>',
+    chat: '<path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>',
+    phones: '<rect x="2" y="5" width="9" height="15" rx="2"/><rect x="13" y="3" width="9" height="15" rx="2"/><path d="M6.5 17h.01M17.5 15h.01"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/>'
+  };
+  function ic(name) { return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[name] + '</svg>'; }
   function avatar(p, cls) { return '<span class="avatar ' + (cls || '') + '" style="background:' + p.color + '">' + esc(initials(p.name)) + '</span>'; }
 
   // ── pantallas ──────────────────────────────────────────────────────────────
@@ -102,8 +112,8 @@
 
   function top(title, back) {
     var i = STEPS.indexOf(state.step);
-    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">←</button>' : '') +
-      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">✕</button></header>' +
+    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">' + ic('back') + '</button>' : '') +
+      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">' + ic('close') + '</button></header>' +
       (i > -1 ? '<div class="steps" role="img" aria-label="Paso ' + (i + 1) + ' de 4">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
   }
   function footer(inner) { return '<div class="footer"><div class="inner">' + inner + '</div></div>'; }
@@ -158,7 +168,7 @@
         e.debts.map(function (d, i) {
           if (d.paid) return '';
           return '<div class="row" style="padding:6px 0;flex-wrap:wrap;gap:6px"><span style="flex:1;min-width:120px">' + esc(d.name) + ' <span class="small num">' + money(d.amount, e.currency) + '</span></span>' +
-            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">💬 Recordar</button>' +
+            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' +
             '<button class="btn sm" data-action="ledger-paid" data-key="' + esc(e.key) + '" data-i="' + i + '">Ya pagó</button></div>';
         }).join('') + '</div>';
     }).join('') + '</div>';
@@ -181,7 +191,7 @@
     return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
       '<section class="hero"><span class="badge accent">Boletas de más de 40 países</span>' +
       '<h1>Divide la cuenta en segundos.</h1><p>Saca una foto de la boleta, marca quién comió qué y listo: impuesto, servicio y propina repartidos de forma justa.</p></section>' +
-      '<label class="cta-scan" for="photo"><span class="ic" aria-hidden="true">📷</span><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></label>' +
+      '<label class="cta-scan" for="photo"><span class="cam">' + ic('camera') + '</span><span class="txt"><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></span></label>' +
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
       pendingCard() +
@@ -226,7 +236,7 @@
         (nSus ? 'Marqué en rojo lo que explica la diferencia.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
         '<div class="actions">' +
         (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
-        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">📷 Sacar otra foto</label>' +
+        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' Sacar otra foto</label>' +
         '</div></div>';
     } else if (c.ok) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ').</div>';
 
@@ -289,7 +299,7 @@
       (state.people.length ? '<div class="list">' + state.people.map(function (p) {
         return '<div class="person">' + avatar(p) + '<span style="flex:1;font-weight:600">' + esc(p.name) + '</span><button class="btn sm ghost" data-action="del-person" data-id="' + p.id + '">Quitar</button></div>';
       }).join('') + '</div>' : '') +
-      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">📲 Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
+      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">' + ic('phones') + ' Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
       (state.share ? sharePanel() : '') +
       footer('<button class="btn primary" data-action="go" data-to="assign"' + (state.people.length ? '' : ' disabled') + '>Asignar ítems →</button>');
   }
@@ -353,13 +363,13 @@
   function voicePanel() {
     if (!voiceOn() || state.people.length < 1) return '';
     var v = ui.voice, undo = ui.voiceUndo;
-    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">🎤 Asignar hablando <span class="badge accent">prueba</span></button>' +
+    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">' + ic('mic') + ' Asignar hablando <span class="badge accent">prueba</span></button>' +
       (undo ? '<button class="btn sm ghost" data-action="voice-undo">Deshacer lo último</button>' : '') + '</div>';
     var pv = v.preview;
     return '<div class="card" style="margin-bottom:12px"><div class="row"><b style="flex:1">Asignar hablando</b><span class="badge accent">prueba</span><button class="btn sm ghost" data-action="voice-close">Cerrar</button></div>' +
       '<p class="small" style="margin:6px 0">Cuenta quién comió qué. Ej.: «yo el bife, ' + esc((state.people[1] || state.people[0]).name) + ' la pizza, la cerveza entre los dos»</p>' +
       '<textarea name="voicetext" data-action="voice-text" rows="3" maxlength="500" placeholder="Habla o escribe aquí…" style="width:100%">' + esc(v.text) + '</textarea>' +
-      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : '🎤 Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
+      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : ic('mic') + ' Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
       '<span class="spacer"></span><button class="btn sm primary" data-action="voice-go"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? 'Interpretando…' : 'Interpretar') + '</button></div>' +
       (v.error ? '<div class="banner danger" style="margin:10px 0 0">' + esc(v.error) + '</div>' : '') +
       (pv ? '<div style="margin-top:12px"><div class="small">Esto entendí (revísalo antes de aplicar):</div>' +
@@ -504,7 +514,7 @@
       var pending = debtors.filter(function (p) { var q = person(p.id); return !(q && q.paid); }).reduce(function (s, p) { return s + p.amount; }, 0);
       out += '<div style="margin-top:12px">' + debtors.map(function (p) {
         var q = person(p.id), isPaid = !!(q && q.paid), can = !shared || host || p.id === me;
-        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">💬 Recordar</button>' : '';
+        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' : '';
         var paidBtn = can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" style="flex:1" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>' : '';
         return '<div style="padding:8px 0;border-top:1px solid var(--border)"><div class="row">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + '</span><span class="num" style="font-weight:700">' + money(p.amount) + '</span>' +
           (can ? '' : '<span class="badge' + (isPaid ? ' ok' : '') + '" style="margin-left:8px">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>' +
