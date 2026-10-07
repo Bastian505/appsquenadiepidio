@@ -374,6 +374,21 @@ begin;
   select note('eventos: sin sesión no se guarda nada', (select count(*)::text = get('events_before') from dc_events));
 commit;
 
+\echo '── Buenas prácticas de Postgres ──'
+select note('rendimiento: las reglas de dc_bills y dc_bill_members calculan auth.uid() una sola vez por consulta',
+  (select count(*) = 7 and bool_and(coalesce(qual, '') || coalesce(with_check, '') ilike '%select auth.uid()%')
+     from pg_policies where schemaname = 'public' and tablename in ('dc_bills', 'dc_bill_members') and policyname in ('dc_bills_select','dc_bills_insert','dc_bills_update','dc_bills_delete','dc_members_select','dc_members_update','dc_members_delete')));
+select note('rendimiento: ninguna regla usa auth.uid() suelto (sin select)',
+  (select count(*) = 0 from pg_policies where schemaname = 'public' and tablename in ('dc_bills', 'dc_bill_members') and (coalesce(qual, '') || coalesce(with_check, '')) ~* '(?<!select )auth\.uid\(\)' and (coalesce(qual, '') || coalesce(with_check, '')) !~* 'select auth\.uid\(\)'));
+select note('índices: están los de columnas usadas en reglas y cascadas',
+  (select count(*) = 3 from pg_indexes where schemaname = 'public' and indexname in ('dc_bill_members_user_idx', 'dc_claims_member_idx', 'dc_bills_created_idx')));
+select note('índices: el redundante de dc_claims(bill_id) ya no existe', (select count(*) = 0 from pg_indexes where schemaname = 'public' and indexname = 'dc_claims_bill_idx'));
+select note('seguridad: toda función SECURITY DEFINER fija su search_path',
+  (select count(*) = 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.prosecdef and not exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
+select note('seguridad: dc_touch fija su search_path', (select count(*) = 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'dc_touch' and exists (select 1 from unnest(coalesce(p.proconfig, '{}')) c where c like 'search_path=%')));
+select note('seguridad: toda tabla dc_ tiene RLS activa',
+  (select count(*) = 0 from pg_tables where schemaname = 'public' and tablename like 'dc\_%' and not rowsecurity));
+
 \pset tuples_only off
 select case when count(*) = 0 then '✓ todas las comprobaciones de seguridad pasaron'
             else '✗ FALLARON ' || count(*) || ': ' || string_agg(label, ' · ') end as resultado
