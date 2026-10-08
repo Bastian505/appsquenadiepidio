@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0d12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0e0c" media="(prefers-color-scheme: dark)">
 <title>DiviCuenta</title>
 <link rel="manifest" href="/v2/manifest.webmanifest">
 <link rel="icon" href="/v2/icon.svg" type="image/svg+xml">
@@ -13,6 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="DiviCuenta">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="preload" href="/v2/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="/v2/styles.css">
 <script>
   // Si algo falla en el navegador queda registrado y se muestra en pantalla (ayuda a encontrar fallos en teléfonos reales).
@@ -28,10 +29,9 @@
 </head>
 <body>
 <div class="splash" id="splash" aria-hidden="true">
-  <div class="splash-icon">🧾</div>
+  <svg class="splash-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M14 6h36v52l-6-4-6 4-6-4-6 4-6-4-6 4z" fill="rgba(255,181,71,.12)"/><path d="M22 18h20M22 27h20M22 36h12"/><path d="M32 44v.01"/></svg>
   <div class="splash-logo">Divi<em>Cuenta</em></div>
-  <div class="splash-sub">Divide sin drama</div>
-  <div class="splash-dots"><i></i><i></i><i></i></div>
+  <div class="splash-sub">Saca la foto. Nosotros hacemos la matemática.</div>
 </div>
 <script>try { if (sessionStorage.getItem('dc_splash')) document.getElementById('splash').className += ' hidden gone'; } catch (e) {}</script>
 <main id="app" aria-live="polite"></main>
