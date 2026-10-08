@@ -81,6 +81,7 @@ reset();
 // Utilidades
 ok(Math.abs(estimateCostCents('claude-sonnet-5-5', { input_tokens: 1000, output_tokens: 500 }) - 0.7) < 1e-9, 'costo Sonnet 5.5: 1000 entrada + 500 salida = 0,7 ¢');
 ok(Math.abs(estimateCostCents('claude-haiku-4-5-20251001', { input_tokens: 1000, output_tokens: 500 }) - 0.35) < 1e-9, 'costo Haiku: 0,35 ¢');
+ok(Math.abs(estimateCostCents('claude-haiku-5-5', { input_tokens: 1000, output_tokens: 500 }) - 0.035) < 1e-9, 'costo Haiku 5.5: 1000 entrada + 500 salida = 0,035 ¢ (20× menos que Sonnet 5.5)');
 ok(estimateCostCents('claude-sonnet-4-6', { input_tokens: 1000, cache_read_input_tokens: 10000 }) > estimateCostCents('claude-sonnet-5-5', { input_tokens: 1000, cache_read_input_tokens: 10000 }), 'Sonnet 4.6 cuesta más que 5.5');
 ok(bearerToken({ headers: { authorization: 'Bearer a.b.c' } }) === 'a.b.c' && bearerToken({ headers: {} }) === null && bearerToken({ headers: { authorization: 'Basic xyz' } }) === null, 'lee solo cabeceras Bearer con forma de JWT');
 

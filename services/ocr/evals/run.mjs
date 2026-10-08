@@ -159,7 +159,8 @@ const usage = {};   // modelo -> { calls, input, output, cw, cr }
 // Precios de lista por millón de tokens (los que conozco; confirmar en la consola de Anthropic): entrada, salida, escritura de caché (5 min), lectura de caché.
 const PRICES = {
   'claude-sonnet-4-6': { in: 3, out: 15, cw: 3.75, cr: 0.30 }, 'claude-sonnet-5-5': { in: 2, out: 10, cw: 2.5, cr: 0.20 },
-  'claude-haiku-4-5-20251001': { in: 1, out: 5, cw: 1.25, cr: 0.10 }, 'claude-haiku-4-5': { in: 1, out: 5, cw: 1.25, cr: 0.10 }
+  'claude-haiku-4-5-20251001': { in: 1, out: 5, cw: 1.25, cr: 0.10 }, 'claude-haiku-4-5': { in: 1, out: 5, cw: 1.25, cr: 0.10 },
+  'claude-haiku-5-5': { in: 0.10, out: 0.50, cw: 0.125, cr: 0.01 }
 };
 const origLog = console.log.bind(console);
 console.log = (...a) => {

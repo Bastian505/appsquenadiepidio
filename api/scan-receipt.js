@@ -350,6 +350,11 @@ function requestBody(model, system, imageBase64, mediaType, userText) {
       if (process.env.OCR_THINKING !== 'adaptive') body.thinking = { type:'between_tools' };
       body.output_config = { effort: process.env.OCR_EFFORT || 'high' };
     }
+  } else if (/^claude-haiku-5/.test(model)) {
+    // Haiku 5.5: tampoco acepta `temperature` (da 400). Piensa por defecto; leer una boleta no lo necesita, así que
+    // se apaga (permitido con esfuerzo ≤ high) salvo OCR_THINKING=adaptive. OCR_EFFORT solo se envía si se define.
+    if (process.env.OCR_THINKING !== 'adaptive') body.thinking = { type:'disabled' };
+    if (process.env.OCR_EFFORT) body.output_config = { effort: process.env.OCR_EFFORT };
   } else body.temperature = 0;
   return JSON.stringify(body);
 }
