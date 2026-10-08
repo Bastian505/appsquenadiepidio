@@ -184,6 +184,31 @@ async function open(scan) {
   ok(await page.locator('.chip.on:has-text("12%")').count() === 1, 'escribir "12 %" siempre es porcentaje');
   ok(errs.length === 0, 'sin errores JS ' + errs.join('|'));
 }
+// 4c) Egipto (boletas reales): un 8 % no es un servicio; y el servicio va sobre el consumo, antes del IVA
+{ // Bayouki: la IA no sumó el "Bayouki Rice 40" al pollo (270). Faltan 40 = 8 % de 500: NO debe ofrecer "servicio del 8 %"
+  const body = { ok: true, restaurante: 'Bayouki', moneda: 'EGP', pais: 'EG', pais_nombre: 'Egipto', propina_sugerida_pct: null,
+    items: [{ nombre: '1/2 Roasted Chicken', precio_unitario: 230, cantidad: 1 }, { nombre: '1/2 Loaded Musakhan', precio_unitario: 270, cantidad: 1 }],
+    reconciliation: { ok: false, total_boleta: 540 }, total_referencia: 540 };
+  const { page, errs } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(await page.locator('[data-action=apply-service]').count() === 0 && !/servicio o propina sumado/.test(await page.innerText('.banner.warn')), 'Bayouki: un 8 % no se ofrece como servicio');
+  ok(await page.locator('[data-action=add-missing]').count() === 1, 'Bayouki: sigue ofreciendo "Agregar lo que falta"');
+  ok(errs.length === 0, 'sin errores JS');
+}
+{ // Table 9: ítems 1735 + servicio 12 % (208,20) + IVA 14 % (272,05): faltan 480,25 y el IVA ya viene como ítem
+  const body = { ok: true, restaurante: 'Table 9', moneda: 'EGP', pais: 'EG', pais_nombre: 'Egipto', propina_sugerida_pct: null,
+    items: [{ nombre: 'Fresh Mango Juice', precio_unitario: 115, cantidad: 2 }, { nombre: 'Minted Lemonade', precio_unitario: 95, cantidad: 1 }, { nombre: 'Mixed Fresh Juice', precio_unitario: 115, cantidad: 1 },
+      { nombre: 'Fattoush', precio_unitario: 150, cantidad: 1 }, { nombre: 'Lahm Bi Ajin', precio_unitario: 185, cantidad: 2 }, { nombre: 'Grilled Chicken Wings', precio_unitario: 285, cantidad: 1 },
+      { nombre: 'Chicken Tawouk', precio_unitario: 385, cantidad: 1 }, { nombre: 'Flavoured Tea', precio_unitario: 60, cantidad: 1 }, { nombre: 'Small Water', precio_unitario: 45, cantidad: 1 },
+      { nombre: 'Impuesto', precio_unitario: 272.05, cantidad: 1 }],
+    reconciliation: { ok: false, total_boleta: 2215.25 }, total_referencia: 2215.25 };
+  const { page, errs } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(/12 %/.test(await page.innerText('.banner.warn')) && await page.locator('[data-action=apply-service]').count() === 1, 'Table 9: detecta que lo que falta es el 12 % del consumo (antes del IVA)');
+  await page.click('[data-action=apply-service]');
+  ok(/2\.215,25/.test(await page.locator('.row.grand').innerText()) && await page.locator('.banner.ok').count() === 1 && await page.locator('input.name[value="Servicio"]').count() === 1, 'Table 9: con un toque el total es EGP2.215,25 y el servicio queda como cargo');
+  ok(errs.length === 0, 'sin errores JS');
+}
 // 5) Cuota de lecturas: el escaneo viaja con la sesión anónima; con la cuota agotada se muestra el aviso
 {
   const { page, errs } = await open({ status: 200, body: SCAN });

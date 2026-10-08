@@ -177,6 +177,11 @@ R5. MODIFICADORES (regla universal, NO por POS):
       "- $1.00: Sin papas"
       → {nombre: "Combo Burger", precio_unitario: 7.00, cantidad: 1}
 
+R6b. MODIFICADORES CON PRECIO PROPIO: si bajo un plato hay extras con su propio precio en la columna de
+    precios ("1/2 Roasted Chicken 230.00 / Bayouki Rice 40.00 / Buffalo" y a la derecha, al cerrar el
+    grupo, "270.00"), el plato vale la SUMA del grupo (270.00 = 230 + 40), no solo la primera línea.
+    Un modificador sin precio ("Buffalo") no suma. Si hay un total de grupo impreso, úsalo tal cual.
+
 R6. MODIFICADORES SIN MONTO: Líneas como "Over Easy", "Sin sal", "Bien hecho",
     "Brown Bread", "Any Style", "Poached Medium" sin monto asociado: IGNORAR.
 
