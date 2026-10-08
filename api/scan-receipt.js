@@ -216,6 +216,10 @@ R9. PROPINAS — incluir SOLO en estos casos:
       o no hay sugerencia, deja ambos en null.
     · Si el restaurante tiene servicio obligatorio (UK service charge, coperto
       italiano) → siempre incluir como "Servicio".
+    · Una línea de servicio con porcentaje que está SUMADA al TOTAL impreso
+      ("SERVICO (10,00%): 17,57", "NÃO INCLUSO (12,00%): 90,36" bajo "TOT CONSUMO",
+      "Taxa de serviço 10%") NO es una propina sugerida: es un cargo → ítem
+      "Servicio" (R22), y deja propina_sugerida_pct en null.
 
 R10. MONEDA AMBIGUA — $ y ¥:
      · $ puede ser CLP, ARS, MXN, USD, CAD, COP, UYU.
@@ -289,6 +293,7 @@ R22. CARGOS QUE NO SON PRODUCTOS (en CUALQUIER idioma: "Serviço", "Taxa de serv
      "Gorjeta", "Servizio"...): si una línea impresa es el cargo de servicio, un impuesto o la propina (no algo que
      se consume), ponle "cargo":"servicio" | "impuesto" | "propina" en ese ítem. Los productos NO llevan "cargo".
      Ej.: "Servico : 17,30" → {"nombre":"Servico","precio_unitario":17.30,"cantidad":1,"cargo":"servicio"}.
+     Ej.: "TOT CONSUMO 175,70 / SERVICO (10,00%): 17,57 / TOTAL A PAGAR 193,27" → ítem Servico 17,57 con "cargo":"servicio".
      Los subtotales y totales siguen sin listarse (R1).
 
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)

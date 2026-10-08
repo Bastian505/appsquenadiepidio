@@ -151,6 +151,39 @@ async function open(scan) {
     ok(errs.length === 0, 'sin errores JS');
   }
 }
+// 4b) Servicio sumado al total impreso (boletas reales de Río de Janeiro)
+{ // R21 Barra: la IA lo leyó como "propina sugerida 10 %"; ítems + 10 % = total impreso → cuadra, sin duplicar
+  const body = { ok: true, restaurante: 'R21 BARRA', moneda: 'BRL', pais: 'BR', pais_nombre: 'Brasil', propina_sugerida_pct: 10,
+    items: [{ nombre: 'COMBO CAMARAO PARISIENSE', precio_unitario: 139.9, cantidad: 1 }, { nombre: 'CAIPIRINHA TRADICIONAL', precio_unitario: 22.9, cantidad: 1 }, { nombre: 'CANECA ZERO GRAU BRAHMA', precio_unitario: 12.9, cantidad: 1 }],
+    reconciliation: { ok: false, total_boleta: 193.27 }, total_referencia: 193.27 };
+  const { page, errs } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner', { timeout: 9000 });
+  ok(/Cuadra con el total impreso/.test(await page.innerText('.banner.ok')) && /servicio del 10 %/.test(await page.innerText('.banner.ok')), 'R21: ítems + servicio del 10 % cuadran con el total impreso (no avisa "no coincide")');
+  ok(/R\$193,27/.test(await page.locator('.row.grand').innerText()), 'R21: el total de la cuenta es R$193,27 (no se duplica el servicio)');
+  await page.click('.chip:has-text("Sin propina")');
+  ok(/Actívalo en Propina/.test(await page.innerText('.banner.warn')) && await page.locator('[data-action=apply-service]').count() === 1, 'R21: sin propina, avisa que el total impreso incluye el servicio y ofrece aplicarlo');
+  await page.click('[data-action=apply-service]');
+  ok(/R\$193,27/.test(await page.locator('.row.grand').innerText()) && await page.locator('.banner.ok').count() === 1, 'R21: aplicar el servicio vuelve a dejar R$193,27');
+  ok(errs.length === 0, 'sin errores JS ' + errs.join('|'));
+}
+{ // Marius Degustare: faltan R$90,36 = 12 % exacto de R$753,00 → un toque aplica el servicio
+  const body = { ok: true, restaurante: 'MARIUS DEGUSTARE', moneda: 'BRL', pais: 'BR', pais_nombre: 'Brasil', propina_sugerida_pct: null,
+    items: [{ nombre: 'CAIPIRAS', precio_unitario: 30, cantidad: 2 }, { nombre: 'MENU DEGUSTACAO', precio_unitario: 190, cantidad: 3 }, { nombre: 'AGUA MINERAL SEM GAS', precio_unitario: 11, cantidad: 1 },
+      { nombre: 'COCA COLA', precio_unitario: 11, cantidad: 1 }, { nombre: 'LIMONADA SUICA', precio_unitario: 21, cantidad: 1 }, { nombre: 'BADEN BADEN WEISS', precio_unitario: 40, cantidad: 2 }],
+    reconciliation: { ok: false, total_boleta: 843.36 }, total_referencia: 843.36 };
+  const { page, errs } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(/12 %/.test(await page.innerText('.banner.warn')) && await page.locator('[data-action=apply-service]').count() === 1, 'Marius: detecta que lo que falta es el 12 % y ofrece aplicarlo');
+  await page.click('[data-action=apply-service]');
+  ok(/R\$843,36/.test(await page.locator('.row.grand').innerText()) && /Cuadra con el total impreso/.test(await page.innerText('.banner.ok')), 'Marius: con un toque el total es R$843,36 y cuadra');
+  await page.click('.chip:has-text("Otro %")'); await page.fill('.chip-input', '15'); await page.click('[data-action=tip-apply]');
+  ok(/R\$865,95|R\$865,94/.test(await page.locator('.row.grand').innerText()) || await page.locator('.chip.on:has-text("15%")').count() === 1, 'Otro %: "15" se aplica como 15 % (no como monto)');
+  await page.click('.chip:has-text("Otro monto")'); await page.fill('.chip-input', '50'); await page.click('[data-action=tip-apply]');
+  ok(/R\$50,00/.test(await page.locator('.totals').innerText()), 'Otro monto: "50" se aplica como monto');
+  await page.click('.chip:has-text("Otro %")'); await page.fill('.chip-input', '12%'); await page.click('[data-action=tip-apply]');
+  ok(await page.locator('.chip.on:has-text("12%")').count() === 1, 'escribir "12 %" siempre es porcentaje');
+  ok(errs.length === 0, 'sin errores JS ' + errs.join('|'));
+}
 // 5) Cuota de lecturas: el escaneo viaja con la sesión anónima; con la cuota agotada se muestra el aviso
 {
   const { page, errs } = await open({ status: 200, body: SCAN });

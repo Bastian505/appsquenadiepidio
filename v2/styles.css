@@ -302,3 +302,6 @@ button { cursor: pointer; }
 }
 #app.step-assign ~ #toast { bottom: calc(272px + env(safe-area-inset-bottom)); }
 .card .row .btn.sm { white-space: nowrap; }
+.chip-edit { display: inline-flex; align-items: center; gap: 6px; }
+.chip-edit .chip-input { width: 96px; }
+.chip-unit { font-weight: 700; color: var(--text-2); margin-left: -2px; }
