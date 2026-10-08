@@ -114,5 +114,18 @@ const dev = (r.body.items || []).find(x => x.auto_created);
 ok(dev && dev.cantidad === -1 && Math.abs(dev.precio_unitario - 3.5) < 0.001 && /Pfandr/.test(dev.nombre), 'Lidl: la devolución agregada resta 3,50 (cantidad -1), no queda en 0 €');
 ok(Math.abs(r.body.items.reduce((a, x) => a + x.precio_unitario * x.cantidad, 0) - 6.82) < 0.01, 'Lidl: con la devolución agregada la suma de la respuesta cuadra con 6,82');
 
+// R22: el cargo de servicio en cualquier idioma queda como "Servicio" (la app lo reparte proporcional, no como plato)
+reset();
+const br = { ok: true, restaurante: 'Conferencia de conta', moneda: 'BRL', pais: 'BR', total_referencia: 190.3, confianza_global: 0.9,
+  items: [it('SAND FILE COM QUEIJO', 39), it('CAIPI SMIRNOFF', 28, 2), it('FILE CARNE A PARMEGI', 52), it('BOLINHO DE BACALHAU', 12), it('PASTEL DE PALMITO CO', 14),
+    { nombre: 'Servico', precio_unitario: 17.3, cantidad: 1, confianza: 0.95, cargo: 'servicio' }] };
+r = await run([br], 'BR');
+const sv = r.body.items.find(x => /serv/i.test(x.nombre));
+ok(sv && sv.nombre === 'Servicio' && sv.precio_unitario === 17.3, 'R22: "Servico" marcado como cargo queda como "Servicio"');
+ok(r.body.items.filter(x => /^servicio$/i.test(x.nombre)).length === 1 && r.body.items.length === 6, 'R22: no se duplica el servicio ni se pierden ítems');
+const plato = lect([{ nombre: 'Servicio de bar', precio_unitario: 40, cantidad: 1, confianza: 0.9 }, it('B', 60)], 100);
+r = await run([plato]);
+ok(r.body.items.some(x => x.nombre === 'Servicio de bar'), 'R22: sin "cargo" el nombre no se toca');
+
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de palancas de costo OK`);
 process.exit(fails ? 1 : 0);

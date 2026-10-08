@@ -14,7 +14,7 @@
 // se reparten proporcionalmente al consumo de cada persona, igual que la propina.
 // La suma de lo que paga cada persona + lo no asignado = total, exacto (método del mayor resto).
 (function (root) {
-  var EXTRA_RE = /^\s*(impuesto|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|sst|fbr pos charges?|sc|stamp duty|card surcharge|credit card (fee|surcharge)|card fee|cargo (por )?servicio)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
+  var EXTRA_RE = /^\s*(impuesto|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|sst|fbr pos charges?|sc|stamp duty|card surcharge|credit card (fee|surcharge)|card fee|cargo (por )?servicio|servi[cç]o|taxa( de)? servi[cç]o|gorjeta|impostos?|servizio|bedienung|service compris|pourboire|trinkgeld|bediening)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
   function isExtra(item) { return EXTRA_RE.test((item && item.name) || ''); }
 
   function cents(currency) { return root.DC_CURRENCIES.decimals(currency) === 0 ? 1 : 100; }
