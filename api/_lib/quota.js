@@ -13,6 +13,7 @@ export const quotaEnabled = () => userLimit() > 0;
 
 // USD por millón de tokens: [entrada, salida, escritura de caché, lectura de caché]
 const PRICES = [
+  [/haiku-5/i,      [0.10, 0.50, 0.125, 0.01]],   // Haiku 5.5 (caché: 1,25× y 0,1× de la entrada, como el resto; estimado)
   [/haiku/i,        [1, 5, 1.25, 0.10]],
   [/(sonnet|opus|fable)-5/i, [2, 10, 2.5, 0.20]],
   [/./,             [3, 15, 3.75, 0.30]]   // Sonnet 4.6 y cualquier otro: la tarifa más alta (estimación conservadora)

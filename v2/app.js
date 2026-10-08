@@ -5,11 +5,11 @@
   'use strict';
   var C = window.DC_CURRENCIES, S = window.DC_SPLIT, CFG = window.DC_CONFIG;
   var SYNC = window.DC_SYNC || null;   // cuentas compartidas (opcional)
-  var COLORS = ['#2563eb', '#db2777', '#059669', '#d97706', '#7c3aed', '#0891b2', '#dc2626', '#65a30d'];
+  var COLORS = ['#c2410c', '#0f766e', '#4f46e5', '#a21caf', '#4d7c0f', '#1d4ed8', '#b45309', '#be123c'];
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-06.a';
+  var BUILD = '2026-10-07.b';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -27,7 +27,7 @@
   var state = load() || fresh();
   // Nunca reabrir en medio de una lectura: la foto y la consulta se perdieron al recargar.
   if (state.step === 'scanning') state.step = 'home';
-  var ui = { unitsOpen: {}, openDetail: {}, voice: { open: false, text: '', busy: false, preview: null, error: null, listening: false }, voiceUndo: null, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null };
+  var ui = { unitsOpen: {}, openDetail: {}, voice: { open: false, text: '', busy: false, preview: null, error: null, listening: false }, voiceUndo: null, joinName: '', scanStage: 0, scanTimer: null, photo: null, error: null, customTip: false, confirm: null, fx: null, prevCount: {}, prevSeg: {}, lastStep: null, fly: null, stamped: false };
 
   function fresh() {
     return { step: 'home', currency: 'CLP', restaurant: null, country: null, items: [], people: [], assigns: {},
@@ -78,6 +78,17 @@
   }
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove('on'); }, 2600); }
   function go(step) { state.step = step; save(); render(); window.scrollTo(0, 0); }
+  // Íconos SVG (trazo, heredan el color del texto). Reemplazan a los emojis, que cambian según el teléfono.
+  var ICONS = {
+    camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3.5"/>',
+    back: '<path d="M15 18l-6-6 6-6"/>',
+    close: '<path d="M18 6L6 18M6 6l12 12"/>',
+    chat: '<path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.6A8.4 8.4 0 1 1 21 11.5z"/>',
+    phones: '<rect x="2" y="5" width="9" height="15" rx="2"/><rect x="13" y="3" width="9" height="15" rx="2"/><path d="M6.5 17h.01M17.5 15h.01"/>',
+    mic: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v4"/>',
+    image: '<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/>'
+  };
+  function ic(name) { return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[name] + '</svg>'; }
   function avatar(p, cls) { return '<span class="avatar ' + (cls || '') + '" style="background:' + p.color + '">' + esc(initials(p.name)) + '</span>'; }
 
   // ── pantallas ──────────────────────────────────────────────────────────────
@@ -86,6 +97,9 @@
     if (state.step === 'summary') { recordLedger(); if (!state.splitTracked) { state.splitTracked = true; track('split_viewed', { p: state.people.length, n: state.items.length }); } } else if (state.step === 'home') ledgerRefresh();
     var html = ({ home: home, scanning: scanning, review: review, people: people, assign: assign, summary: summary, join: join, share: shareScreen }[state.step] || home)();
     app.innerHTML = html;
+    app.className = 'step-' + state.step + (ui.lastStep && ui.lastStep !== state.step && !reducedMotion() ? ' enter' : '');
+    ui.lastStep = state.step;
+    afterPaint(app);
     var ph = document.getElementById('photo');
     if (ph) {
       ph.addEventListener('click', function () { tlog('selector de fotos abierto'); });
@@ -100,13 +114,133 @@
     var f = app.querySelector('[data-autofocus]'); if (f) f.focus();
   }
 
+
+  // ── movimiento: números que ruedan, barra que se reacomoda, ítems que vuelan al avatar ──────────
+  function reducedMotion() { try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } }
+  // Barra de proporciones: cuánto de la cuenta lleva cada persona (y lo que falta asignar).
+  function propBar(r, big) {
+    var segs = r.perPerson.filter(function (p) { return p.amount > 0; }).map(function (p) { var q = person(p.id); return { key: 'p' + p.id, v: p.amount, c: q ? q.color : 'var(--text-3)', n: p.name }; });
+    if (r.unassigned > 0) segs.push({ key: 'u', v: r.unassigned, c: 'var(--border)', n: 'Sin asignar' });
+    var tot = segs.reduce(function (t, x) { return t + x.v; }, 0) || 1;
+    var label = segs.map(function (x) { return x.n + ' ' + Math.round(100 * x.v / tot) + '%'; }).join(', ');
+    return '<div class="pbar' + (big ? ' big' : '') + '" role="img" aria-label="Reparto: ' + esc(label || 'nada asignado aún') + '">' +
+      (segs.length ? segs.map(function (x) { return '<i data-seg="' + x.key + '" data-w="' + (100 * x.v / tot).toFixed(3) + '" style="width:' + (100 * x.v / tot).toFixed(3) + '%;background:' + x.c + '"></i>'; }).join('') : '<i class="empty"></i>') + '</div>';
+  }
+  // Número que rueda desde su valor anterior (key estable entre repintados).
+  function countSpan(key, v, cls) { return '<span class="num ' + (cls || '') + '" data-count="' + key + '" data-to="' + v + '">' + money(v) + '</span>'; }
+  function afterPaint(app) {
+    var rm = reducedMotion();
+    // barra: parte del ancho anterior y se desliza al nuevo
+    var segs = app.querySelectorAll('[data-seg]'), seen = {};
+    segs.forEach(function (el) {
+      var k = el.dataset.seg, to = el.dataset.w, from = ui.prevSeg[k];
+      seen[k] = to;
+      if (rm || from == null || from === to) return;
+      el.style.transition = 'none'; el.style.width = from + '%';
+      el.getBoundingClientRect();
+      el.style.transition = ''; el.style.width = to + '%';
+    });
+    if (segs.length) ui.prevSeg = seen;
+    // números
+    app.querySelectorAll('[data-count]').forEach(function (el) {
+      var k = el.dataset.count, to = Number(el.dataset.to), from = ui.prevCount[k];
+      ui.prevCount[k] = to;
+      if (rm || from == null || Math.abs(from - to) < 0.005) return;
+      var t0 = performance.now(), dur = 520;
+      (function step(now) {
+        var t = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - t, 3);
+        if (!el.isConnected) return;
+        el.textContent = money(from + (to - from) * e);
+        if (t < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+    // ítem que vuela hacia el avatar de quien lo consumió
+    var f = ui.fly; ui.fly = null;
+    if (f && !rm) {
+      var target = app.querySelector('.dock [data-dock="' + f.pid + '"] .avatar');
+      if (target && f.rect) {
+        var tr = target.getBoundingClientRect(), dot = document.createElement('div');
+        dot.className = 'fly'; dot.style.background = f.color; dot.textContent = f.initials;
+        var sx = f.rect.left + f.rect.width / 2 - 18, sy = f.rect.top + f.rect.height / 2 - 18;
+        dot.style.left = sx + 'px'; dot.style.top = sy + 'px';
+        document.body.appendChild(dot);
+        var dx = tr.left + tr.width / 2 - 18 - sx, dy = tr.top + tr.height / 2 - 18 - sy;
+        var anim = dot.animate([
+          { transform: 'translate(0,0) scale(1)', opacity: 1 },
+          { transform: 'translate(' + dx * 0.5 + 'px,' + (dy * 0.5 - 60) + 'px) scale(1.15)', opacity: 1, offset: 0.5 },
+          { transform: 'translate(' + dx + 'px,' + dy + 'px) scale(.5)', opacity: .2 }
+        ], { duration: 520, easing: 'cubic-bezier(.3,.7,.3,1)' });
+        anim.onfinish = function () {
+          dot.remove();
+          target.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.28)' }, { transform: 'scale(1)' }], { duration: 320, easing: 'cubic-bezier(.34,1.56,.64,1)' });
+        };
+      }
+    }
+    // sello PAGADA: se estampa una sola vez
+    var st = app.querySelector('.stamp.animate');
+    if (st) { ui.stamped = true; if (rm) st.classList.remove('animate'); }
+  }
+  // Dock inferior de la pantalla de asignar: barra + personas con lo que llevan.
+  function dock(r) {
+    return '<div class="dock">' + propBar(r) + '<div class="dock-people">' + state.people.map(function (p) {
+      var pp = r.perPerson.filter(function (x) { return x.id === p.id; })[0], n = baseItems().filter(function (it) { var a = state.assigns[it.id]; return a && (a.people || []).indexOf(p.id) > -1; }).length;
+      return '<div class="dock-p" data-dock="' + p.id + '">' + avatar(p) + '<span class="dn">' + esc(p.name) + '</span>' + countSpan('dock' + p.id, pp ? pp.amount : 0, 'da') + '<span class="dc">' + n + (n === 1 ? ' ítem' : ' ítems') + '</span></div>';
+    }).join('') + '</div></div>';
+  }
+  // ¿Todos le pagaron a quien pagó la cuenta?
+  function allPaid(r, tiny) {
+    if (state.people.length < 2) return false;
+    var payer = payerPid(), debtors = r.perPerson.filter(function (p) { return p.id !== payer && p.amount > tiny; });
+    return debtors.length > 0 && debtors.every(function (p) { var q = person(p.id); return q && q.paid; });
+  }
+  // Imagen del resumen para compartir (canvas propio, sin HTML del usuario ni datos de transferencia).
+  function shareImage() {
+    var r = split(), W = 1080, pad = 84, rows = r.perPerson.filter(function (p) { return p.amount > 0; });
+    var H = 760 + rows.length * 120;
+    var cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+    var g = cv.getContext('2d'), disp = "'Bricolage Grotesque', -apple-system, sans-serif", body = '-apple-system, "Segoe UI", Roboto, sans-serif';
+    function draw() {
+      g.fillStyle = '#0f0e0c'; g.fillRect(0, 0, W, H);
+      var glow = g.createRadialGradient(W * .8, 0, 10, W * .8, 0, 700); glow.addColorStop(0, 'rgba(255,181,71,.22)'); glow.addColorStop(1, 'rgba(255,181,71,0)');
+      g.fillStyle = glow; g.fillRect(0, 0, W, H);
+      g.fillStyle = '#f6f2ea'; g.font = '800 44px ' + disp; g.fillText('Divi', pad, 120); var w1 = g.measureText('Divi').width;
+      g.fillStyle = '#ffb547'; g.fillText('Cuenta', pad + w1, 120);
+      g.fillStyle = '#bdb4a6'; g.font = '500 34px ' + body; g.fillText(String(state.restaurant || 'La cuenta').slice(0, 40), pad, 220);
+      g.fillStyle = '#f6f2ea'; g.font = '800 128px ' + disp; g.fillText(money(r.grandTotal), pad, 350);
+      var x = pad, bw = W - pad * 2, tot = rows.reduce(function (t, p) { return t + p.amount; }, 0) + r.unassigned || 1;
+      rows.forEach(function (p) { var q = person(p.id), w = bw * p.amount / tot; g.fillStyle = q ? q.color : '#888'; g.fillRect(x, 410, Math.max(w - 6, 2), 28); x += w; });
+      var y = 540;
+      rows.forEach(function (p) {
+        var q = person(p.id);
+        g.fillStyle = q ? q.color : '#888'; g.beginPath(); g.arc(pad + 36, y - 12, 36, 0, Math.PI * 2); g.fill();
+        g.fillStyle = '#fff'; g.font = '800 30px ' + body; g.textAlign = 'center'; g.fillText(initials(p.name), pad + 36, y - 1); g.textAlign = 'left';
+        g.fillStyle = '#f6f2ea'; g.font = '600 40px ' + body; g.fillText(String(p.name).slice(0, 22), pad + 100, y);
+        g.font = '800 48px ' + disp; g.textAlign = 'right'; g.fillText(money(p.amount), W - pad, y); g.textAlign = 'left';
+        if (q && q.paid) { g.fillStyle = '#5bd38e'; g.font = '700 26px ' + body; g.fillText('PAGÓ', pad + 100, y + 38); }
+        y += 120;
+      });
+      if (allPaid(r, C.decimals(state.currency) ? 0.005 : 0.5)) {
+        g.save(); g.translate(W - 250, 230); g.rotate(-0.22); g.strokeStyle = '#5bd38e'; g.lineWidth = 8; g.strokeRect(-150, -56, 300, 112);
+        g.fillStyle = '#5bd38e'; g.font = '800 64px ' + disp; g.textAlign = 'center'; g.fillText('PAGADA', 0, 22); g.restore();
+      }
+      g.fillStyle = '#a0978a'; g.font = '500 28px ' + body; g.fillText('Hecho con DiviCuenta · saca la foto, nosotros hacemos la matemática', pad, H - 70);
+      cv.toBlob(function (blob) {
+        if (!blob) { toast('No pudimos crear la imagen'); return; }
+        var file = new File([blob], 'divicuenta.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'DiviCuenta' }).catch(function () {});
+        else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'divicuenta.png'; document.body.appendChild(a); a.click(); a.remove(); toast('Imagen descargada'); }
+      }, 'image/png');
+    }
+    if (document.fonts && document.fonts.load) document.fonts.load('800 40px "Bricolage Grotesque"').then(draw, draw); else draw();
+  }
+
   function top(title, back) {
     var i = STEPS.indexOf(state.step);
-    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">←</button>' : '') +
-      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">✕</button></header>' +
+    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">' + ic('back') + '</button>' : '') +
+      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">' + ic('close') + '</button></header>' +
       (i > -1 ? '<div class="steps" role="img" aria-label="Paso ' + (i + 1) + ' de 4">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
   }
-  function footer(inner) { return '<div class="footer"><div class="inner">' + inner + '</div></div>'; }
+  function footer(inner, cls) { return '<div class="footer' + (cls ? ' ' + cls : '') + '"><div class="inner">' + inner + '</div></div>'; }
 
   // ── Cobros pendientes: lo que me deben de cuentas anteriores, guardado en este teléfono ──────────────
   var LEDGER_KEY = 'dc_ledger', LEDGER_DAYS = 45;
@@ -158,7 +292,7 @@
         e.debts.map(function (d, i) {
           if (d.paid) return '';
           return '<div class="row" style="padding:6px 0;flex-wrap:wrap;gap:6px"><span style="flex:1;min-width:120px">' + esc(d.name) + ' <span class="small num">' + money(d.amount, e.currency) + '</span></span>' +
-            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">💬 Recordar</button>' +
+            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' +
             '<button class="btn sm" data-action="ledger-paid" data-key="' + esc(e.key) + '" data-i="' + i + '">Ya pagó</button></div>';
         }).join('') + '</div>';
     }).join('') + '</div>';
@@ -181,7 +315,7 @@
     return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
       '<section class="hero"><span class="badge accent">Boletas de más de 40 países</span>' +
       '<h1>Divide la cuenta en segundos.</h1><p>Saca una foto de la boleta, marca quién comió qué y listo: impuesto, servicio y propina repartidos de forma justa.</p></section>' +
-      '<label class="cta-scan" for="photo"><span class="ic" aria-hidden="true">📷</span><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></label>' +
+      '<label class="cta-scan" for="photo"><span class="cam">' + ic('camera') + '</span><span class="txt"><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></span></label>' +
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
       '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
       pendingCard() +
@@ -226,7 +360,7 @@
         (nSus ? 'Marqué en rojo lo que explica la diferencia.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
         '<div class="actions">' +
         (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
-        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">📷 Sacar otra foto</label>' +
+        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' Sacar otra foto</label>' +
         '</div></div>';
     } else if (c.ok) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ').</div>';
 
@@ -289,7 +423,7 @@
       (state.people.length ? '<div class="list">' + state.people.map(function (p) {
         return '<div class="person">' + avatar(p) + '<span style="flex:1;font-weight:600">' + esc(p.name) + '</span><button class="btn sm ghost" data-action="del-person" data-id="' + p.id + '">Quitar</button></div>';
       }).join('') + '</div>' : '') +
-      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">📲 Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
+      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">' + ic('phones') + ' Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
       (state.share ? sharePanel() : '') +
       footer('<button class="btn primary" data-action="go" data-to="assign"' + (state.people.length ? '' : ' disabled') + '>Asignar ítems →</button>');
   }
@@ -353,13 +487,13 @@
   function voicePanel() {
     if (!voiceOn() || state.people.length < 1) return '';
     var v = ui.voice, undo = ui.voiceUndo;
-    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">🎤 Asignar hablando <span class="badge accent">prueba</span></button>' +
+    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">' + ic('mic') + ' Asignar hablando <span class="badge accent">prueba</span></button>' +
       (undo ? '<button class="btn sm ghost" data-action="voice-undo">Deshacer lo último</button>' : '') + '</div>';
     var pv = v.preview;
     return '<div class="card" style="margin-bottom:12px"><div class="row"><b style="flex:1">Asignar hablando</b><span class="badge accent">prueba</span><button class="btn sm ghost" data-action="voice-close">Cerrar</button></div>' +
       '<p class="small" style="margin:6px 0">Cuenta quién comió qué. Ej.: «yo el bife, ' + esc((state.people[1] || state.people[0]).name) + ' la pizza, la cerveza entre los dos»</p>' +
       '<textarea name="voicetext" data-action="voice-text" rows="3" maxlength="500" placeholder="Habla o escribe aquí…" style="width:100%">' + esc(v.text) + '</textarea>' +
-      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : '🎤 Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
+      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : ic('mic') + ' Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
       '<span class="spacer"></span><button class="btn sm primary" data-action="voice-go"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? 'Interpretando…' : 'Interpretar') + '</button></div>' +
       (v.error ? '<div class="banner danger" style="margin:10px 0 0">' + esc(v.error) + '</div>' : '') +
       (pv ? '<div style="margin-top:12px"><div class="small">Esto entendí (revísalo antes de aplicar):</div>' +
@@ -419,8 +553,8 @@
       (state.share ? sharePanel() : '') + voicePanel() +
       '<div class="card"><div class="row"><b>' + done + ' de ' + base.length + ' ítems asignados</b><span class="spacer"></span><button class="btn sm" data-action="all-everything">Compartir todo</button></div>' +
       '<div class="progress" style="margin-top:10px"><i style="width:' + (base.length ? Math.round(100 * done / base.length) : 0) + '%"></i></div></div>' +
-      '<div class="list">' + base.map(assignRow).join('') + '</div>' +
-      footer('<button class="btn primary" data-action="go" data-to="summary">Ver cuánto paga cada uno →</button>');
+      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || 'Tu boleta') + '</span><span>' + base.length + ' ítems</span></div>' + base.map(assignRow).join('') + '</div>' +
+      footer(dock(split()) + '<button class="btn primary block" data-action="go" data-to="summary">Ver cuánto paga cada uno →</button>', 'tall');
   }
 
   // Vista del invitado: solo marca lo suyo, no toca a los demás.
@@ -428,19 +562,20 @@
     var mine = state.myMemberId;
     var r = split(), me = r.perPerson.filter(function (p) { return p.id === mine; })[0];
     return top('Marca lo tuyo', null) +
-      '<div class="card"><div class="row"><div><div class="small">Lo que llevas</div><div style="font-size:26px;font-weight:800" class="num">' + money(me ? me.amount : 0) + '</div></div><span class="spacer"></span><span class="badge ok">en vivo</span></div></div>' +
-      '<div class="list">' + base.map(function (it) {
+      '<div class="card mine"><div class="row"><div><div class="small">Lo que llevas</div>' + countSpan('mine', me ? me.amount : 0, 'mine-amt') + '</div><span class="spacer"></span><span class="badge ok live">en vivo</span></div>' + propBar(r) + '</div>' +
+      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || 'Tu boleta') + '</span><span>' + base.length + ' ítems</span></div>' + base.map(function (it) {
         var a = state.assigns[it.id] || { people: [], units: {} };
         var mineOn = (a.people || []).indexOf(mine) > -1;
         var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name + (it.qty > 1 && a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : '') : ''; }).filter(Boolean);
         var myU = (a.units && a.units[mine]) || 0;
         var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">¿Cuántas tomaste?</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="Más"' + (myU >= it.qty - othersUnits(it.id, mine) ? ' disabled' : '') + '>+</button></div></div>' : '';
-        return '<div class="assign' + (mineOn ? ' done' : '') + '">' +
+        var mp = person(mine), tint = mineOn && mp ? ' style="--stripe:' + mp.color + '"' : '';
+        return '<div class="assign' + (mineOn ? ' done' : '') + '"' + tint + '>' +
           '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
           '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' + stepper +
           '<div class="state">' + (others.length ? 'También: ' + esc(others.join(', ')) : 'Nadie más lo marcó') + '</div></div>';
       }).join('') + '</div>' +
-      footer('<button class="btn primary" data-action="go" data-to="summary">Ver el total →</button>');
+      footer('<button class="btn primary block" data-action="go" data-to="summary">Ver el total →</button>');
   }
 
   function isAssigned(it) {
@@ -458,8 +593,10 @@
     var stateTxt = !who.length ? 'Sin asignar'
       : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? 'Unidades repartidas ✓' : unitSum > it.qty ? 'Se pasaron ' + (unitSum - it.qty) + ' unidades: ajusten' : 'Faltan ' + (it.qty - unitSum) + ' de ' + it.qty + ' unidades')
       : who.length > 1 ? 'Se divide en partes iguales entre ' + who.length : 'Lo paga ' + esc(person(who[0]) ? person(who[0]).name : '');
-    return '<div class="assign' + (isAssigned(it) ? ' done' : '') + '">' +
-      '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
+    var cols = who.map(function (pid) { var q = person(pid); return q ? q.color : null; }).filter(Boolean);
+    var stripe = cols.length ? ' style="--stripe:' + (cols.length === 1 ? cols[0] : 'linear-gradient(' + cols.map(function (c, k) { return c + ' ' + Math.round(100 * k / cols.length) + '% ' + Math.round(100 * (k + 1) / cols.length) + '%'; }).join(',') + ')') + '"' : '';
+    return '<div class="assign' + (isAssigned(it) ? ' done' : '') + (cols.length ? ' tinted' : '') + '"' + stripe + '>' +
+      '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="price num">' + money(it.price * it.qty) + '</span></div>' +
       '<div class="who">' + state.people.map(function (p) {
         var on = who.indexOf(p.id) > -1;
         return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '"' + '>' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span>' + '</button>';
@@ -504,7 +641,7 @@
       var pending = debtors.filter(function (p) { var q = person(p.id); return !(q && q.paid); }).reduce(function (s, p) { return s + p.amount; }, 0);
       out += '<div style="margin-top:12px">' + debtors.map(function (p) {
         var q = person(p.id), isPaid = !!(q && q.paid), can = !shared || host || p.id === me;
-        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">💬 Recordar</button>' : '';
+        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' : '';
         var paidBtn = can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" style="flex:1" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>' : '';
         return '<div style="padding:8px 0;border-top:1px solid var(--border)"><div class="row">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + '</span><span class="num" style="font-weight:700">' + money(p.amount) + '</span>' +
           (can ? '' : '<span class="badge' + (isPaid ? ' ok' : '') + '" style="margin-left:8px">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>' +
@@ -528,14 +665,20 @@
       : r.unassigned ? '<span class="badge accent">Cuentas + sin asignar = total</span>'
       : '<span class="badge ok">✓ Todo repartido: las cuentas suman el total</span>';
     var pct = pctTxt(r.extrasRatio), tiny = C.decimals(state.currency) ? 0.005 : 0.5;
+    var done = allPaid(r, tiny);
     return top('Cuánto paga cada uno', 'assign') +
-      '<div class="card summary-total"><div class="small">Total de la cuenta</div><div class="amount num">' + money(r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
-      '<div style="margin-top:8px">' + seal + '</div></div>' +
+      '<div class="card summary-total' + (done ? ' paid' : '') + '">' + (done ? '<div class="stamp' + (ui.stamped ? '' : ' animate') + '" aria-hidden="true">Pagada</div>' : '') +
+      '<div class="small">Total de la cuenta</div><div class="amount">' + countSpan('grand', r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
+      propBar(r, true) +
+      '<div class="legend">' + r.perPerson.filter(function (p) { return p.amount > 0; }).map(function (p) { var q = person(p.id); return '<span><i style="background:' + (q ? q.color : 'var(--text-3)') + '"></i>' + esc(p.name) + '</span>'; }).join('') + '</div>' +
+      '<div style="margin-top:12px">' + seal + '</div>' +
+      (done ? '<p class="paid-msg">Todos pagaron. Cuenta cerrada.</p>' : '') +
+      '<button class="btn sm share-img" data-action="share-img">' + ic('image') + ' Compartir como imagen</button></div>' +
       (r.unassigned ? '<div class="banner warn"><b>Falta asignar ' + money(r.unassigned) + ':</b> ' + esc(r.unassignedNames.join(', ')) + '<div class="actions"><button class="btn sm" data-action="go" data-to="assign">Asignar</button></div></div>' : '') +
       cobro(r, tiny) +
       r.perPerson.map(function (p) {
         var ppl = person(p.id);
-        return '<div class="card pcard"><div class="row">' + avatar(ppl) + '<b style="flex:1">' + esc(p.name) + '</b><div><div class="amount num">' + money(p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
+        return '<div class="card pcard" style="--pc:' + (ppl ? ppl.color : 'var(--border)') + '"><div class="row">' + avatar(ppl, 'lg') + '<b class="pname">' + esc(p.name) + (ppl && ppl.paid ? ' <span class="badge ok">Pagó</span>' : '') + '</b><div><div class="amount">' + countSpan('pp' + p.id, p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
           '<details data-pid="' + p.id + '"' + (ui.openDetail[p.id] ? ' open' : '') + '><summary>Ver detalle</summary><div class="lines">' +
           p.lines.map(function (l) { return '<div class="row"><span>' + nameHtml(item(l.itemId) || { name: l.name }) + (l.units ? ' ×' + l.units : '') + (l.shared ? ' (compartido)' : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
           (p.extras > tiny ? '<div class="row"><span>Impuesto y cargos (' + pct + '%)</span><span class="spacer"></span><span>' + money(p.extras) + '</span></div>' : '') +
@@ -565,7 +708,11 @@
       case 'tip': ui.customTip = false; state.tip = Number(el.dataset.pct) ? { pct: Number(el.dataset.pct) } : null; save(); render(); break;
       case 'tip-custom': ui.customTip = true; render(); break;
       case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
-      case 'toggle': togglePerson(itemId, pid); save(); render(); syncHost([itemId], [pid]); break;
+      case 'toggle': {
+        var ta = state.assigns[itemId], wasOn = !!(ta && (ta.people || []).indexOf(pid) > -1), tp = person(pid);
+        if (!wasOn && tp) ui.fly = { pid: pid, color: tp.color, initials: initials(tp.name), rect: el.getBoundingClientRect() };
+        togglePerson(itemId, pid); save(); render(); syncHost([itemId], [pid]); break;
+      }
       case 'toggle-all': toggleAll(itemId); save(); render(); syncHost([itemId]); break;
       case 'units-open': ui.unitsOpen[itemId] = true; render(); break;
       case 'unit': changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); syncHost([itemId], [pid]); break;
@@ -593,6 +740,7 @@
       case 'ledger-paid': ledgerPaid(el.dataset.key, Number(el.dataset.i)); break;
       case 'copy-pay': copyText(state.payInfo || ''); break;
       case 'copy': copyText(shareText()); break;
+      case 'share-img': shareImage(); break;
       case 'share': window.open('https://wa.me/?text=' + encodeURIComponent(shareText()), '_blank', 'noopener'); break;
     }
   });

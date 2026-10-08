@@ -35,6 +35,16 @@ r = await run([buena]); ok(r.bodies[0].model === 'claude-haiku-4-5-20251001' && 
 process.env.OCR_MODEL = 'no es un modelo; drop table';
 r = await run([buena]); ok(r.bodies[0].model === 'claude-sonnet-4-6', 'un OCR_MODEL con formato inválido se ignora');
 
+// Haiku 5.5: sin temperature (daría 400), pensamiento apagado y esfuerzo solo si se pide
+process.env.OCR_MODEL = 'claude-haiku-5-5';
+r = await run([buena]); b = r.bodies[0];
+ok(b.model === 'claude-haiku-5-5' && b.temperature === undefined && b.thinking?.type === 'disabled' && b.output_config === undefined, 'Haiku 5.5: sin temperature, thinking disabled y sin esfuerzo por defecto');
+process.env.OCR_EFFORT = 'medium';
+r = await run([buena]); ok(r.bodies[0].output_config?.effort === 'medium', 'Haiku 5.5: OCR_EFFORT se envía');
+process.env.OCR_THINKING = 'adaptive';
+r = await run([buena]); ok(r.bodies[0].thinking === undefined, 'Haiku 5.5: OCR_THINKING=adaptive deja el pensamiento adaptativo');
+delete process.env.OCR_EFFORT; delete process.env.OCR_THINKING;
+
 // Sonnet 5.5: sin temperature, pensamiento mínimo y esfuerzo configurable
 process.env.OCR_MODEL = 'claude-sonnet-5-5';
 r = await run([buena]); b = r.bodies[0];
