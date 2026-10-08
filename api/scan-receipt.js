@@ -285,6 +285,12 @@ R17. ANULACIONES (STORNO / VOID): una línea con cantidad NEGATIVA (ej.
      precio_unitario:390, positivo). NO la omitas ni hagas tú la resta: el sistema
      la descuenta del ítem original. El total de la boleta ya viene neto.
 
+R22. CARGOS QUE NO SON PRODUCTOS (en CUALQUIER idioma: "Serviço", "Taxa de serviço", "Bedienung", "Service",
+     "Gorjeta", "Servizio"...): si una línea impresa es el cargo de servicio, un impuesto o la propina (no algo que
+     se consume), ponle "cargo":"servicio" | "impuesto" | "propina" en ese ítem. Los productos NO llevan "cargo".
+     Ej.: "Servico : 17,30" → {"nombre":"Servico","precio_unitario":17.30,"cantidad":1,"cargo":"servicio"}.
+     Los subtotales y totales siguen sin listarse (R1).
+
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
      → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas
      una cantidad decimal ni uses el precio por kg como precio del ítem.
@@ -648,8 +654,12 @@ function normalizeItems(items, currency) {
       precioFinal = round(precioFinal * qty);
       qty = 1;
     }
+    // R22: si el lector marcó la línea como cargo, el nombre se normaliza a la etiqueta que la app reparte
+    // proporcionalmente (Servicio / Impuesto / Propina), sea cual sea el idioma de la boleta.
+    const CARGOS = { servicio:'Servicio', impuesto:'Impuesto', propina:'Propina' };
+    const cargo = CARGOS[String(it.cargo || '').toLowerCase().trim()];
     return {
-      nombre:          it.nombre || it.name || ("Item " + (i+1)),
+      nombre:          cargo || it.nombre || it.name || ("Item " + (i+1)),
       precio_unitario: precioFinal,
       cantidad:        qty,
       confianza:       it.confianza || null,

@@ -1502,6 +1502,22 @@
       ],
       "total_referencia": 104.8,
       "notas": "MISMA boleta que US/johns-pizzeria-nyc pero como la subió el usuario en producción: captura completa del teléfono (con la interfaz del navegador y miniaturas), reducida a 1600 px como hace la app. Tax 8.54 (8,87 % de 96.25) y Total Due 104.80 (la suma da 104.79: un centavo de redondeo de la boleta). 'GRATUITY IS NOT INCLUDED' + gratuities sugeridas (15/18/20 %, tachadas a mano): no son ítems ni parte del total. Hallazgo de producción v2: la app omitió el Tax (faltaban $8,55): 8,2 % del total, fuera de la ventana de auto-corrección 6–8 %."
+    },
+    {
+      "id": "BR/conferencia-conta-servico",
+      "pais": "BR",
+      "moneda": "BRL",
+      "restaurante": null,
+      "items": [
+        { "nombre": "SAND FILE COM QUEIJO", "precio_unitario": 39, "cantidad": 1 },
+        { "nombre": "CAIPI SMIRNOFF", "precio_unitario": 28, "cantidad": 2 },
+        { "nombre": "FILE CARNE A PARMEGI", "precio_unitario": 52, "cantidad": 1 },
+        { "nombre": "BOLINHO DE BACALHAU", "precio_unitario": 12, "cantidad": 1 },
+        { "nombre": "PASTEL DE PALMITO CO", "precio_unitario": 14, "cantidad": 1 },
+        { "nombre": "Servico", "precio_unitario": 17.3, "cantidad": 1 }
+      ],
+      "total_referencia": 190.3,
+      "notas": "Conferência de conta (Brasil): subtotal 173,00 + Serviço 17,30 (10 %) = 190,30. El servicio va como línea aparte; la app debe tratarlo como cargo (se reparte proporcional al consumo), no como plato."
     }
   ]
 }
