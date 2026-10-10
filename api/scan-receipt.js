@@ -177,6 +177,12 @@ R5. MODIFICADORES (regla universal, NO por POS):
       "- $1.00: Sin papas"
       → {nombre: "Combo Burger", precio_unitario: 7.00, cantidad: 1}
 
+R6b. TOTAL DE GRUPO IMPRESO: SOLO si bajo un plato hay extras con precio propio Y al cerrar el grupo la boleta
+    imprime un total de ese grupo ("1/2 Roasted Chicken 230.00 / Bayouki Rice 40.00 / Buffalo" y a la derecha
+    "270.00"), el plato vale ese total (270.00 = 230 + 40). Sin un total de grupo impreso NO unas nada: los extras con
+    cargo ("=> SUB BISON $3,00", "+ Chelado $1.800", "ADD MUSH 2.25") siguen siendo ítems aparte, y el
+    modificador sin precio ("Buffalo") no suma.
+
 R6. MODIFICADORES SIN MONTO: Líneas como "Over Easy", "Sin sal", "Bien hecho",
     "Brown Bread", "Any Style", "Poached Medium" sin monto asociado: IGNORAR.
 
@@ -295,6 +301,14 @@ R22. CARGOS QUE NO SON PRODUCTOS (en CUALQUIER idioma: "Serviço", "Taxa de serv
      Ej.: "Servico : 17,30" → {"nombre":"Servico","precio_unitario":17.30,"cantidad":1,"cargo":"servicio"}.
      Ej.: "TOT CONSUMO 175,70 / SERVICO (10,00%): 17,57 / TOTAL A PAGAR 193,27" → ítem Servico 17,57 con "cargo":"servicio".
      Los subtotales y totales siguen sin listarse (R1).
+
+R23. PRECIOS DESALINEADOS: en tickets de bar donde el precio va en una columna a la derecha, un modificador sin precio
+     ("- Coca Cola Zero 220cc", "Sin hielo") entre dos líneas deja el precio una FILA arriba o abajo de su nombre.
+     Asigna los precios contando de ABAJO hacia ARRIBA: el último monto antes de "Total" es el del último ítem, y cada
+     "Nx NOMBRE" tiene su propio precio. Debe haber tantos precios como ítems (sin contar modificadores): un monto
+     sobrante al final de la lista (ej. "2.500" bajo el último plato) NO es propina ni un ítem nuevo, es el precio del
+     último plato. Las filas idénticas repetidas ("1x Mala Mia" ocho veces, cada una con su $8.990) son filas distintas:
+     cuéntalas todas.
 
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
      → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas

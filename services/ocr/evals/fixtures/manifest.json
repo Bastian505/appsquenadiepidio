@@ -1518,6 +1518,83 @@
       ],
       "total_referencia": 190.3,
       "notas": "Conferência de conta (Brasil): subtotal 173,00 + Serviço 17,30 (10 %) = 190,30. El servicio va como línea aparte; la app debe tratarlo como cargo (se reparte proporcional al consumo), no como plato."
+    },
+    {
+      "id": "EG/bayouki-mall-of-egypt",
+      "pais": "EG",
+      "moneda": "EGP",
+      "restaurante": "Bayouki - Mall Of Egypt",
+      "items": [
+        { "nombre": "1/2 Roasted Chicken Bayouki Rice Buffalo", "precio_unitario": 270, "cantidad": 1 },
+        { "nombre": "1/2 Loaded Musakhan", "precio_unitario": 270, "cantidad": 1 }
+      ],
+      "total_referencia": 540,
+      "notas": "Factura simplificada: el pollo trae un extra con precio propio (Bayouki Rice 40) y el grupo suma 270 (230 + 40). Los precios ya incluyen el IVA 14 % (subtotal 473,68 + IVA 66,32 = 540): no hay impuesto aparte que agregar. Caso real donde el lector dejó el pollo en 230 y la app ofreció 'servicio del 8 %'."
+    },
+    {
+      "id": "EG/table-9-servicio-y-vat",
+      "pais": "EG",
+      "moneda": "EGP",
+      "restaurante": null,
+      "items": [
+        { "nombre": "Fresh Mango Juice", "precio_unitario": 115, "cantidad": 2 },
+        { "nombre": "Minted Lemonade", "precio_unitario": 95, "cantidad": 1 },
+        { "nombre": "Mixed Fresh Juice", "precio_unitario": 115, "cantidad": 1 },
+        { "nombre": "Fattoush", "precio_unitario": 150, "cantidad": 1 },
+        { "nombre": "Lahm Bi Ajin", "precio_unitario": 185, "cantidad": 2 },
+        { "nombre": "Grilled Chicken Wings", "precio_unitario": 285, "cantidad": 1 },
+        { "nombre": "Chicken Tawouk", "precio_unitario": 385, "cantidad": 1 },
+        { "nombre": "Flavoured Tea", "precio_unitario": 60, "cantidad": 1 },
+        { "nombre": "Small Water", "precio_unitario": 45, "cantidad": 1 },
+        { "nombre": "Servicio", "precio_unitario": 208.2, "cantidad": 1 },
+        { "nombre": "Impuesto", "precio_unitario": 272.05, "cantidad": 1 }
+      ],
+      "total_referencia": 2215.25,
+      "notas": "Sub Total 1.735,00 + Service Charge 12 % (208,20) + VAT 14 % (272,05, calculado sobre subtotal + servicio) = 2.215,25. Los precios de la columna son el total de cada línea (Mango Juice 230 = 2 × 115). 'Entres Cup' y 'Extra Hot Bread' van en 0,00 y no son ítems. Caso real donde el lector omitía el servicio, o el servicio y el IVA."
+    },
+    {
+      "id": "CL/concept-bar-precios-corridos",
+      "pais": "CL",
+      "moneda": "CLP",
+      "restaurante": "Concept Bar",
+      "items": [
+        { "nombre": "Tabla Con Carne Mechada", "precio_unitario": 26490, "cantidad": 1 },
+        { "nombre": "Ex Presso Martini", "precio_unitario": 8990, "cantidad": 2 },
+        { "nombre": "Flores y Rejas (nuevo)", "precio_unitario": 8990, "cantidad": 4 },
+        { "nombre": "Mala Mia", "precio_unitario": 8990, "cantidad": 8 },
+        { "nombre": "Mistral Nobel 40°", "precio_unitario": 8990, "cantidad": 1 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 2 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 1 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 1 },
+        { "nombre": "2 Shot Olmeca Blanco", "precio_unitario": 8500, "cantidad": 3 },
+        { "nombre": "2 Shot Olmeca Blanco", "precio_unitario": 8500, "cantidad": 3 },
+        { "nombre": "Schop Heineken 500 cc", "precio_unitario": 4990, "cantidad": 1 },
+        { "nombre": "Agua Sin Gas 330", "precio_unitario": 2500, "cantidad": 1 }
+      ],
+      "total_referencia": 263830,
+      "notas": "Chile 2026, bar. Los modificadores sin precio ('- Coca Cola Zero 220cc') desplazan la columna de precios una fila: el $8.990 que se ve junto a 'Mistral Nobel 40°' es el suyo, y al final el $4.990 es del Schop Heineken y el $2.500 del Agua (no es una propina). Hallazgo de producción con Haiku 5.5: leyó 7 Mala Mia en vez de 8, un solo 2 Shot Olmeca, Schop Heineken en 25.500, Agua en 4.990 y un 'Propina 2.500' inventado; los errores casi se cancelaban (faltaban 8.990). 'Propina sugerida 26.383' y 'Total c/propina' NO están en el total a pagar (263.830). Foto con el dedo tapando el nombre del local."
+    },
+    {
+      "id": "CL/concept-bar-precios-corridos-2",
+      "pais": "CL",
+      "moneda": "CLP",
+      "restaurante": "Concept Bar",
+      "items": [
+        { "nombre": "Tabla Con Carne Mechada", "precio_unitario": 26490, "cantidad": 1 },
+        { "nombre": "Ex Presso Martini", "precio_unitario": 8990, "cantidad": 2 },
+        { "nombre": "Flores y Rejas (nuevo)", "precio_unitario": 8990, "cantidad": 4 },
+        { "nombre": "Mala Mia", "precio_unitario": 8990, "cantidad": 8 },
+        { "nombre": "Mistral Nobel 40°", "precio_unitario": 8990, "cantidad": 1 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 2 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 1 },
+        { "nombre": "Mistral Nobel Barricas Tostadas", "precio_unitario": 11000, "cantidad": 1 },
+        { "nombre": "2 Shot Olmeca Blanco", "precio_unitario": 8500, "cantidad": 3 },
+        { "nombre": "2 Shot Olmeca Blanco", "precio_unitario": 8500, "cantidad": 3 },
+        { "nombre": "Schop Heineken 500 cc", "precio_unitario": 4990, "cantidad": 1 },
+        { "nombre": "Agua Sin Gas 330", "precio_unitario": 2500, "cantidad": 1 }
+      ],
+      "total_referencia": 263830,
+      "notas": "MISMA boleta que CL/concept-bar-precios-corridos, segunda foto (más inclinada, la hoja curva). El Total impreso es 263.830; la propina sugerida (10 %) no está incluida."
     }
   ]
 }

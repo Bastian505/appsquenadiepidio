@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-08.a';
+  var BUILD = '2026-10-08.b';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -68,8 +68,18 @@
     // El total impreso puede traer sumado un servicio o propina (ej. "SERVICO (10%)" en Brasil): ítems + ese % = total.
     var viaTip = !!(printed && !okPlain && state.tipSuggested && Math.abs(printed - sum * (1 + state.tipSuggested / 100)) <= tol * 2);
     // Si la diferencia que falta es justo un % redondo de los ítems (ej. 90,36 de 753,00 = 12 %), probablemente es el servicio.
-    var pctRaw = diff > 0 && sum > 0 ? diff / sum * 100 : 0, pctK = Math.round(pctRaw);
-    var servicePct = !okPlain && !viaTip && pctK >= 3 && pctK <= 25 && Math.abs(pctRaw - pctK) <= 0.03 ? pctK : null;
+    // Solo tasas de servicio habituales (un 8 % no existe: suele ser un modificador sin sumar). Se prueba sobre el consumo
+    // y sobre consumo + extras (en Egipto el servicio va sobre el subtotal y el IVA se calcula después).
+    var servicePct = null;
+    if (!okPlain && !viaTip && diff > 0) {
+      [r.baseTotal, sum].some(function (b) {
+        if (!(b > 0)) return false;
+        var raw = diff / b * 100;
+        var hit = [5, 10, 12, 12.5, 15, 18, 20].filter(function (k) { return Math.abs(raw - k) <= 0.06; })[0];
+        if (hit) { servicePct = hit; return true; }
+        return false;
+      });
+    }
     return { r: r, printed: printed, sum: sum, diff: diff, tol: tol, viaTip: viaTip, servicePct: servicePct, bad: !!(printed && !okPlain && !viaTip), ok: !!(printed && (okPlain || viaTip)) };
   }
   // Si sobra plata (los ítems suman más que la boleta), ¿hay un ítem que explique justo la diferencia?
@@ -363,9 +373,9 @@
     if (c.bad) {
       var nSus = Object.keys(ui.suspects).length;
       banner = '<div class="banner warn"><b>La suma no coincide con la boleta.</b> Total impreso ' + money(printed) + ', ítems ' + money(c.sum) + ' (' + (diff > 0 ? 'faltan ' : 'sobran ') + money(Math.abs(diff)) + ', ' + Math.round(Math.abs(diff) / printed * 100) + '%). ' +
-        (nSus ? 'Marqué en rojo lo que explica la diferencia.' : c.servicePct ? 'La diferencia es justo el ' + c.servicePct + ' % de los ítems: parece un servicio o propina sumado al total.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
+        (nSus ? 'Marqué en rojo lo que explica la diferencia.' : c.servicePct ? 'La diferencia es justo el ' + pctTxt(c.servicePct / 100) + ' % del consumo: parece un servicio o propina sumado al total.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
         '<div class="actions">' +
-        (c.servicePct ? '<button class="btn sm primary" data-action="apply-service" data-pct="' + c.servicePct + '">Es el servicio del ' + c.servicePct + ' % (' + money(diff) + ')</button>' : '') +
+        (c.servicePct ? '<button class="btn sm primary" data-action="apply-service" data-pct="' + c.servicePct + '">Es el servicio del ' + pctTxt(c.servicePct / 100) + ' % (' + money(diff) + ')</button>' : '') +
         (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
         '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' Sacar otra foto</label>' +
         '</div></div>';
@@ -729,7 +739,16 @@
       case 'tip-custom-amt': ui.customTip = 'amt'; render(); break;
       case 'tip-custom-pct': ui.customTip = 'pct'; render(); break;
       case 'tip-apply': { var ti = document.querySelector('.chip-input'); if (ti) applyCustomTip(ti.value, ti.dataset.kind); break; }
-      case 'apply-service': { var sp = Number(el.dataset.pct); if (sp > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'servicio'; ui.customTip = false; state.tip = { pct: sp }; state.tipSuggested = sp; save(); render(); toast('Servicio del ' + sp + ' % aplicado'); } break; }
+      case 'apply-service': {
+        var sp = Number(el.dataset.pct), rc2 = recon();
+        if (rc2.servicePct && rc2.diff > 0) { // la diferencia exacta que falta, como cargo de servicio
+          state.edits = (state.edits || 0) + 1; ui.lastFix = 'servicio';
+          addItem('Servicio', C.decimals(state.currency) === 0 ? Math.round(rc2.diff) : Math.round(rc2.diff * 100) / 100); save(); render(); toast('Servicio agregado (' + money(rc2.diff) + ')');
+        } else if (sp > 0) { // el total impreso ya incluía el % sugerido: se activa en Propina
+          state.edits = (state.edits || 0) + 1; ui.lastFix = 'servicio'; ui.customTip = false; state.tip = { pct: sp }; state.tipSuggested = sp; save(); render(); toast('Servicio del ' + sp + ' % aplicado');
+        }
+        break;
+      }
       case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
       case 'toggle': {
         var ta = state.assigns[itemId], wasOn = !!(ta && (ta.people || []).indexOf(pid) > -1), tp = person(pid);
