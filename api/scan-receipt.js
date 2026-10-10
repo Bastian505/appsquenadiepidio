@@ -302,6 +302,14 @@ R22. CARGOS QUE NO SON PRODUCTOS (en CUALQUIER idioma: "Serviço", "Taxa de serv
      Ej.: "TOT CONSUMO 175,70 / SERVICO (10,00%): 17,57 / TOTAL A PAGAR 193,27" → ítem Servico 17,57 con "cargo":"servicio".
      Los subtotales y totales siguen sin listarse (R1).
 
+R23. PRECIOS DESALINEADOS: en tickets de bar donde el precio va en una columna a la derecha, un modificador sin precio
+     ("- Coca Cola Zero 220cc", "Sin hielo") entre dos líneas deja el precio una FILA arriba o abajo de su nombre.
+     Asigna los precios contando de ABAJO hacia ARRIBA: el último monto antes de "Total" es el del último ítem, y cada
+     "Nx NOMBRE" tiene su propio precio. Debe haber tantos precios como ítems (sin contar modificadores): un monto
+     sobrante al final de la lista (ej. "2.500" bajo el último plato) NO es propina ni un ítem nuevo, es el precio del
+     último plato. Las filas idénticas repetidas ("1x Mala Mia" ocho veces, cada una con su $8.990) son filas distintas:
+     cuéntalas todas.
+
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
      → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas
      una cantidad decimal ni uses el precio por kg como precio del ítem.
