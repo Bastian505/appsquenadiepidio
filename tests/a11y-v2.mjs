@@ -56,6 +56,9 @@ for (const scheme of ['light', 'dark']) {
   ({ page, ctx } = await pagina(scheme, { body: { ok: false, needs_confirmation: true, message: '¿Cuál es la moneda de esta boleta?', candidates: [{ code: 'US', name: 'Estados Unidos', currency: 'USD' }, { code: 'CA', name: 'Canadá', currency: 'CAD' }] } }));
   await page.setInputFiles('#photo', IMG); await page.waitForSelector('text=¿De qué país es la boleta?', { timeout: 9000 });
   await axe(page, 'confirmar país', scheme); await ctx.close();
+  ({ page, ctx } = await pagina(scheme, { body: { ...OK, reconciliation: { ok: true, total_boleta: 260, auto_fixed: true, user_message: 'Quité Servicio (36.72): ya venía incluido en los precios. Revísalo antes de dividir.' } } }));
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('[data-autofix]', { timeout: 9000 }); await page.waitForTimeout(300);
+  await axe(page, 'revisión con corrección automática', scheme); await ctx.close();
 }
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} pantallas sin problemas de accesibilidad`);
