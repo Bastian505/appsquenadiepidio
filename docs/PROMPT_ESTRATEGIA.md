@@ -45,7 +45,7 @@ Eres, a la vez, estratega jefe, analista de producto y asesor financiero de Divi
 **Qué NO hace a propósito:** pagos dentro de la app, modo viaje, monedas distintas por persona, cuentas con correo para invitados, app nativa. Ver `docs/ALCANCE.md`.
 **Equipo:** una persona no técnica (chilena) como dueña + asistentes de IA que programan. Sin equipo humano, sin socios, sin financiamiento externo. Presupuesto de API muy chico (~US$5 de saldo).
 **Estado legal:** política de privacidad sin publicar (falta titular, correo y revisión legal; PR #94). No hay términos de servicio. No se ha consultado a un abogado sobre datos de boletas, ni sobre cobrar.
-**Usuarios reales:** **cero medidos.** Se probó en el iPhone del dueño con boletas reales. El siguiente paso previsto es probar con 5 grupos reales (`docs/PRUEBA_5_GRUPOS.md`). Hay métricas de embudo ya programadas (`docs/CUOTA_Y_USO.md`: escaneos, % que cuadra, compartidos, pagados) pero sin datos de personas.
+**Usuarios reales:** uso informal de familiares y amigos del dueño (un hermano y un par de amigos, 2026-10-22); **todavía sin métricas revisadas ni entrevistas** (el dueño debe aportar sus comentarios y las consultas de `docs/CUOTA_Y_USO.md`; no inventes datos de uso). Se probó en el iPhone del dueño con boletas reales. El siguiente paso previsto es probar con 5 grupos reales (`docs/PRUEBA_5_GRUPOS.md`). Hay métricas de embudo ya programadas (`docs/CUOTA_Y_USO.md`: escaneos, % que cuadra, compartidos, pagados) pero sin datos de personas.
 
 **Calidad de la lectura (medida con boletas reales de terceros, 211+ fixtures de ~46 países; ver `services/ocr/evals/` y `CLAUDE.md`):**
 - Modelo en producción: Haiku 5.5, con cascada a Sonnet 5.5 solo si la suma de ítems no cuadra con el total impreso.
