@@ -358,12 +358,12 @@
       "notas": "JPY sin decimales. El 10% de consumo tax mostrado ya esta incluido en los precios (boleta dice '10%標準対象 ¥3,620' = base imponible, no un cargo adicional) -> no sumar de nuevo."
     },
 
-    { "id": "JP/skytree-dutyfree", "pais": "JP", "moneda": "JPY", "restaurante": null,
+    { "id": "KR/seoul-transit-card-recharge", "pais": "KR", "moneda": "KRW", "restaurante": null,
       "items": [
-        {"nombre": "シアークロップド丈ドロス", "precio_unitario": 5000, "cantidad": 1}
+        {"nombre": "기후동행카드 3일권 충전", "precio_unitario": 10000, "cantidad": 1}
       ],
-      "total_referencia": 5000,
-      "notas": "Tienda duty-free (免税 = libre de impuestos), no es gastronomia pero es una boleta real valida. 消費税 (consumption tax) = ¥0 porque es venta libre de impuestos."
+      "total_referencia": 10000,
+      "notas": "Recibo de recarga de tarjeta de transporte de Seúl (기후동행카드 3일권), pago en efectivo: 투입금액 y 충전금액 10.000원 son el MISMO importe (monto ingresado = monto cargado), no dos ítems. Antes estaba mal etiquetado como JP/skytree-dutyfree (la imagen nunca fue de Japón); Sonnet 5.5 la leyó bien y se creyó un error del modelo. No es restaurante pero es un comprobante válido."
     },
 
     { "id": "KR/myeongdong-cafe", "pais": "KR", "moneda": "KRW", "restaurante": null,
