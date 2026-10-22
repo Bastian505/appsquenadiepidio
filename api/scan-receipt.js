@@ -296,6 +296,13 @@ R22. CARGOS QUE NO SON PRODUCTOS (en CUALQUIER idioma: "Serviço", "Taxa de serv
      Ej.: "TOT CONSUMO 175,70 / SERVICO (10,00%): 17,57 / TOTAL A PAGAR 193,27" → ítem Servico 17,57 con "cargo":"servicio".
      Los subtotales y totales siguen sin listarse (R1).
 
+R24. NÚMERO DE LÍNEA, CÓDIGO Y CANTIDAD: si la tabla tiene una columna de numeración (cabezal "ITEM", "Nº", "#", "SEQ", "Pos.")
+     o un código de producto antes del nombre, esos números NO son la cantidad ni el precio. La cantidad es la columna "QTD", "Qty",
+     "Cant." (o el "2 x" que precede al nombre) y el importe es el de la derecha ("VL ITEM", "Amount", "Importe").
+     Ej. cupom fiscal de Brasil: "2 6039 Galinha Chic 1 05T ........ 36,00" → ítem número 2, código 6039, cantidad 1, importe 36,00
+     → {"nombre":"Galinha Chic","precio_unitario":36.00,"cantidad":1}. El "2" inicial es el número de ítem, no una cantidad.
+     Ante la duda, cantidad 1 y precio_unitario = el importe de la derecha (así la suma de la línea siempre es la correcta).
+
 R18. VENTA POR PESO: "0,85 x 400,00 ... 340,00" (kg × precio por kg = total de línea)
      → precio_unitario = el TOTAL DE LÍNEA (340,00) y cantidad = 1. Nunca pongas
      una cantidad decimal ni uses el precio por kg como precio del ítem.
