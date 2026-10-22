@@ -73,7 +73,9 @@ function normName(s) {
   return String(s || '')
     .toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '') // saca acentos
-    .replace(/[^a-z0-9]+/g, ' ')
+    // Árabe: sin vocales/tatweel y variantes de una misma letra (أ إ آ → ا, ة → ه, ى → ي)
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ')   // letras y números de cualquier escritura (antes solo a-z0-9: los nombres árabes, chinos, etc. nunca coincidían)
     .trim();
 }
 
