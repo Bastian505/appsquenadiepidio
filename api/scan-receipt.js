@@ -805,7 +805,19 @@ async function handleScan(req, res) {
       return res.status(502).json({ error:'No pudimos leer esta boleta. Prueba con otra foto o ingresa los ítems a mano.', code:'OCR_ERROR' });
     }
 
-    const parsed = parseJSON(raw);
+    let parsed = parseJSON(raw);
+
+    // Cascada ante rechazo (OCR_CASCADE_MODEL): si el modelo barato rehúsa o no devuelve ítems (ej. boleta en árabe sin símbolo
+    // de moneda), se intenta con el modelo fuerte ANTES de decirle "no pude" al usuario. Si éste también falla, se conserva la primera respuesta.
+    const cascadeRefusalModel = (process.env.OCR_CASCADE_MODEL || '').trim();
+    if (cascadeRefusalModel && cascadeRefusalModel !== model && !is_confirmation && Date.now() - startMs < 25000
+        && ((parsed && parsed.ok === false && parsed.reason) || (parsed && !parsed.items))) {
+      try {
+        const rawR = await callClaude(apiKey, image_base64, media_type, system, 'Extrae todos los ítems con sus precios de esta boleta.', cascadeRefusalModel);
+        const pR = parseJSON(rawR);
+        if (pR?.items?.length && !(pR.ok === false && pR.reason)) { raw = rawR; parsed = pR; modelUsed = cascadeRefusalModel; }
+      } catch (e) { console.warn('Cascada ante rechazo omitida:', e.message); }
+    }
 
     // Refusal explícito del modelo
     if (parsed && parsed.ok === false && parsed.reason) {
