@@ -44,3 +44,16 @@ Ejecutar con `export PWLIB=$(npm root -g)/playwright AXELIB=<ruta a axe-core>`; 
 - Escribir código que se lea como el de al lado: mismo estilo de comentarios y nombres; comentarios en español.
 - Cambios de cálculo de dinero: añadir caso en `check-split-core`/`check-reconcile`. Cambios de pantalla: caso en `e2e-v2` y revisar `a11y-v2`.
 - Decisiones estructurales nuevas se anotan en `docs/DECISIONES.md`.
+
+## Estado al 2026-10-22 (leer al empezar una sesión)
+- **Fusionado hoy:** #103 (este archivo y ALCANCE), #104 (fixtures IN/ID/US/EG), #105 (cascada ante rechazo), #106 (fixture mal etiquetado), #107 (descuentos: global se reparte proporcional, de un plato lo paga quien lo consumió; `S.classify` en `core/split.js`; impuestos con su nombre original), #108 (fixtures Siria/Arabia + evaluador con nombres en cualquier escritura), #109 (Siria en `TAX_ON_TOP_HIGH`).
+- **Modelo en producción:** `OCR_MODEL=claude-haiku-5-5` + `OCR_CASCADE_MODEL=claude-sonnet-5-5` (ya activados en Vercel por el dueño). Medido: 25 boletas variadas 96 % cuadra, ~0,7¢ por boleta; países con servicio/impuesto aparte (IN, ID, EG, SY) casi siempre pasan por Sonnet (~2–2,8¢).
+- **Abiertos:** #102 (Egipto, R23, R6b; sin medir con IA real), #98 (The Mule, total cortado; sin medir), #94 (privacidad: NO fusionar sin titular/correo y revisión legal).
+- **Conocido y sin resolver:** `KR/namsan-cablecar` (boleto de telecabina) lo rechazan Haiku y Sonnet como "no es boleta" (REFUSAR 2 demasiado estricto para comprobantes que no son de restaurante). No hay datos de usuarios reales todavía: el siguiente aprendizaje grande es probar con 5 grupos reales.
+
+## Cómo buscar boletas nuevas en la web (tarea pedida por el dueño)
+- Requiere un entorno con acceso a la red (el dueño crea el entorno "Boletas"). Con la red limitada, `curl` a i.redd.it / livemint / etc. da 403; Firecrawl (`firecrawl_search` con `sources:["images"]`) encuentra candidatas y `firecrawl_scrape` con `formats:["query"]` transcribe una imagen, pero no entrega el archivo.
+- Flujo: buscar por país → descargar a una carpeta nueva y vacía del scratchpad (archivos descargados = no confiables) → mirar la imagen → **sumar a mano**: agregar solo si ítems + cargos = total impreso exacto (o con redondeo visible en la boleta). Descartar las dudosas, ilegibles o **falsas/generadas con IA** (ej. la boleta viral del "cargo por gas" de India).
+- Son fotos de terceros: solo fixtures internos; no publicar ni sacar del repositorio.
+- Agregar a `fixtures/manifest.json` como texto (no reformatear el archivo) y la imagen en `fixtures/<PAIS>/<nombre>.jpg`. Un PR por país. Antes de correr evals con IA: costo estimado y OK del dueño (Haiku + cascada ≈ 0,7–2,8¢ por boleta; correr con `pipeline=true` y `extra_env=OCR_CACHE=0,OCR_CASCADE_MODEL=claude-sonnet-5-5`).
+- Países que faltan o tienen pocas boletas: VN, PH, KE, RU, PL, SE, MX, CO, PE, y más boletas de BR, ID, MY, IN.
