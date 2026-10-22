@@ -67,3 +67,12 @@ Regresión con R24 (PE, VN, CL, GB, TR; 14 boletas con cascada): 14/14 cuadran, 
 **Conclusión:** sin mejora medible. La diferencia (3 ítems) cae dentro del ruido entre corridas de Haiku (se vio lo mismo con Table 9: la misma boleta lee distinto en dos intentos), y el error original de Pimenta Verde no se reproduce de forma estable. No se agrega una regla de prompt que no demuestra su efecto (cada regla puede romper otras boletas). Para decidir con datos haría falta repetir cada corrida 3–5 veces (≈ 5¢) o juntar más boletas con ese formato.
 
 **Fallo de Brasil que sí se repite (con y sin R24):** `BR/torres-amores-gavea-2024`, sobran 62,76 de 170,24: un plato con 100 % de descuento aparece sumado y la línea de descuento no se lee. Es la clase "descuento no leído"; candidato a regla determinista en `reconcile()` solo si calza al peso con un único ítem (hoy lo mitiga el aviso "Si este ítem no va, la suma cuadra" de la pantalla de revisión).
+
+## 2026-10-22 — Interfaz en español e inglés (`v2/i18n.js`)
+
+**Decisión:** la app v2 se ve en español o inglés. Se elige sola por el idioma del navegador (`es*` → español; cualquier otro → inglés), hay un botón `EN`/`ES` en la portada y en la invitación, y se recuerda en `localStorage` (`dc_lang`).
+
+**Cómo:** `L('texto en español', {datos})` busca la traducción en `DC_I18N.EN`; **la clave es el propio español**, así que sin traducción se ve el español (nada queda en blanco) y el español no puede romperse. `{x}` marca los datos que se insertan. `money()`, fechas, coma/punto decimal y reconocimiento de voz siguen el idioma (`es-CL` / `en-US`). Los nombres de platos se traducen al idioma de la interfaz (`userLang()`).
+`tests/check-i18n.mjs` falla si un `L('…')` de `app.js` no tiene su inglés o si los `{datos}` no coinciden; `tests/e2e-idioma.mjs` recorre el flujo en inglés y `a11y-v2` revisa las pantallas en inglés.
+
+**Pendiente (a propósito):** (1) mensajes que vienen del servidor (`reconciliation.user_message`, errores de `api/`) siguen en español: hay que enviarlos como código + datos. (2) El registro técnico de lectura queda en español (es de depuración). (3) Más idiomas (pt, fr, de…): agregar un bloque a `EN`-style en `i18n.js`; la lista de idiomas la decide el público (ver países con más usuarios potenciales). (4) La política de privacidad (#94) no se traduce hasta tener revisión legal.

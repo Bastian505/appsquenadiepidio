@@ -24,6 +24,7 @@
 <script src="/core/config.js"></script>
 <script src="/core/currencies.js"></script>
 <script src="/core/split.js"></script>
+<script src="/v2/i18n.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" async></script>
 <script src="/v2/sync.js" defer></script>
 </head>
@@ -31,11 +32,12 @@
 <div class="splash" id="splash" aria-hidden="true">
   <svg class="splash-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"><path d="M14 6h36v52l-6-4-6 4-6-4-6 4-6-4-6 4z" fill="rgba(255,181,71,.12)"/><path d="M22 18h20M22 27h20M22 36h12"/><path d="M32 44v.01"/></svg>
   <div class="splash-logo">Divi<em>Cuenta</em></div>
-  <div class="splash-sub">Saca la foto. Nosotros hacemos la matemática.</div>
+  <div class="splash-sub" id="splash-sub">Saca la foto. Nosotros hacemos la matemática.</div>
 </div>
 <script>try { if (sessionStorage.getItem('dc_splash')) document.getElementById('splash').className += ' hidden gone'; } catch (e) {}</script>
 <main id="app" aria-live="polite"></main>
 <div id="toast" role="status"></div>
+<script>try { var _s = document.getElementById("splash-sub"); if (_s && window.DC_I18N) _s.textContent = window.DC_I18N.t("Saca la foto. Nosotros hacemos la matemática."); } catch (e) {}</script>
 <script src="/v2/app.js" defer></script>
 </body>
 </html>

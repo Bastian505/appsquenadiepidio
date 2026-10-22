@@ -3,13 +3,14 @@
 // El cálculo vive en core/split.js; monedas en core/currencies.js.
 (function () {
   'use strict';
-  var C = window.DC_CURRENCIES, S = window.DC_SPLIT, CFG = window.DC_CONFIG;
+  var C = window.DC_CURRENCIES, S = window.DC_SPLIT, CFG = window.DC_CONFIG, I18N = window.DC_I18N;
+  function L(es, vars) { return I18N.t(es, vars); }   // texto de la interfaz en el idioma elegido (la clave es el español)
   var SYNC = window.DC_SYNC || null;   // cuentas compartidas (opcional)
   var COLORS = ['#c2410c', '#0f766e', '#4f46e5', '#a21caf', '#4d7c0f', '#1d4ed8', '#b45309', '#be123c'];
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-22.b';
+  var BUILD = '2026-10-22.c';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -42,11 +43,11 @@
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function money(v, cur) {
     cur = cur || state.currency; var d = C.decimals(cur), s = C.symbol(cur), info = C.list[cur] || {};
-    var n = (Number(v) || 0).toLocaleString('es-CL', { minimumFractionDigits: d, maximumFractionDigits: d });
+    var n = (Number(v) || 0).toLocaleString(I18N.locale, { minimumFractionDigits: d, maximumFractionDigits: d });
     return info.suffix ? n + ' ' + s : s + n;
   }
-  function inputNum(v) { var d = C.decimals(state.currency); return d ? (Number(v) || 0).toFixed(2).replace('.', ',') : String(Math.round(Number(v) || 0)); }
-  function pctTxt(r) { return (Math.round(r * 1000) / 10).toString().replace('.', ','); }
+  function inputNum(v) { var d = C.decimals(state.currency); return d ? (Number(v) || 0).toFixed(2).replace('.', I18N.dec) : String(Math.round(Number(v) || 0)); }
+  function pctTxt(r) { return (Math.round(r * 1000) / 10).toString().replace('.', I18N.dec); }
   // Nombre del ítem + traducción al idioma del usuario debajo (si existe y es distinta)
   function nameHtml(it) {
     var tr = it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? it.tr : '';
@@ -79,8 +80,8 @@
     var out = {}, abs = Math.abs(diff), t2 = C.decimals(state.currency) === 0 ? 1 : 0.02;
     if (diff >= 0) return out;
     state.items.forEach(function (it) {
-      if (Math.abs(it.price * it.qty - abs) <= t2) out[it.id] = { kind: 'sobra', msg: 'Si este ítem no va, la suma cuadra.' };
-      else if (it.qty > 1 && Math.abs(it.price - abs) <= t2) out[it.id] = { kind: 'qty', msg: '¿Es una unidad menos? Con ' + (it.qty - 1) + ' cuadra.' };
+      if (Math.abs(it.price * it.qty - abs) <= t2) out[it.id] = { kind: 'sobra', msg: L('Si este ítem no va, la suma cuadra.') };
+      else if (it.qty > 1 && Math.abs(it.price - abs) <= t2) out[it.id] = { kind: 'qty', msg: L('¿Es una unidad menos? Con {n} cuadra.', { n: it.qty - 1 }) };
     });
     return out;
   }
@@ -128,10 +129,10 @@
   // Barra de proporciones: cuánto de la cuenta lleva cada persona (y lo que falta asignar).
   function propBar(r, big) {
     var segs = r.perPerson.filter(function (p) { return p.amount > 0; }).map(function (p) { var q = person(p.id); return { key: 'p' + p.id, v: p.amount, c: q ? q.color : 'var(--text-3)', n: p.name }; });
-    if (r.unassigned > 0) segs.push({ key: 'u', v: r.unassigned, c: 'var(--border)', n: 'Sin asignar' });
+    if (r.unassigned > 0) segs.push({ key: 'u', v: r.unassigned, c: 'var(--border)', n: L('Sin asignar') });
     var tot = segs.reduce(function (t, x) { return t + x.v; }, 0) || 1;
     var label = segs.map(function (x) { return x.n + ' ' + Math.round(100 * x.v / tot) + '%'; }).join(', ');
-    return '<div class="pbar' + (big ? ' big' : '') + '" role="img" aria-label="Reparto: ' + esc(label || 'nada asignado aún') + '">' +
+    return '<div class="pbar' + (big ? ' big' : '') + '" role="img" aria-label="' + esc(L('Reparto: {x}', { x: label || L('nada asignado aún') })) + '">' +
       (segs.length ? segs.map(function (x) { return '<i data-seg="' + x.key + '" data-w="' + (100 * x.v / tot).toFixed(3) + '" style="width:' + (100 * x.v / tot).toFixed(3) + '%;background:' + x.c + '"></i>'; }).join('') : '<i class="empty"></i>') + '</div>';
   }
   // Número que rueda desde su valor anterior (key estable entre repintados).
@@ -192,7 +193,7 @@
   function dock(r) {
     return '<div class="dock">' + propBar(r) + '<div class="dock-people">' + state.people.map(function (p) {
       var pp = r.perPerson.filter(function (x) { return x.id === p.id; })[0], n = baseItems().filter(function (it) { var a = state.assigns[it.id]; return a && (a.people || []).indexOf(p.id) > -1; }).length;
-      return '<div class="dock-p" data-dock="' + p.id + '">' + avatar(p) + '<span class="dn">' + esc(p.name) + '</span>' + countSpan('dock' + p.id, pp ? pp.amount : 0, 'da') + '<span class="dc">' + n + (n === 1 ? ' ítem' : ' ítems') + '</span></div>';
+      return '<div class="dock-p" data-dock="' + p.id + '">' + avatar(p) + '<span class="dn">' + esc(p.name) + '</span>' + countSpan('dock' + p.id, pp ? pp.amount : 0, 'da') + '<span class="dc">' + L(n === 1 ? '{n} ítem' : '{n} ítems', { n: n }) + '</span></div>';
     }).join('') + '</div></div>';
   }
   // ¿Todos le pagaron a quien pagó la cuenta?
@@ -213,7 +214,7 @@
       g.fillStyle = glow; g.fillRect(0, 0, W, H);
       g.fillStyle = '#f6f2ea'; g.font = '800 44px ' + disp; g.fillText('Divi', pad, 120); var w1 = g.measureText('Divi').width;
       g.fillStyle = '#ffb547'; g.fillText('Cuenta', pad + w1, 120);
-      g.fillStyle = '#bdb4a6'; g.font = '500 34px ' + body; g.fillText(String(state.restaurant || 'La cuenta').slice(0, 40), pad, 220);
+      g.fillStyle = '#bdb4a6'; g.font = '500 34px ' + body; g.fillText(String(state.restaurant || L('La cuenta')).slice(0, 40), pad, 220);
       g.fillStyle = '#f6f2ea'; g.font = '800 128px ' + disp; g.fillText(money(r.grandTotal), pad, 350);
       var x = pad, bw = W - pad * 2, tot = rows.reduce(function (t, p) { return t + p.amount; }, 0) + r.unassigned || 1;
       rows.forEach(function (p) { var q = person(p.id), w = bw * p.amount / tot; g.fillStyle = q ? q.color : '#888'; g.fillRect(x, 410, Math.max(w - 6, 2), 28); x += w; });
@@ -224,19 +225,19 @@
         g.fillStyle = '#fff'; g.font = '800 30px ' + body; g.textAlign = 'center'; g.fillText(initials(p.name), pad + 36, y - 1); g.textAlign = 'left';
         g.fillStyle = '#f6f2ea'; g.font = '600 40px ' + body; g.fillText(String(p.name).slice(0, 22), pad + 100, y);
         g.font = '800 48px ' + disp; g.textAlign = 'right'; g.fillText(money(p.amount), W - pad, y); g.textAlign = 'left';
-        if (q && q.paid) { g.fillStyle = '#5bd38e'; g.font = '700 26px ' + body; g.fillText('PAGÓ', pad + 100, y + 38); }
+        if (q && q.paid) { g.fillStyle = '#5bd38e'; g.font = '700 26px ' + body; g.fillText(L('PAGÓ'), pad + 100, y + 38); }
         y += 120;
       });
       if (allPaid(r, C.decimals(state.currency) ? 0.005 : 0.5)) {
         g.save(); g.translate(W - 250, 230); g.rotate(-0.22); g.strokeStyle = '#5bd38e'; g.lineWidth = 8; g.strokeRect(-150, -56, 300, 112);
-        g.fillStyle = '#5bd38e'; g.font = '800 64px ' + disp; g.textAlign = 'center'; g.fillText('PAGADA', 0, 22); g.restore();
+        g.fillStyle = '#5bd38e'; g.font = '800 64px ' + disp; g.textAlign = 'center'; g.fillText(L('PAGADA'), 0, 22); g.restore();
       }
-      g.fillStyle = '#a0978a'; g.font = '500 28px ' + body; g.fillText('Hecho con DiviCuenta · saca la foto, nosotros hacemos la matemática', pad, H - 70);
+      g.fillStyle = '#a0978a'; g.font = '500 28px ' + body; g.fillText(L('Hecho con DiviCuenta · saca la foto, nosotros hacemos la matemática'), pad, H - 70);
       cv.toBlob(function (blob) {
-        if (!blob) { toast('No pudimos crear la imagen'); return; }
+        if (!blob) { toast(L('No pudimos crear la imagen')); return; }
         var file = new File([blob], 'divicuenta.png', { type: 'image/png' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) navigator.share({ files: [file], title: 'DiviCuenta' }).catch(function () {});
-        else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'divicuenta.png'; document.body.appendChild(a); a.click(); a.remove(); toast('Imagen descargada'); }
+        else { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'divicuenta.png'; document.body.appendChild(a); a.click(); a.remove(); toast(L('Imagen descargada')); }
       }, 'image/png');
     }
     if (document.fonts && document.fonts.load) document.fonts.load('800 40px "Bricolage Grotesque"').then(draw, draw); else draw();
@@ -244,9 +245,9 @@
 
   function top(title, back) {
     var i = STEPS.indexOf(state.step);
-    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="Volver">' + ic('back') + '</button>' : '') +
-      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="Nueva cuenta">' + ic('close') + '</button></header>' +
-      (i > -1 ? '<div class="steps" role="img" aria-label="Paso ' + (i + 1) + ' de 4">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
+    return '<header class="top">' + (back ? '<button class="icon-btn" data-action="go" data-to="' + back + '" aria-label="' + L('Volver') + '">' + ic('back') + '</button>' : '') +
+      '<h1>' + title + '</h1><button class="icon-btn" data-action="reset" aria-label="' + L('Nueva cuenta') + '">' + ic('close') + '</button></header>' +
+      (i > -1 ? '<div class="steps" role="img" aria-label="' + L('Paso {i} de 4', { i: i + 1 }) + '">' + STEPS.map(function (_, k) { return '<i class="' + (k <= i ? 'on' : '') + '"></i>'; }).join('') + '</div>' : '');
   }
   function footer(inner, cls) { return '<div class="footer' + (cls ? ' ' + cls : '') + '"><div class="inner">' + inner + '</div></div>'; }
 
@@ -294,23 +295,23 @@
   function pendingCard() {
     var list = ledgerLoad().filter(function (e) { return e.debts.some(function (d) { return !d.paid; }); });
     if (!list.length) return '';
-    return '<div class="card" style="margin-top:14px"><b>Cobros pendientes</b><p class="small" style="margin:4px 0 0">Lo que aún te deben de cuentas anteriores.</p>' + list.map(function (e) {
-      var date = new Date(e.ts).toLocaleDateString('es-CL', { day: 'numeric', month: 'short' });
-      return '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><div class="small">' + esc(e.restaurant || 'Cuenta') + ' · ' + esc(date) + '</div>' +
+    return '<div class="card" style="margin-top:14px"><b>' + L('Cobros pendientes') + '</b><p class="small" style="margin:4px 0 0">' + L('Lo que aún te deben de cuentas anteriores.') + '</p>' + list.map(function (e) {
+      var date = new Date(e.ts).toLocaleDateString(I18N.locale, { day: 'numeric', month: 'short' });
+      return '<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)"><div class="small">' + esc(e.restaurant || L('Cuenta')) + ' · ' + esc(date) + '</div>' +
         e.debts.map(function (d, i) {
           if (d.paid) return '';
           return '<div class="row" style="padding:6px 0;flex-wrap:wrap;gap:6px"><span style="flex:1;min-width:120px">' + esc(d.name) + ' <span class="small num">' + money(d.amount, e.currency) + '</span></span>' +
-            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="Recordarle a ' + esc(d.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' +
-            '<button class="btn sm" data-action="ledger-paid" data-key="' + esc(e.key) + '" data-i="' + i + '">Ya pagó</button></div>';
+            '<button class="btn sm ghost" data-action="ledger-remind" data-key="' + esc(e.key) + '" data-i="' + i + '" aria-label="' + esc(L('Recordarle a {name} por WhatsApp', { name: d.name })) + '">' + ic('chat') + ' ' + L('Recordar') + '</button>' +
+            '<button class="btn sm" data-action="ledger-paid" data-key="' + esc(e.key) + '" data-i="' + i + '">' + L('Ya pagó') + '</button></div>';
         }).join('') + '</div>';
     }).join('') + '</div>';
   }
   function ledgerRemind(key, i) {
     var e = ledgerLoad().filter(function (x) { return x.key === key; })[0], d = e && e.debts[i]; if (!d) return;
     var info = e.payInfo || savedPayInfo();
-    var lines = ['Hola ' + d.name + '! 👋 La cuenta' + (e.restaurant ? ' de ' + e.restaurant : '') + ' fue ' + money(e.total, e.currency) + ' y tu parte es ' + money(d.amount, e.currency) + '.'];
-    if (info) lines.push('', 'Para transferir a ' + e.payer + ':', info);
-    lines.push('', '¡Gracias!');
+    var lines = [L('Hola {name}! 👋 La cuenta{de} fue {total} y tu parte es {part}.', { name: d.name, de: e.restaurant ? L(' de {r}', { r: e.restaurant }) : '', total: money(e.total, e.currency), part: money(d.amount, e.currency) })];
+    if (info) lines.push('', L('Para transferir a {payer}:', { payer: e.payer }), info);
+    lines.push('', L('¡Gracias!'));
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')), '_blank', 'noopener');
   }
   function ledgerPaid(key, i) {
@@ -319,29 +320,35 @@
     if (SYNC && d.mid) SYNC.setPaid(d.mid, true);   // si era una cuenta compartida, también se avisa allá (si sigue abierta)
   }
 
+  // Encabezado con la marca y el selector de idioma (muestra el otro idioma: tocar cambia a ese).
+  function brandHeader() {
+    var other = I18N.lang === 'en' ? 'es' : 'en';
+    return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1><button class="icon-btn lang-btn" data-action="lang" lang="' + other + '" aria-label="' + I18N.LANGS[other].name + '" title="' + L('Cambiar idioma') + '">' + other.toUpperCase() + '</button></header>';
+  }
+
   function home() {
-    return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
-      '<section class="hero"><span class="badge accent">Boletas de más de 40 países</span>' +
-      '<h1>Divide la cuenta en segundos.</h1><p>Saca una foto de la boleta, marca quién comió qué y listo: impuesto, servicio y propina repartidos de forma justa.</p></section>' +
-      '<label class="cta-scan" for="photo"><span class="cam">' + ic('camera') + '</span><span class="txt"><strong>Escanear boleta</strong><span>Foto o imagen de la galería</span></span></label>' +
+    return brandHeader() +
+      '<section class="hero"><span class="badge accent">' + L('Boletas de más de 40 países') + '</span>' +
+      '<h1>' + L('Divide la cuenta en segundos.') + '</h1><p>' + L('Saca una foto de la boleta, marca quién comió qué y listo: impuesto, servicio y propina repartidos de forma justa.') + '</p></section>' +
+      '<label class="cta-scan" for="photo"><span class="cam">' + ic('camera') + '</span><span class="txt"><strong>' + L('Escanear boleta') + '</strong><span>' + L('Foto o imagen de la galería') + '</span></span></label>' +
       '<input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' +
-      '<button class="btn block" data-action="manual">Ingresar ítems a mano</button>' +
+      '<button class="btn block" data-action="manual">' + L('Ingresar ítems a mano') + '</button>' +
       pendingCard() +
       (ui.error ? '<div class="banner danger" style="margin-top:12px">' + esc(ui.error) + '</div>' : '') +
-      ((trace.length && (debugOn() || traceFailed())) ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Registro del último intento de lectura</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">Borrar registro</button></details>' : '') +
-      (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">Error técnico: ' + esc(window.__errs.slice(-2).join(' | ')) + '</div>' : '') +
-      '<div class="how"><div><b>1</b>Saca la foto: leemos ítems, cantidades y moneda.</div><div><b>2</b>Agrega a tus amigos y marca qué consumió cada uno.</div><div><b>3</b>Cada uno ve cuánto paga, también en su moneda.</div></div>' +
+      ((trace.length && (debugOn() || traceFailed())) ? '<details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">' + L('Registro del último intento de lectura') + '</summary><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0 0">' + esc(trace.join('\n')) + '</pre><button class="btn sm ghost" data-action="clear-trace" style="margin-top:8px">' + L('Borrar registro') + '</button></details>' : '') +
+      (window.__errs && window.__errs.length ? '<div class="banner danger" style="margin-top:12px;font-size:12px">' + L('Error técnico: {x}', { x: esc(window.__errs.slice(-2).join(' | ')) }) + '</div>' : '') +
+      '<div class="how"><div><b>1</b>' + L('Saca la foto: leemos ítems, cantidades y moneda.') + '</div><div><b>2</b>' + L('Agrega a tus amigos y marca qué consumió cada uno.') + '</div><div><b>3</b>' + L('Cada uno ve cuánto paga, también en su moneda.') + '</div></div>' +
       '<p class="small" style="text-align:center;margin:18px 0 6px">DiviCuenta v2 · ' + BUILD + '</p>';
   }
 
   function scanning() {
-    var labels = ['Subiendo foto', 'Leyendo ítems y precios', 'Validando con el total impreso'];
-    return top('Leyendo boleta') +
-      '<div class="scan-photo">' + (ui.photo ? '<img alt="Boleta" src="' + ui.photo + '">' : '') + '<div class="beam"></div></div>' +
+    var labels = [L('Subiendo foto'), L('Leyendo ítems y precios'), L('Validando con el total impreso')];
+    return top(L('Leyendo boleta')) +
+      '<div class="scan-photo">' + (ui.photo ? '<img alt="' + L('Boleta') + '" src="' + ui.photo + '">' : '') + '<div class="beam"></div></div>' +
       '<div class="card"><div class="stages">' + labels.map(function (l, k) {
         var cls = k < ui.scanStage ? 'done' : k === ui.scanStage ? 'active' : '';
         return '<div class="stage ' + cls + '"><span class="dot">' + (k < ui.scanStage ? '✓' : '') + '</span>' + l + '</div>';
-      }).join('') + '</div><p class="small" style="margin:12px 0 0">Las cuentas largas pueden tardar hasta un minuto.</p></div>' +
+      }).join('') + '</div><p class="small" style="margin:12px 0 0">' + L('Las cuentas largas pueden tardar hasta un minuto.') + '</p></div>' +
       (debugOn() ? '<pre class="small" style="white-space:pre-wrap;word-break:break-word;margin:10px 4px 0;opacity:.7">' + esc(trace.slice(-5).join('\n')) + '</pre>' : '') +
       (ui.confirm ? confirmCountry() : '');
   }
@@ -349,7 +356,7 @@
   function confirmCountry() {
     var c = ui.confirm, list = (c.candidates && c.candidates.length ? c.candidates : []).concat(c.available_countries || []);
     var seen = {}; list = list.filter(function (x) { var k = x.code || x.country; if (!k || seen[k]) return false; seen[k] = 1; return true; }).slice(0, 12);
-    return '<div class="card"><h2>¿De qué país es la boleta?</h2><p class="muted">' + esc(c.message || 'No pudimos identificar la moneda.') + '</p>' +
+    return '<div class="card"><h2>' + L('¿De qué país es la boleta?') + '</h2><p class="muted">' + esc(c.message || L('No pudimos identificar la moneda.')) + '</p>' +
       '<div class="chips" style="margin-top:12px">' + list.map(function (x) {
         var code = x.code || x.country; return '<button class="chip" data-action="country" data-code="' + esc(code) + '">' + esc(x.name || code) + (x.currency ? ' · ' + esc(x.currency) : '') + '</button>';
       }).join('') + '</div></div>';
@@ -364,49 +371,49 @@
     var banner = '';
     if (c.bad) {
       var nSus = Object.keys(ui.suspects).length;
-      banner = '<div class="banner warn"><b>La suma no coincide con la boleta.</b> Total impreso ' + money(printed) + ', ítems ' + money(c.sum) + ' (' + (diff > 0 ? 'faltan ' : 'sobran ') + money(Math.abs(diff)) + ', ' + Math.round(Math.abs(diff) / printed * 100) + '%). ' +
-        (nSus ? 'Marqué en rojo lo que explica la diferencia.' : c.servicePct ? 'La diferencia es justo el ' + c.servicePct + ' % de los ítems: parece un servicio o propina sumado al total.' : diff > 0 ? 'Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.' : 'Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') +
+      banner = '<div class="banner warn"><b>' + L('La suma no coincide con la boleta.') + '</b> ' + L('Total impreso {printed}, ítems {sum} ({dir} {diff}, {pct}%). ', { printed: money(printed), sum: money(c.sum), dir: diff > 0 ? L('faltan') : L('sobran'), diff: money(Math.abs(diff)), pct: Math.round(Math.abs(diff) / printed * 100) }) +
+        (nSus ? L('Marqué en rojo lo que explica la diferencia.') : c.servicePct ? L('La diferencia es justo el {n} % de los ítems: parece un servicio o propina sumado al total.', { n: c.servicePct }) : diff > 0 ? L('Puede faltar un ítem o el impuesto. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.') : L('Revisa los precios y las cantidades. Si la foto salió torcida, cortada o con sombra, sacar otra suele resolverlo.')) +
         '<div class="actions">' +
-        (c.servicePct ? '<button class="btn sm primary" data-action="apply-service" data-pct="' + c.servicePct + '">Es el servicio del ' + c.servicePct + ' % (' + money(diff) + ')</button>' : '') +
-        (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
-        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' Sacar otra foto</label>' +
+        (c.servicePct ? '<button class="btn sm primary" data-action="apply-service" data-pct="' + c.servicePct + '">' + L('Es el servicio del {n} % ({diff})', { n: c.servicePct, diff: money(diff) }) + '</button>' : '') +
+        (diff > 0 ? '<button class="btn sm" data-action="add-missing">' + L('+ Agregar lo que falta ({diff})', { diff: money(diff) }) + '</button>' : '') +
+        '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' ' + L('Sacar otra foto') + '</label>' +
         '</div></div>';
     } else if (c.ok && c.viaTip && !(state.tip && state.tip.pct === state.tipSuggested)) {
-      banner = '<div class="banner warn">El total impreso (' + money(printed) + ') incluye un servicio del ' + state.tipSuggested + ' %. Actívalo en Propina para que la cuenta sume lo mismo.' +
-        '<div class="actions"><button class="btn sm primary" data-action="apply-service" data-pct="' + state.tipSuggested + '">Aplicar servicio del ' + state.tipSuggested + ' %</button></div></div>';
-    } else if (c.ok) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ')' + (c.viaTip ? ': ítems + servicio del ' + state.tipSuggested + ' %' : '') + '.</div>';
-    if (state.autoFix) banner += '<div class="banner warn" data-autofix><b>Corregí la lectura:</b> ' + esc(state.autoFix) +
-      '<div class="actions"><button class="btn sm" data-action="autofix-ok">Entendido</button></div></div>';
+      banner = '<div class="banner warn">' + L('El total impreso ({printed}) incluye un servicio del {n} %. Actívalo en Propina para que la cuenta sume lo mismo.', { printed: money(printed), n: state.tipSuggested }) +
+        '<div class="actions"><button class="btn sm primary" data-action="apply-service" data-pct="' + state.tipSuggested + '">' + L('Aplicar servicio del {n} %', { n: state.tipSuggested }) + '</button></div></div>';
+    } else if (c.ok) banner = '<div class="banner ok">' + L('✓ Cuadra con el total impreso de la boleta ({printed})', { printed: money(printed) }) + (c.viaTip ? L(': ítems + servicio del {n} %', { n: state.tipSuggested }) : '') + '.</div>';
+    if (state.autoFix) banner += '<div class="banner warn" data-autofix><b>' + L('Corregí la lectura:') + '</b> ' + esc(state.autoFix) +
+      '<div class="actions"><button class="btn sm" data-action="autofix-ok">' + L('Entendido') + '</button></div></div>';
 
-    return top(esc(state.restaurant || 'Tu cuenta'), 'home') +
-      '<p class="muted" style="margin:-6px 4px 12px">' + esc(state.country ? state.country + ' · ' : '') + esc(state.currency) + ' · toca un nombre o precio para corregirlo</p>' +
+    return top(esc(state.restaurant || L('Tu cuenta')), 'home') +
+      '<p class="muted" style="margin:-6px 4px 12px">' + esc(state.country ? state.country + ' · ' : '') + esc(state.currency) + L(' · toca un nombre o precio para corregirlo') + '</p>' +
       banner +
       '<div class="list">' + base.map(itemRow).join('') + '</div>' +
-      '<button class="btn sm ghost" data-action="add-item">+ Agregar ítem</button>' +
-      '<div class="section-title">Impuesto y cargos <span class="badge accent">se reparten según consumo</span></div>' +
-      (extras.length ? '<div class="list">' + extras.map(itemRow).join('') + '</div>' : '<p class="small" style="margin:0 4px 8px">Sin impuesto ni cargos aparte en esta boleta.</p>') +
-      '<button class="btn sm ghost" data-action="add-extra">+ Agregar impuesto o cargo</button>' +
-      '<div class="section-title">Propina</div>' + tipChips() +
+      '<button class="btn sm ghost" data-action="add-item">' + L('+ Agregar ítem') + '</button>' +
+      '<div class="section-title">' + L('Impuesto y cargos') + ' <span class="badge accent">' + L('se reparten según consumo') + '</span></div>' +
+      (extras.length ? '<div class="list">' + extras.map(itemRow).join('') + '</div>' : '<p class="small" style="margin:0 4px 8px">' + L('Sin impuesto ni cargos aparte en esta boleta.') + '</p>') +
+      '<button class="btn sm ghost" data-action="add-extra">' + L('+ Agregar impuesto o cargo') + '</button>' +
+      '<div class="section-title">' + L('Propina') + '</div>' + tipChips() +
       '<div class="card" style="margin-top:14px"><div class="totals">' +
-      '<div class="row"><span>Consumo</span><span class="spacer"></span><span>' + money(r.baseTotal) + '</span></div>' +
-      (r.extrasTotal ? '<div class="row"><span>Impuesto y cargos</span><span class="spacer"></span><span>' + money(r.extrasTotal) + '</span></div>' : '') +
-      (r.tipAmount ? '<div class="row"><span>Propina</span><span class="spacer"></span><span>' + money(r.tipAmount) + '</span></div>' : '') +
-      '<div class="row grand"><span>Total</span><span class="spacer"></span><span>' + money(r.grandTotal) + '</span></div>' + fxLine(r.grandTotal, true) +
+      '<div class="row"><span>' + L('Consumo') + '</span><span class="spacer"></span><span>' + money(r.baseTotal) + '</span></div>' +
+      (r.extrasTotal ? '<div class="row"><span>' + L('Impuesto y cargos') + '</span><span class="spacer"></span><span>' + money(r.extrasTotal) + '</span></div>' : '') +
+      (r.tipAmount ? '<div class="row"><span>' + L('Propina') + '</span><span class="spacer"></span><span>' + money(r.tipAmount) + '</span></div>' : '') +
+      '<div class="row grand"><span>' + L('Total') + '</span><span class="spacer"></span><span>' + money(r.grandTotal) + '</span></div>' + fxLine(r.grandTotal, true) +
       '</div></div>' +
-      footer('<button class="btn primary" data-action="go" data-to="people"' + (cl.base.length ? '' : ' disabled') + '>Agregar personas →</button>');
+      footer('<button class="btn primary" data-action="go" data-to="people"' + (cl.base.length ? '' : ' disabled') + '>' + L('Agregar personas →') + '</button>');
   }
 
   function itemRow(it) {
     var low = it.confidence != null && it.confidence < 0.8, sus = (ui.suspects || {})[it.id];
     return '<div class="item' + (sus ? ' suspect' : low ? ' low' : '') + '">' +
-      '<span class="namebox"><input class="name" value="' + esc(it.name) + '" data-action="edit" data-id="' + it.id + '" data-field="name" aria-label="Nombre">' +
-      (it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? '<span class="tr">' + esc(it.tr) + '</span>' : (ui.translating && it.needsTr ? '<span class="tr muted-tr">traduciendo…</span>' : '')) + '</span>' +
+      '<span class="namebox"><input class="name" value="' + esc(it.name) + '" data-action="edit" data-id="' + it.id + '" data-field="name" aria-label="' + L('Nombre') + '">' +
+      (it.tr && it.tr.toLowerCase() !== String(it.name).toLowerCase() ? '<span class="tr">' + esc(it.tr) + '</span>' : (ui.translating && it.needsTr ? '<span class="tr muted-tr">' + L('traduciendo…') + '</span>' : '')) + '</span>' +
       '<span class="total num">' + money(it.price * it.qty) + '</span>' +
-      '<span class="meta"><input class="qty num" inputmode="numeric" value="' + it.qty + '" data-action="edit" data-id="' + it.id + '" data-field="qty" aria-label="Cantidad">×' +
-      '<input class="num" inputmode="decimal" value="' + inputNum(it.price) + '" data-action="edit" data-id="' + it.id + '" data-field="price" aria-label="Precio unitario">' +
-      (low ? '<span class="badge">revisar</span>' : '') + '</span>' +
-      '<button class="del" data-action="del-item" data-id="' + it.id + '" aria-label="Eliminar ' + esc(it.name) + '">✕</button>' +
-      (sus ? '<div class="hint"><span>' + esc(sus.msg) + '</span>' + (sus.kind === 'qty' ? '<button class="btn sm" data-action="fix-qty" data-id="' + it.id + '">Dejar en ' + (it.qty - 1) + '</button>' : '<button class="btn sm" data-action="del-item" data-id="' + it.id + '" data-fix="1">Quitar ítem</button>') + '</div>' : '') + '</div>';
+      '<span class="meta"><input class="qty num" inputmode="numeric" value="' + it.qty + '" data-action="edit" data-id="' + it.id + '" data-field="qty" aria-label="' + L('Cantidad') + '">×' +
+      '<input class="num" inputmode="decimal" value="' + inputNum(it.price) + '" data-action="edit" data-id="' + it.id + '" data-field="price" aria-label="' + L('Precio unitario') + '">' +
+      (low ? '<span class="badge">' + L('revisar') + '</span>' : '') + '</span>' +
+      '<button class="del" data-action="del-item" data-id="' + it.id + '" aria-label="' + esc(L('Eliminar {name}', { name: it.name })) + '">✕</button>' +
+      (sus ? '<div class="hint"><span>' + esc(sus.msg) + '</span>' + (sus.kind === 'qty' ? '<button class="btn sm" data-action="fix-qty" data-id="' + it.id + '">' + L('Dejar en {n}', { n: it.qty - 1 }) + '</button>' : '<button class="btn sm" data-action="del-item" data-id="' + it.id + '" data-fix="1">' + L('Quitar ítem') + '</button>') + '</div>' : '') + '</div>';
   }
 
   function tipChips() {
@@ -417,15 +424,15 @@
     var custom;
     if (ui.customTip) {
       var isPct = ui.customTip === 'pct';
-      custom = '<span class="chip-edit"><input class="chip-input num" inputmode="decimal" placeholder="' + (isPct ? 'Ej. 12' : 'Monto') + '" data-action="tip-custom-input" data-kind="' + ui.customTip + '" data-autofocus aria-label="' + (isPct ? 'Propina en porcentaje' : 'Propina en monto') + '">' +
+      custom = '<span class="chip-edit"><input class="chip-input num" inputmode="decimal" placeholder="' + (isPct ? L('Ej. 12') : L('Monto')) + '" data-action="tip-custom-input" data-kind="' + ui.customTip + '" data-autofocus aria-label="' + (isPct ? L('Propina en porcentaje') : L('Propina en monto')) + '">' +
         (isPct ? '<span class="chip-unit">%</span>' : '') + '<button class="chip on" data-action="tip-apply">OK</button></span>';
     } else {
-      custom = (t && t.fixed != null ? '<button class="chip on" data-action="tip-custom-amt">Monto ' + money(t.fixed) + '</button>' : '<button class="chip" data-action="tip-custom-amt">Otro monto</button>') +
-        '<button class="chip" data-action="tip-custom-pct">Otro %</button>';
+      custom = (t && t.fixed != null ? '<button class="chip on" data-action="tip-custom-amt">' + L('Monto {x}', { x: money(t.fixed) }) + '</button>' : '<button class="chip" data-action="tip-custom-amt">' + L('Otro monto') + '</button>') +
+        '<button class="chip" data-action="tip-custom-pct">' + L('Otro %') + '</button>';
     }
     return '<div class="chips">' +
-      '<button class="chip' + (!t ? ' on' : '') + '" data-action="tip" data-pct="0">Sin propina</button>' +
-      pcts.map(function (p) { return '<button class="chip' + on(p) + '" data-action="tip" data-pct="' + p + '">' + p + '%' + (p === state.tipSuggested ? ' · sugerida' : '') + '</button>'; }).join('') +
+      '<button class="chip' + (!t ? ' on' : '') + '" data-action="tip" data-pct="0">' + L('Sin propina') + '</button>' +
+      pcts.map(function (p) { return '<button class="chip' + on(p) + '" data-action="tip" data-pct="' + p + '">' + p + '%' + (p === state.tipSuggested ? L(' · sugerida') : '') + '</button>'; }).join('') +
       custom + '</div>';
   }
 
@@ -437,19 +444,19 @@
     var rate = ui.fx && ui.fx.key === state.currency + '_' + pref ? ui.fx.rate : null;
     if (!rate) fetchFx();
     if (!withSelect) return rate ? '<div class="fx">≈ ' + money(amount * rate, pref) + '</div>' : '';
-    return '<div class="fx">' + (rate ? '≈ ' + money(amount * rate, pref) : 'En tu moneda:') + ' <select data-action="pref" aria-label="Tu moneda">' + opts + '</select></div>';
+    return '<div class="fx">' + (rate ? '≈ ' + money(amount * rate, pref) : L('En tu moneda:')) + ' <select data-action="pref" aria-label="' + L('Tu moneda') + '">' + opts + '</select></div>';
   }
 
   function people() {
-    return top('¿Quiénes están?', 'review') +
-      '<form class="field" data-action="add-person"><input name="name" placeholder="Nombre" maxlength="24" autocomplete="off" data-autofocus aria-label="Nombre"><button class="btn primary" type="submit">Agregar</button></form>' +
-      '<p class="small" style="margin:8px 4px 14px">Agrega a todos los que comparten la cuenta, incluyéndote.</p>' +
+    return top(L('¿Quiénes están?'), 'review') +
+      '<form class="field" data-action="add-person"><input name="name" placeholder="' + L('Nombre') + '" maxlength="24" autocomplete="off" data-autofocus aria-label="' + L('Nombre') + '"><button class="btn primary" type="submit">' + L('Agregar') + '</button></form>' +
+      '<p class="small" style="margin:8px 4px 14px">' + L('Agrega a todos los que comparten la cuenta, incluyéndote.') + '</p>' +
       (state.people.length ? '<div class="list">' + state.people.map(function (p) {
-        return '<div class="person">' + avatar(p) + '<span style="flex:1;font-weight:600">' + esc(p.name) + '</span><button class="btn sm ghost" data-action="del-person" data-id="' + p.id + '">Quitar</button></div>';
+        return '<div class="person">' + avatar(p) + '<span style="flex:1;font-weight:600">' + esc(p.name) + '</span><button class="btn sm ghost" data-action="del-person" data-id="' + p.id + '">' + L('Quitar') + '</button></div>';
       }).join('') + '</div>' : '') +
-      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">' + ic('phones') + ' Que cada uno marque en su teléfono</button><p class="small" style="margin:8px 4px 0">Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.</p>' : '') +
+      (SYNC && !state.share ? '<button class="btn block" data-action="share-bill" style="margin-top:4px">' + ic('phones') + ' ' + L('Que cada uno marque en su teléfono') + '</button><p class="small" style="margin:8px 4px 0">' + L('Compartes un link: tus amigos entran sin registrarse y marcan lo suyo.') + '</p>' : '') +
       (state.share ? sharePanel() : '') +
-      footer('<button class="btn primary" data-action="go" data-to="assign"' + (state.people.length ? '' : ' disabled') + '>Asignar ítems →</button>');
+      footer('<button class="btn primary" data-action="go" data-to="assign"' + (state.people.length ? '' : ' disabled') + '>' + L('Asignar ítems →') + '</button>');
   }
 
   function shareLink() { return location.origin + '/v2/#' + (state.share && state.share.token || ''); }
@@ -457,52 +464,52 @@
   function sharePanel() {
     if (!state.share) return '';
     var joined = state.people.filter(function (p) { return p.memberId; }).length;
-    return '<div class="card" style="margin-top:12px"><div class="row"><b style="flex:1">Cuenta compartida</b><span class="badge ok">en vivo</span></div>' +
-      '<p class="muted" style="margin:6px 0 10px">' + (joined > 1 ? 'Conectados: ' + esc(state.people.filter(function (p) { return p.memberId; }).map(function (p) { return p.name; }).join(', ')) : 'Esperando a que entren tus amigos…') + '</p>' +
-      '<div class="row"><button class="btn sm" data-action="copy-link">Copiar link</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button><button class="btn sm ghost" data-action="go" data-to="share">Ver QR</button></div></div>';
+    return '<div class="card" style="margin-top:12px"><div class="row"><b style="flex:1">' + L('Cuenta compartida') + '</b><span class="badge ok">' + L('en vivo') + '</span></div>' +
+      '<p class="muted" style="margin:6px 0 10px">' + (joined > 1 ? L('Conectados: {x}', { x: esc(state.people.filter(function (p) { return p.memberId; }).map(function (p) { return p.name; }).join(', ')) }) : L('Esperando a que entren tus amigos…')) + '</p>' +
+      '<div class="row"><button class="btn sm" data-action="copy-link">' + L('Copiar link') + '</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button><button class="btn sm ghost" data-action="go" data-to="share">' + L('Ver QR') + '</button></div></div>';
   }
 
   function shareScreen() {
     var link = shareLink();
     setTimeout(drawQR, 0);
-    return top('Compartir la cuenta', 'people') +
-      '<div class="card" style="text-align:center"><div id="qr" class="qr"><span class="small">Generando código…</span></div>' +
-      '<p class="muted" style="margin:14px 0 4px">Que escaneen este código o abran el link</p>' +
+    return top(L('Compartir la cuenta'), 'people') +
+      '<div class="card" style="text-align:center"><div id="qr" class="qr"><span class="small">' + L('Generando código…') + '</span></div>' +
+      '<p class="muted" style="margin:14px 0 4px">' + L('Que escaneen este código o abran el link') + '</p>' +
       '<p class="small" style="word-break:break-all">' + esc(link) + '</p>' +
-      '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm" data-action="copy-link">Copiar</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button></div></div>' +
-      '<p class="small" style="margin:0 4px">El link caduca en 24 horas. Cada uno marca lo suyo y tú ves los totales al instante.</p>' +
-      footer('<button class="btn primary" data-action="go" data-to="assign">Seguir →</button>');
+      '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn sm" data-action="copy-link">' + L('Copiar') + '</button><button class="btn sm" data-action="share-wa-link">WhatsApp</button></div></div>' +
+      '<p class="small" style="margin:0 4px">' + L('El link caduca en 24 horas. Cada uno marca lo suyo y tú ves los totales al instante.') + '</p>' +
+      footer('<button class="btn primary" data-action="go" data-to="assign">' + L('Seguir →') + '</button>');
   }
 
   // El QR se dibuja con qrcodejs, cargado solo al entrar a esta pantalla.
   function drawQR() {
     var box = document.getElementById('qr'); if (!box) return;
     function draw() {
-      if (!window.QRCode) { box.innerHTML = '<span class="small">Usa el link de abajo</span>'; return; }
+      if (!window.QRCode) { box.innerHTML = '<span class="small">' + L('Usa el link de abajo') + '</span>'; return; }
       box.innerHTML = '';
       new window.QRCode(box, { text: shareLink(), width: 200, height: 200, correctLevel: window.QRCode.CorrectLevel.M });
     }
     if (window.QRCode) return draw();
     var sc = document.createElement('script');
     sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-    sc.onload = draw; sc.onerror = function () { box.innerHTML = '<span class="small">Usa el link de abajo</span>'; };
+    sc.onload = draw; sc.onerror = function () { box.innerHTML = '<span class="small">' + L('Usa el link de abajo') + '</span>'; };
     document.head.appendChild(sc);
   }
 
   function join() {
     var inv = ui.invite, free = !inv || !inv.people.length || ui.joinFree;
-    var chips = inv && inv.people.length ? '<p class="small" style="margin:0 4px 8px">¿Quién eres? Toca tu nombre:</p><div class="list">' + inv.people.map(function (p) {
+    var chips = inv && inv.people.length ? '<p class="small" style="margin:0 4px 8px">' + L('¿Quién eres? Toca tu nombre:') + '</p><div class="list">' + inv.people.map(function (p) {
       var taken = inv.taken.indexOf(String(p.id)) > -1;
       return '<button class="person pick" data-action="pick-person" data-key="' + esc(p.id) + '"' + (taken || ui.joining ? ' disabled' : '') + '>' +
         avatar({ name: p.name, color: COLORS[(Number(p.id) || 0) % COLORS.length] }) + '<span style="flex:1;font-weight:600;text-align:left">' + esc(p.name) + '</span>' +
-        (taken ? '<span class="small">ya entró</span>' : '<span class="small">Soy yo →</span>') + '</button>';
-    }).join('') + '</div>' + (ui.joinFree ? '' : '<button class="linkbtn" data-action="join-free" style="margin-top:10px">Mi nombre no está en la lista</button>') : '';
-    return '<header class="top"><h1 class="brand">Divi<b>Cuenta</b></h1></header>' +
-      '<section class="hero"><h1 style="font-size:26px">Te invitaron a dividir una cuenta' + (inv && inv.restaurant ? ' en ' + esc(inv.restaurant) : '') + '</h1>' +
-      '<p>' + (inv && inv.people.length ? 'Elige tu nombre y marca lo que consumiste. No necesitas registrarte.' : 'Escribe tu nombre y marca lo que consumiste. No necesitas registrarte.') + '</p></section>' +
+        (taken ? '<span class="small">' + L('ya entró') + '</span>' : '<span class="small">' + L('Soy yo →') + '</span>') + '</button>';
+    }).join('') + '</div>' + (ui.joinFree ? '' : '<button class="linkbtn" data-action="join-free" style="margin-top:10px">' + L('Mi nombre no está en la lista') + '</button>') : '';
+    return brandHeader() +
+      '<section class="hero"><h1 style="font-size:26px">' + L('Te invitaron a dividir una cuenta') + (inv && inv.restaurant ? L(' en {r}', { r: esc(inv.restaurant) }) : '') + '</h1>' +
+      '<p>' + (inv && inv.people.length ? L('Elige tu nombre y marca lo que consumiste. No necesitas registrarte.') : L('Escribe tu nombre y marca lo que consumiste. No necesitas registrarte.')) + '</p></section>' +
       (ui.joinError ? '<div class="banner danger">' + esc(ui.joinError) + '</div>' : '') +
-      (ui.invalid ? '' : ui.inviteLoading ? '<p class="muted" style="text-align:center">Cargando la invitación…</p>' : chips +
-        (free ? '<form class="field" data-action="do-join" style="margin-top:12px"><input name="name" placeholder="Tu nombre" maxlength="24" value="' + esc(ui.joinName) + '" ' + (ui.joinFree || !(inv && inv.people.length) ? 'data-autofocus ' : '') + 'aria-label="Tu nombre"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? 'Entrando…' : 'Entrar') + '</button></form>' : ''));
+      (ui.invalid ? '' : ui.inviteLoading ? '<p class="muted" style="text-align:center">' + L('Cargando la invitación…') + '</p>' : chips +
+        (free ? '<form class="field" data-action="do-join" style="margin-top:12px"><input name="name" placeholder="' + L('Tu nombre') + '" maxlength="24" value="' + esc(ui.joinName) + '" ' + (ui.joinFree || !(inv && inv.people.length) ? 'data-autofocus ' : '') + 'aria-label="' + L('Tu nombre') + '"><button class="btn primary" type="submit"' + (ui.joining ? ' disabled' : '') + '>' + (ui.joining ? L('Entrando…') : L('Entrar')) + '</button></form>' : ''));
   }
 
   // ── PROTOTIPO: asignar hablando (apagado por defecto: se activa con ?voz=1 y se desactiva con ?voz=0) ──
@@ -511,21 +518,21 @@
   function voicePanel() {
     if (!voiceOn() || state.people.length < 1) return '';
     var v = ui.voice, undo = ui.voiceUndo;
-    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">' + ic('mic') + ' Asignar hablando <span class="badge accent">prueba</span></button>' +
-      (undo ? '<button class="btn sm ghost" data-action="voice-undo">Deshacer lo último</button>' : '') + '</div>';
+    if (!v.open) return '<div class="row" style="margin-bottom:12px"><button class="btn sm" data-action="voice-open">' + ic('mic') + ' ' + L('Asignar hablando') + ' <span class="badge accent">' + L('prueba') + '</span></button>' +
+      (undo ? '<button class="btn sm ghost" data-action="voice-undo">' + L('Deshacer lo último') + '</button>' : '') + '</div>';
     var pv = v.preview;
-    return '<div class="card" style="margin-bottom:12px"><div class="row"><b style="flex:1">Asignar hablando</b><span class="badge accent">prueba</span><button class="btn sm ghost" data-action="voice-close">Cerrar</button></div>' +
-      '<p class="small" style="margin:6px 0">Cuenta quién comió qué. Ej.: «yo el bife, ' + esc((state.people[1] || state.people[0]).name) + ' la pizza, la cerveza entre los dos»</p>' +
-      '<textarea name="voicetext" data-action="voice-text" rows="3" maxlength="500" placeholder="Habla o escribe aquí…" style="width:100%">' + esc(v.text) + '</textarea>' +
-      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? '● Escuchando…' : ic('mic') + ' Hablar') + '</button>' : '<span class="small" style="flex:1">Tip: usa el micrófono del teclado para dictar.</span>') +
-      '<span class="spacer"></span><button class="btn sm primary" data-action="voice-go"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? 'Interpretando…' : 'Interpretar') + '</button></div>' +
+    return '<div class="card" style="margin-bottom:12px"><div class="row"><b style="flex:1">' + L('Asignar hablando') + '</b><span class="badge accent">' + L('prueba') + '</span><button class="btn sm ghost" data-action="voice-close">' + L('Cerrar') + '</button></div>' +
+      '<p class="small" style="margin:6px 0">' + L('Cuenta quién comió qué. Ej.: «yo el bife, {x} la pizza, la cerveza entre los dos»', { x: esc((state.people[1] || state.people[0]).name) }) + '</p>' +
+      '<textarea name="voicetext" data-action="voice-text" rows="3" maxlength="500" placeholder="' + L('Habla o escribe aquí…') + '" style="width:100%">' + esc(v.text) + '</textarea>' +
+      '<div class="row" style="margin-top:8px">' + (SR ? '<button class="btn sm' + (v.listening ? ' primary' : '') + '" data-action="voice-mic">' + (v.listening ? L('● Escuchando…') : ic('mic') + ' ' + L('Hablar')) + '</button>' : '<span class="small" style="flex:1">' + L('Tip: usa el micrófono del teclado para dictar.') + '</span>') +
+      '<span class="spacer"></span><button class="btn sm primary" data-action="voice-go"' + (v.busy ? ' disabled' : '') + '>' + (v.busy ? L('Interpretando…') : L('Interpretar')) + '</button></div>' +
       (v.error ? '<div class="banner danger" style="margin:10px 0 0">' + esc(v.error) + '</div>' : '') +
-      (pv ? '<div style="margin-top:12px"><div class="small">Esto entendí (revísalo antes de aplicar):</div>' +
+      (pv ? '<div style="margin-top:12px"><div class="small">' + L('Esto entendí (revísalo antes de aplicar):') + '</div>' +
         (pv.length ? pv.map(function (a) {
           var it = item(a.item); if (!it) return '';
           return '<div class="row" style="padding:4px 0"><span style="flex:1">' + esc(it.name) + '</span><span class="small">→ ' + a.who.map(function (pid) { var p = person(pid); return esc(p ? p.name : '?') + (a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : ''); }).join(', ') + '</span></div>';
-        }).join('') : '<p class="small">No pude emparejar nada. Prueba con los nombres tal como aparecen.</p>') +
-        (pv.length ? '<div class="row" style="margin-top:8px"><button class="btn sm primary" data-action="voice-apply">Aplicar</button><button class="btn sm ghost" data-action="voice-discard">Descartar</button></div>' : '') + '</div>' : '') +
+        }).join('') : '<p class="small">' + L('No pude emparejar nada. Prueba con los nombres tal como aparecen.') + '</p>') +
+        (pv.length ? '<div class="row" style="margin-top:8px"><button class="btn sm primary" data-action="voice-apply">' + L('Aplicar') + '</button><button class="btn sm ghost" data-action="voice-discard">' + L('Descartar') + '</button></div>' : '') + '</div>' : '') +
       '</div>';
   }
   function voiceInterpret() {
@@ -538,11 +545,11 @@
       .then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
       .then(function (x) {
         v.busy = false;
-        if (!x.ok || !x.d || !x.d.ok) { v.error = x.d && x.d.code === 'RATE_LIMITED' ? 'Muchos intentos seguidos. Espera un minuto.' : 'No pude interpretarlo ahora. Puedes marcar a mano.'; }
+        if (!x.ok || !x.d || !x.d.ok) { v.error = x.d && x.d.code === 'RATE_LIMITED' ? L('Muchos intentos seguidos. Espera un minuto.') : L('No pude interpretarlo ahora. Puedes marcar a mano.'); }
         else v.preview = (x.d.assigns || []).map(function (a) { return { item: Number(a.item), who: a.who.map(Number), units: a.units ? Object.keys(a.units).reduce(function (o, k) { o[Number(k)] = a.units[k]; return o; }, {}) : null }; });
         render();
       })
-      .catch(function () { v.busy = false; v.error = 'No hay conexión. Puedes marcar a mano.'; render(); });
+      .catch(function () { v.busy = false; v.error = L('No hay conexión. Puedes marcar a mano.'); render(); });
   }
   function voiceApply() {
     var pv = ui.voice.preview; if (!pv || !pv.length) return;
@@ -550,20 +557,20 @@
     ui.voiceUndo = { ids: ids, assigns: JSON.parse(JSON.stringify(state.assigns)) };
     pv.forEach(function (a) { if (item(a.item)) state.assigns[a.item] = { people: a.who.filter(function (pid) { return person(pid); }), units: a.units || {} }; });
     ui.voice.preview = null; ui.voice.text = ''; ui.voice.open = false;
-    save(); render(); syncHost(ids); toast('Listo: revisa y ajusta lo que haga falta');
+    save(); render(); syncHost(ids); toast(L('Listo: revisa y ajusta lo que haga falta'));
   }
   function voiceUndoLast() {
     var u = ui.voiceUndo; if (!u) return;
     u.ids.forEach(function (id) { if (u.assigns[id]) state.assigns[id] = u.assigns[id]; else delete state.assigns[id]; });
-    ui.voiceUndo = null; save(); render(); syncHost(u.ids); toast('Deshecho');
+    ui.voiceUndo = null; save(); render(); syncHost(u.ids); toast(L('Deshecho'));
   }
   var recog = null;
   function voiceMic() {
     if (!SR) return;
     if (recog) { try { recog.stop(); } catch (e) {} return; }
-    recog = new SR(); recog.lang = navigator.language || 'es-CL'; recog.interimResults = false; recog.continuous = false;
+    recog = new SR(); recog.lang = I18N.locale; recog.interimResults = false; recog.continuous = false;
     recog.onresult = function (ev) { var t = ''; for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript + ' '; ui.voice.text = (ui.voice.text ? ui.voice.text + ' ' : '') + t.trim(); };
-    recog.onerror = function () { ui.voice.error = 'No pude escuchar. Escribe o usa el micrófono del teclado.'; };
+    recog.onerror = function () { ui.voice.error = L('No pude escuchar. Escribe o usa el micrófono del teclado.'); };
     recog.onend = function () { recog = null; ui.voice.listening = false; render(); };
     ui.voice.listening = true; ui.voice.error = null; render();
     try { recog.start(); } catch (e) { recog = null; ui.voice.listening = false; render(); }
@@ -573,33 +580,33 @@
     var base = baseItems(), done = base.filter(isAssigned).length;
     var guest = state.share && state.share.role === 'guest';
     if (guest) return assignGuest(base);
-    return top('¿Quién consumió qué?', 'people') +
+    return top(L('¿Quién consumió qué?'), 'people') +
       (state.share ? sharePanel() : '') + voicePanel() +
-      '<div class="card"><div class="row"><b>' + done + ' de ' + base.length + ' ítems asignados</b><span class="spacer"></span><button class="btn sm" data-action="all-everything">Compartir todo</button></div>' +
+      '<div class="card"><div class="row"><b>' + L('{done} de {n} ítems asignados', { done: done, n: base.length }) + '</b><span class="spacer"></span><button class="btn sm" data-action="all-everything">' + L('Compartir todo') + '</button></div>' +
       '<div class="progress" style="margin-top:10px"><i style="width:' + (base.length ? Math.round(100 * done / base.length) : 0) + '%"></i></div></div>' +
-      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || 'Tu boleta') + '</span><span>' + base.length + ' ítems</span></div>' + base.map(assignRow).join('') + '</div>' +
-      footer(dock(split()) + '<button class="btn primary block" data-action="go" data-to="summary">Ver cuánto paga cada uno →</button>', 'tall');
+      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || L('Tu boleta')) + '</span><span>' + L('{n} ítems', { n: base.length }) + '</span></div>' + base.map(assignRow).join('') + '</div>' +
+      footer(dock(split()) + '<button class="btn primary block" data-action="go" data-to="summary">' + L('Ver cuánto paga cada uno →') + '</button>', 'tall');
   }
 
   // Vista del invitado: solo marca lo suyo, no toca a los demás.
   function assignGuest(base) {
     var mine = state.myMemberId;
     var r = split(), me = r.perPerson.filter(function (p) { return p.id === mine; })[0];
-    return top('Marca lo tuyo', null) +
-      '<div class="card mine"><div class="row"><div><div class="small">Lo que llevas</div>' + countSpan('mine', me ? me.amount : 0, 'mine-amt') + '</div><span class="spacer"></span><span class="badge ok live">en vivo</span></div>' + propBar(r) + '</div>' +
-      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || 'Tu boleta') + '</span><span>' + base.length + ' ítems</span></div>' + base.map(function (it) {
+    return top(L('Marca lo tuyo'), null) +
+      '<div class="card mine"><div class="row"><div><div class="small">' + L('Lo que llevas') + '</div>' + countSpan('mine', me ? me.amount : 0, 'mine-amt') + '</div><span class="spacer"></span><span class="badge ok live">' + L('en vivo') + '</span></div>' + propBar(r) + '</div>' +
+      '<div class="receipt"><div class="receipt-head"><span>' + esc(state.restaurant || L('Tu boleta')) + '</span><span>' + L('{n} ítems', { n: base.length }) + '</span></div>' + base.map(function (it) {
         var a = state.assigns[it.id] || { people: [], units: {} };
         var mineOn = (a.people || []).indexOf(mine) > -1;
         var others = (a.people || []).filter(function (p) { return p !== mine; }).map(function (pid) { var p = person(pid); return p ? p.name + (it.qty > 1 && a.units && a.units[pid] ? ' (' + a.units[pid] + ')' : '') : ''; }).filter(Boolean);
         var myU = (a.units && a.units[mine]) || 0;
-        var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">¿Cuántas tomaste?</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="Más"' + (myU >= it.qty - othersUnits(it.id, mine) ? ' disabled' : '') + '>+</button></div></div>' : '';
+        var stepper = it.qty > 1 && mineOn ? '<div class="unit" style="margin-top:8px"><span class="name">' + L('¿Cuántas tomaste?') + '</span><div class="stepper"><button data-action="claim-unit" data-item="' + it.id + '" data-d="-1" aria-label="' + L('Menos') + '">−</button><span class="num">' + myU + '</span><button data-action="claim-unit" data-item="' + it.id + '" data-d="1" aria-label="' + L('Más') + '"' + (myU >= it.qty - othersUnits(it.id, mine) ? ' disabled' : '') + '>+</button></div></div>' : '';
         var mp = person(mine), tint = mineOn && mp ? ' style="--stripe:' + mp.color + '"' : '';
         return '<div class="assign' + (mineOn ? ' done' : '') + '"' + tint + '>' +
           '<div class="head"><span class="name">' + nameHtml(it) + (it.qty > 1 ? ' <span class="small">×' + it.qty + '</span>' : '') + '</span><span class="num" style="font-weight:700">' + money(it.price * it.qty) + '</span></div>' +
-          '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? '✓ Lo consumí' : 'Marcar') + '</button></div>' + stepper +
-          '<div class="state">' + (others.length ? 'También: ' + esc(others.join(', ')) : 'Nadie más lo marcó') + '</div></div>';
+          '<div class="who"><button class="pbtn' + (mineOn ? ' on' : '') + '" data-action="claim" data-item="' + it.id + '" aria-pressed="' + mineOn + '">' + (mineOn ? L('✓ Lo consumí') : L('Marcar')) + '</button></div>' + stepper +
+          '<div class="state">' + (others.length ? L('También: {x}', { x: esc(others.join(', ')) }) : L('Nadie más lo marcó')) + '</div></div>';
       }).join('') + '</div>' +
-      footer('<button class="btn primary block" data-action="go" data-to="summary">Ver el total →</button>');
+      footer('<button class="btn primary block" data-action="go" data-to="summary">' + L('Ver el total →') + '</button>');
   }
 
   function isAssigned(it) {
@@ -614,9 +621,9 @@
     var unitSum = who.reduce(function (t, pid) { return t + (units[pid] || 0); }, 0);
     var all = who.length === state.people.length && state.people.length > 0;
     var unitsOpen = ui.unitsOpen[it.id] || unitSum > 0;
-    var stateTxt = !who.length ? 'Sin asignar'
-      : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? 'Unidades repartidas ✓' : unitSum > it.qty ? 'Se pasaron ' + (unitSum - it.qty) + ' unidades: ajusten' : 'Faltan ' + (it.qty - unitSum) + ' de ' + it.qty + ' unidades')
-      : who.length > 1 ? 'Se divide en partes iguales entre ' + who.length : 'Lo paga ' + esc(person(who[0]) ? person(who[0]).name : '');
+    var stateTxt = !who.length ? L('Sin asignar')
+      : it.qty > 1 && unitSum > 0 ? (unitSum === it.qty ? L('Unidades repartidas ✓') : unitSum > it.qty ? L('Se pasaron {n} unidades: ajusten', { n: unitSum - it.qty }) : L('Faltan {n} de {q} unidades', { n: it.qty - unitSum, q: it.qty }))
+      : who.length > 1 ? L('Se divide en partes iguales entre {n}', { n: who.length }) : L('Lo paga {name}', { name: esc(person(who[0]) ? person(who[0]).name : '') });
     var cols = who.map(function (pid) { var q = person(pid); return q ? q.color : null; }).filter(Boolean);
     var stripe = cols.length ? ' style="--stripe:' + (cols.length === 1 ? cols[0] : 'linear-gradient(' + cols.map(function (c, k) { return c + ' ' + Math.round(100 * k / cols.length) + '% ' + Math.round(100 * (k + 1) / cols.length) + '%'; }).join(',') + ')') + '"' : '';
     return '<div class="assign' + (isAssigned(it) ? ' done' : '') + (cols.length ? ' tinted' : '') + '"' + stripe + '>' +
@@ -625,12 +632,12 @@
         var on = who.indexOf(p.id) > -1;
         return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="toggle" data-item="' + it.id + '" data-person="' + p.id + '" aria-pressed="' + on + '"' + '>' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span>' + '</button>';
       }).join('') + '</div>' +
-      (it.qty > 1 && who.length > 1 && !unitsOpen ? '<button class="linkbtn" data-action="units-open" data-item="' + it.id + '">Repartir por unidades (ej. 2 y 3)</button>' : '') +
+      (it.qty > 1 && who.length > 1 && !unitsOpen ? '<button class="linkbtn" data-action="units-open" data-item="' + it.id + '">' + L('Repartir por unidades (ej. 2 y 3)') + '</button>' : '') +
       (it.qty > 1 && who.length > 1 && unitsOpen ? '<div class="units">' + who.map(function (pid) {
         var p = person(pid); if (!p) return '';
-        return '<div class="unit">' + avatar(p, 'sm') + '<span class="name">' + esc(p.name) + '</span><div class="stepper"><button data-action="unit" data-item="' + it.id + '" data-person="' + pid + '" data-d="-1" aria-label="Menos">−</button><span class="num">' + (units[pid] || 0) + '</span><button data-action="unit" data-item="' + it.id + '" data-person="' + pid + '" data-d="1" aria-label="Más"' + (unitSum >= it.qty ? ' disabled' : '') + '>+</button></div></div>';
+        return '<div class="unit">' + avatar(p, 'sm') + '<span class="name">' + esc(p.name) + '</span><div class="stepper"><button data-action="unit" data-item="' + it.id + '" data-person="' + pid + '" data-d="-1" aria-label="' + L('Menos') + '">−</button><span class="num">' + (units[pid] || 0) + '</span><button data-action="unit" data-item="' + it.id + '" data-person="' + pid + '" data-d="1" aria-label="' + L('Más') + '"' + (unitSum >= it.qty ? ' disabled' : '') + '>+</button></div></div>';
       }).join('') + '</div>' : '') +
-      '<div class="state row"><span style="flex:1">' + stateTxt + '</span>' + (state.people.length > 1 ? '<button class="pbtn all' + (all ? ' on' : '') + '" data-action="toggle-all" data-item="' + it.id + '" aria-pressed="' + all + '">' + (all ? 'Quitar todos' : 'Todos') + '</button>' : '') + '</div></div>';
+      '<div class="state row"><span style="flex:1">' + stateTxt + '</span>' + (state.people.length > 1 ? '<button class="pbtn all' + (all ? ' on' : '') + '" data-action="toggle-all" data-item="' + it.id + '" aria-pressed="' + all + '">' + (all ? L('Quitar todos') : L('Todos')) + '</button>' : '') + '</div></div>';
   }
 
   // ── cobro: quién pagó la cuenta y quién ya le pagó ─────────────────────────
@@ -652,32 +659,32 @@
     var mine = shared && !host ? r.perPerson.filter(function (p) { return p.id === me; })[0] : null, meP = person(me);
     var out = '';
     if (mine && me !== payer && mine.amount > tiny) {
-      out += '<div class="banner ' + (meP && meP.paid ? 'ok' : 'warn') + '">' + (meP && meP.paid ? '✓ Ya le pagaste a <b>' + esc(pp.name) + '</b>' : 'Le debes <b>' + money(mine.amount) + '</b> a <b>' + esc(pp.name) + '</b>') + '</div>';
+      out += '<div class="banner ' + (meP && meP.paid ? 'ok' : 'warn') + '">' + (meP && meP.paid ? L('✓ Ya le pagaste a {name}', { name: '<b>' + esc(pp.name) + '</b>' }) : L('Le debes {amt} a {name}', { amt: '<b>' + money(mine.amount) + '</b>', name: '<b>' + esc(pp.name) + '</b>' })) + '</div>';
     }
-    out += '<div class="card"><b>Cobro</b>';
+    out += '<div class="card"><b>' + L('Cobro') + '</b>';
     if (!shared) {
-      out += '<p class="small" style="margin:8px 0">¿Quién pagó la cuenta?</p><div class="who">' + state.people.map(function (p) {
+      out += '<p class="small" style="margin:8px 0">' + L('¿Quién pagó la cuenta?') + '</p><div class="who">' + state.people.map(function (p) {
         var on = p.id === payer;
         return '<button class="pbtn' + (on ? ' on' : '') + '" style="' + (on ? 'color:' + p.color : '') + '" data-action="set-payer" data-person="' + p.id + '" aria-pressed="' + on + '">' + avatar(p) + '<span style="color:var(--text)">' + esc(p.name) + '</span></button>';
       }).join('') + '</div>';
-    } else out += '<p class="small" style="margin:6px 0 0">Pagó ' + esc(pp.name) + ': a esa persona se le paga.</p>';
+    } else out += '<p class="small" style="margin:6px 0 0">' + L('Pagó {name}: a esa persona se le paga.', { name: esc(pp.name) }) + '</p>';
     if (debtors.length) {
       var pending = debtors.filter(function (p) { var q = person(p.id); return !(q && q.paid); }).reduce(function (s, p) { return s + p.amount; }, 0);
       out += '<div style="margin-top:12px">' + debtors.map(function (p) {
         var q = person(p.id), isPaid = !!(q && q.paid), can = !shared || host || p.id === me;
-        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="Recordarle a ' + esc(p.name) + ' por WhatsApp">' + ic('chat') + ' Recordar</button>' : '';
-        var paidBtn = can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" style="flex:1" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? '✓ Pagó' : (shared && !host ? 'Ya pagué' : 'Marcar pagado')) + '</button>' : '';
+        var remindBtn = host && !isPaid ? '<button class="btn sm ghost" style="flex:1" data-action="remind" data-person="' + p.id + '" aria-label="' + esc(L('Recordarle a {name} por WhatsApp', { name: p.name })) + '">' + ic('chat') + ' ' + L('Recordar') + '</button>' : '';
+        var paidBtn = can ? '<button class="btn sm' + (isPaid ? '' : ' primary') + '" style="flex:1" data-action="toggle-paid" data-person="' + p.id + '" aria-pressed="' + isPaid + '">' + (isPaid ? L('✓ Pagó') : (shared && !host ? L('Ya pagué') : L('Marcar pagado'))) + '</button>' : '';
         return '<div style="padding:8px 0;border-top:1px solid var(--border)"><div class="row">' + avatar(q, 'sm') + '<span style="flex:1;margin-left:8px">' + esc(p.name) + '</span><span class="num" style="font-weight:700">' + money(p.amount) + '</span>' +
-          (can ? '' : '<span class="badge' + (isPaid ? ' ok' : '') + '" style="margin-left:8px">' + (isPaid ? '✓ Pagó' : 'Pendiente') + '</span>') + '</div>' +
+          (can ? '' : '<span class="badge' + (isPaid ? ' ok' : '') + '" style="margin-left:8px">' + (isPaid ? L('✓ Pagó') : L('Pendiente')) + '</span>') + '</div>' +
           (remindBtn || paidBtn ? '<div style="display:flex;gap:8px;margin-top:8px">' + remindBtn + paidBtn + '</div>' : '') + '</div>';
       }).join('') + '</div>' +
-        '<p class="small" style="margin:8px 0 0">' + (pending > tiny ? 'Falta por pagar ' + money(pending) : '✓ Todos pagaron') + '</p>';
+        '<p class="small" style="margin:8px 0 0">' + (pending > tiny ? L('Falta por pagar {x}', { x: money(pending) }) : L('✓ Todos pagaron')) + '</p>';
     }
     if (host) {
-      out += '<label class="small" style="display:block;margin-top:12px">Datos para que te transfieran (opcional) · se recuerdan en este teléfono</label>' +
-        '<textarea name="payinfo" data-action="pay-info" rows="2" maxlength="400" placeholder="Alias, cuenta, RUT, CLABE…" style="width:100%;margin-top:4px">' + esc(state.payInfo || '') + '</textarea>';
+      out += '<label class="small" style="display:block;margin-top:12px">' + L('Datos para que te transfieran (opcional) · se recuerdan en este teléfono') + '</label>' +
+        '<textarea name="payinfo" data-action="pay-info" rows="2" maxlength="400" placeholder="' + L('Alias, cuenta, RUT, CLABE…') + '" style="width:100%;margin-top:4px">' + esc(state.payInfo || '') + '</textarea>';
     } else if (state.payInfo) {
-      out += '<div style="margin-top:12px"><div class="small">Transferir a ' + esc(pp.name) + '</div><div style="white-space:pre-wrap;margin:4px 0 8px;font-weight:600">' + esc(state.payInfo) + '</div><button class="btn sm" data-action="copy-pay">Copiar datos</button></div>';
+      out += '<div style="margin-top:12px"><div class="small">' + L('Transferir a {name}', { name: esc(pp.name) }) + '</div><div style="white-space:pre-wrap;margin:4px 0 8px;font-weight:600">' + esc(state.payInfo) + '</div><button class="btn sm" data-action="copy-pay">' + L('Copiar datos') + '</button></div>';
     }
     return out + '</div>';
   }
@@ -685,31 +692,31 @@
   function summary() {
     var r = split(), paid = r.perPerson.reduce(function (s, p) { return s + p.amount; }, 0) + r.unassigned;
     var cuadra = Math.abs(paid - r.grandTotal) < (C.decimals(state.currency) === 0 ? 1 : 0.01);
-    var seal = !cuadra ? '<span class="badge">Revisa: las cuentas no suman el total</span>'
-      : r.unassigned ? '<span class="badge accent">Cuentas + sin asignar = total</span>'
-      : '<span class="badge ok">✓ Todo repartido: las cuentas suman el total</span>';
+    var seal = !cuadra ? '<span class="badge">' + L('Revisa: las cuentas no suman el total') + '</span>'
+      : r.unassigned ? '<span class="badge accent">' + L('Cuentas + sin asignar = total') + '</span>'
+      : '<span class="badge ok">' + L('✓ Todo repartido: las cuentas suman el total') + '</span>';
     var pct = pctTxt(r.extrasRatio), tiny = C.decimals(state.currency) ? 0.005 : 0.5;
     var done = allPaid(r, tiny);
-    return top('Cuánto paga cada uno', 'assign') +
-      '<div class="card summary-total' + (done ? ' paid' : '') + '">' + (done ? '<div class="stamp' + (ui.stamped ? '' : ' animate') + '" aria-hidden="true">Pagada</div>' : '') +
-      '<div class="small">Total de la cuenta</div><div class="amount">' + countSpan('grand', r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
+    return top(L('Cuánto paga cada uno'), 'assign') +
+      '<div class="card summary-total' + (done ? ' paid' : '') + '">' + (done ? '<div class="stamp' + (ui.stamped ? '' : ' animate') + '" aria-hidden="true">' + L('Pagada') + '</div>' : '') +
+      '<div class="small">' + L('Total de la cuenta') + '</div><div class="amount">' + countSpan('grand', r.grandTotal) + '</div>' + fxLine(r.grandTotal, true).replace('class="fx"', 'class="fx" style="justify-content:center"') +
       propBar(r, true) +
       '<div class="legend">' + r.perPerson.filter(function (p) { return p.amount > 0; }).map(function (p) { var q = person(p.id); return '<span><i style="background:' + (q ? q.color : 'var(--text-3)') + '"></i>' + esc(p.name) + '</span>'; }).join('') + '</div>' +
       '<div style="margin-top:12px">' + seal + '</div>' +
-      (done ? '<p class="paid-msg">Todos pagaron. Cuenta cerrada.</p>' : '') +
-      '<button class="btn sm share-img" data-action="share-img">' + ic('image') + ' Compartir como imagen</button></div>' +
-      (r.unassigned ? '<div class="banner warn"><b>Falta asignar ' + money(r.unassigned) + ':</b> ' + esc(r.unassignedNames.join(', ')) + '<div class="actions"><button class="btn sm" data-action="go" data-to="assign">Asignar</button></div></div>' : '') +
+      (done ? '<p class="paid-msg">' + L('Todos pagaron. Cuenta cerrada.') + '</p>' : '') +
+      '<button class="btn sm share-img" data-action="share-img">' + ic('image') + ' ' + L('Compartir como imagen') + '</button></div>' +
+      (r.unassigned ? '<div class="banner warn"><b>' + L('Falta asignar {x}:', { x: money(r.unassigned) }) + '</b> ' + esc(r.unassignedNames.join(', ')) + '<div class="actions"><button class="btn sm" data-action="go" data-to="assign">' + L('Asignar') + '</button></div></div>' : '') +
       cobro(r, tiny) +
       r.perPerson.map(function (p) {
         var ppl = person(p.id);
-        return '<div class="card pcard" style="--pc:' + (ppl ? ppl.color : 'var(--border)') + '"><div class="row">' + avatar(ppl, 'lg') + '<b class="pname">' + esc(p.name) + (ppl && ppl.paid ? ' <span class="badge ok">Pagó</span>' : '') + '</b><div><div class="amount">' + countSpan('pp' + p.id, p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
-          '<details data-pid="' + p.id + '"' + (ui.openDetail[p.id] ? ' open' : '') + '><summary>Ver detalle</summary><div class="lines">' +
-          p.lines.map(function (l) { return '<div class="row"><span>' + nameHtml(item(l.itemId) || { name: l.name }) + (l.units ? ' ×' + l.units : '') + (l.shared ? ' (compartido)' : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
-          (p.extras > tiny ? '<div class="row"><span>Impuesto y cargos (' + pct + '%)</span><span class="spacer"></span><span>' + money(p.extras) + '</span></div>' : '') +
-          (p.tip > tiny ? '<div class="row"><span>Propina</span><span class="spacer"></span><span>' + money(p.tip) + '</span></div>' : '') +
+        return '<div class="card pcard" style="--pc:' + (ppl ? ppl.color : 'var(--border)') + '"><div class="row">' + avatar(ppl, 'lg') + '<b class="pname">' + esc(p.name) + (ppl && ppl.paid ? ' <span class="badge ok">' + L('Pagó') + '</span>' : '') + '</b><div><div class="amount">' + countSpan('pp' + p.id, p.amount) + '</div>' + fxLine(p.amount) + '</div></div>' +
+          '<details data-pid="' + p.id + '"' + (ui.openDetail[p.id] ? ' open' : '') + '><summary>' + L('Ver detalle') + '</summary><div class="lines">' +
+          p.lines.map(function (l) { return '<div class="row"><span>' + nameHtml(item(l.itemId) || { name: l.name }) + (l.units ? ' ×' + l.units : '') + (l.shared ? L(' (compartido)') : '') + '</span><span class="spacer"></span><span>' + money(l.base) + '</span></div>'; }).join('') +
+          (p.extras > tiny ? '<div class="row"><span>' + L('Impuesto y cargos ({pct}%)', { pct: pct }) + '</span><span class="spacer"></span><span>' + money(p.extras) + '</span></div>' : '') +
+          (p.tip > tiny ? '<div class="row"><span>' + L('Propina') + '</span><span class="spacer"></span><span>' + money(p.tip) + '</span></div>' : '') +
           '</div></details></div>';
       }).join('') +
-      footer('<button class="btn" data-action="copy">Copiar</button><button class="btn primary" data-action="share">WhatsApp</button>');
+      footer('<button class="btn" data-action="copy">' + L('Copiar') + '</button><button class="btn primary" data-action="share">WhatsApp</button>');
   }
 
   // ── acciones ───────────────────────────────────────────────────────────────
@@ -722,19 +729,20 @@
     var a = el.dataset.action, id = Number(el.dataset.id), itemId = Number(el.dataset.item), pid = Number(el.dataset.person);
     switch (a) {
       case 'go': if (el.dataset.to === 'people' && state.step === 'review') { var rc = recon(); track('review_done', { edits: state.edits || 0, ok: rc.ok, bad: rc.bad }); } go(el.dataset.to); break;
-      case 'reset': if (confirm('¿Empezar una cuenta nueva? Se borra la actual.')) { state = fresh(); ui.error = null; save(); render(); } break;
-      case 'manual': state = fresh(); state.currency = prefCurrency(); state.step = 'review'; addItem('Ítem 1', 0); save(); render(); break;
-      case 'add-item': state.edits = (state.edits || 0) + 1; addItem('Nuevo ítem', 0); save(); render(); break;
+      case 'lang': I18N.set(I18N.lang === 'en' ? 'es' : 'en'); render(); break;
+      case 'reset': if (confirm(L('¿Empezar una cuenta nueva? Se borra la actual.'))) { state = fresh(); ui.error = null; save(); render(); } break;
+      case 'manual': state = fresh(); state.currency = prefCurrency(); state.step = 'review'; addItem(L('Ítem') + ' 1', 0); save(); render(); break;
+      case 'add-item': state.edits = (state.edits || 0) + 1; addItem(L('Nuevo ítem'), 0); save(); render(); break;
       case 'autofix-ok': state.autoFix = null; save(); render(); break;
-      case 'add-missing': var miss = recon().diff; if (miss > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'agregar'; addItem('Ítem que faltaba', C.decimals(state.currency) === 0 ? Math.round(miss) : Math.round(miss * 100) / 100); save(); render(); toast('Agregué lo que falta. Toca el nombre para corregirlo.'); } break;
+      case 'add-missing': var miss = recon().diff; if (miss > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'agregar'; addItem(L('Ítem que faltaba'), C.decimals(state.currency) === 0 ? Math.round(miss) : Math.round(miss * 100) / 100); save(); render(); toast(L('Agregué lo que falta. Toca el nombre para corregirlo.')); } break;
       case 'fix-qty': var fq = item(id); if (fq && fq.qty > 1) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'cantidad'; fq.qty -= 1; if (state.assigns[id]) state.assigns[id].units = {}; save(); render(); } break;
-      case 'add-extra': addItem('Impuesto', 0); save(); render(); break;
+      case 'add-extra': addItem(L('Impuesto'), 0); save(); render(); break;
       case 'del-item': state.edits = (state.edits || 0) + 1; if (el.dataset.fix) ui.lastFix = 'quitar'; state.items = state.items.filter(function (i) { return i.id !== id; }); delete state.assigns[id]; save(); render(); break;
       case 'tip': ui.customTip = false; state.tip = Number(el.dataset.pct) ? { pct: Number(el.dataset.pct) } : null; save(); render(); break;
       case 'tip-custom-amt': ui.customTip = 'amt'; render(); break;
       case 'tip-custom-pct': ui.customTip = 'pct'; render(); break;
       case 'tip-apply': { var ti = document.querySelector('.chip-input'); if (ti) applyCustomTip(ti.value, ti.dataset.kind); break; }
-      case 'apply-service': { var sp = Number(el.dataset.pct); if (sp > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'servicio'; ui.customTip = false; state.tip = { pct: sp }; state.tipSuggested = sp; save(); render(); toast('Servicio del ' + sp + ' % aplicado'); } break; }
+      case 'apply-service': { var sp = Number(el.dataset.pct); if (sp > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'servicio'; ui.customTip = false; state.tip = { pct: sp }; state.tipSuggested = sp; save(); render(); toast(L('Servicio del {n} % aplicado', { n: sp })); } break; }
       case 'del-person': { var gone = person(id); if (gone && gone.memberId && SYNC) SYNC.removeMember(gone.memberId); removePerson(id); save(); render(); break; }
       case 'toggle': {
         var ta = state.assigns[itemId], wasOn = !!(ta && (ta.people || []).indexOf(pid) > -1), tp = person(pid);
@@ -744,14 +752,14 @@
       case 'toggle-all': toggleAll(itemId); save(); render(); syncHost([itemId]); break;
       case 'units-open': ui.unitsOpen[itemId] = true; render(); break;
       case 'unit': changeUnit(itemId, pid, Number(el.dataset.d)); save(); render(); syncHost([itemId], [pid]); break;
-      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast('Todo se divide entre todos'); syncHost(baseItems().map(function (it) { return it.id; })); break;
+      case 'all-everything': baseItems().forEach(function (it) { state.assigns[it.id] = { people: state.people.map(function (p) { return p.id; }), units: {} }; }); save(); render(); toast(L('Todo se divide entre todos')); syncHost(baseItems().map(function (it) { return it.id; })); break;
       case 'country': rescan(el.dataset.code); break;
       case 'share-bill': startSharing(); break;
       case 'pick-person': { var pk = el.dataset.key, pp = ui.invite && ui.invite.people.filter(function (x) { return String(x.id) === pk; })[0]; if (pp) { ui.joinName = pp.name; doJoin(pendingToken, pp.name, pk); } break; }
       case 'join-free': ui.joinFree = true; render(); break;
       case 'clear-trace': trace = []; try { localStorage.removeItem(TRACE_KEY); } catch (x) {} render(); break;
       case 'copy-link': copyText(shareLink()); break;
-      case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent('Dividamos la cuenta: ' + shareLink()), '_blank', 'noopener'); break;
+      case 'share-wa-link': window.open('https://wa.me/?text=' + encodeURIComponent(L('Dividamos la cuenta: {link}', { link: shareLink() })), '_blank', 'noopener'); break;
       case 'claim': toggleClaim(itemId); break;
       case 'claim-unit': claimUnits(itemId, Number(el.dataset.d)); break;
       case 'set-payer': state.payerId = pid; save(); render(); break;
@@ -845,8 +853,8 @@
   function startScan(file) {
     trace = trace.slice(-2);
     ui.error = null; ui.confirm = null; ui.scanStage = 0; ui.photo = null;
-    toast('Procesando la foto…');
-    var done = false, guard = setTimeout(function () { if (!done) { done = true; tlog('✗ la foto no terminó de procesarse en 25 s'); fail('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.'); } }, 25000);
+    toast(L('Procesando la foto…'));
+    var done = false, guard = setTimeout(function () { if (!done) { done = true; tlog('✗ la foto no terminó de procesarse en 25 s'); fail(L('No pudimos procesar esa foto. Prueba con otra o con una captura de pantalla.')); } }, 25000);
     compress(file, function (b64, dataUrl) {
       if (done) return; done = true; clearTimeout(guard);
       ui.photo = dataUrl; pending = b64; state.step = 'scanning'; render();
@@ -874,12 +882,12 @@
       .then(function (x) {
         clearTimeout(timeout); clearInterval(ui.scanTimer);
         var d = x.d; tlog('respuesta del servidor: HTTP ' + x.res.status + ' en ' + Math.round((Date.now() - t0) / 100) / 10 + ' s' + (d && d.code ? ' · ' + d.code : '') + (x.res.ok ? '' : ' · ' + String((d && (d.error || d.message)) || '').slice(0, 80)));
-        if (!x.res.ok) return fail(d.error || (x.res.status === 429 ? 'Demasiados escaneos seguidos. Espera un minuto.' : 'No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.'), d.code || 'HTTP' + x.res.status);
+        if (!x.res.ok) return fail(d.error || (x.res.status === 429 ? L('Demasiados escaneos seguidos. Espera un minuto.') : L('No pudimos leer la boleta. Prueba con otra foto o ingresa los ítems a mano.')), d.code || 'HTTP' + x.res.status);
         if (d.needs_confirmation) { ui.confirm = d; render(); return; }
-        if (!d.ok || !d.items || !d.items.length) return fail(d.message || d.error || 'No encontramos ítems. Prueba con una foto más nítida y con la boleta completa.');
+        if (!d.ok || !d.items || !d.items.length) return fail(d.message || d.error || L('No encontramos ítems. Prueba con una foto más nítida y con la boleta completa.'));
         loadReceipt(d);
       })
-      .catch(function (err) { clearTimeout(timeout); clearInterval(ui.scanTimer); tlog('✗ error de red: ' + (err && (err.name + ' ' + err.message))); fail(err && err.name === 'AbortError' ? 'La lectura tardó demasiado. Intenta de nuevo.' : 'Sin conexión. Revisa tu internet e intenta de nuevo.'); });
+      .catch(function (err) { clearTimeout(timeout); clearInterval(ui.scanTimer); tlog('✗ error de red: ' + (err && (err.name + ' ' + err.message))); fail(err && err.name === 'AbortError' ? L('La lectura tardó demasiado. Intenta de nuevo.') : L('Sin conexión. Revisa tu internet e intenta de nuevo.')); });
   }
   function fail(msg, code) { track('scan_fail', { code: String(code || 'local').slice(0, 24) }); ui.error = msg; state.step = 'home'; save(); render(); }
 
@@ -893,7 +901,7 @@
     // Corrección automática del servidor (agregó un impuesto, quitó un cargo ya incluido, cambió un signo): se avisa qué hizo y por qué.
     state.autoFix = rec.auto_fixed && rec.user_message ? String(rec.user_message).slice(0, 300) : null;
     (d.items || []).forEach(function (it) {
-      state.items.push({ id: state.nextId++, name: it.nombre || 'Ítem', price: Number(it.precio_unitario) || 0, qty: Math.max(1, Number(it.cantidad) || 1), confidence: it.confianza == null ? null : Number(it.confianza) });
+      state.items.push({ id: state.nextId++, name: it.nombre || L('Ítem'), price: Number(it.precio_unitario) || 0, qty: Math.max(1, Number(it.cantidad) || 1), confidence: it.confianza == null ? null : Number(it.confianza) });
     });
     state.nextId = Math.max(state.nextId, 1 + state.people.reduce(function (m, p) { return Math.max(m, p.id); }, 0));
     var sug = Number(d.propina_sugerida_pct);
@@ -901,14 +909,14 @@
     var c0 = recon(); track('scan_ok', { c: String(d.pais || '').slice(0, 3), cur: String(d.moneda || '').slice(0, 4), n: state.items.length, ok: c0.ok, bad: c0.bad });
     state.step = 'review'; ui.photo = null; save(); render();
     var left = d.quota && d.quota.limit > 0 ? d.quota.limit - d.quota.used : null;
-    toast(left != null && left <= 2 ? 'Boleta leída · te quedan ' + left + ' lectura' + (left === 1 ? '' : 's') + ' este mes' : 'Boleta leída · ' + state.items.length + ' líneas');
+    toast(left != null && left <= 2 ? L(left === 1 ? 'Boleta leída · te quedan {n} lectura este mes' : 'Boleta leída · te quedan {n} lecturas este mes', { n: left }) : L('Boleta leída · {n} líneas', { n: state.items.length }));
     translateNames();
   }
 
   // ── traducción de nombres (en segundo plano, no bloquea) ───────────────────
   var LANG_BY_COUNTRY = { es: ['CL','AR','MX','CO','PE','UY','PY','ES','BO','EC','VE','CR','GT','PA','DO','SV','HN','NI'],
                           en: ['US','GB','IE','AU','NZ','ZA','NA','CA'] };
-  function userLang() { var l = String(navigator.language || 'es').slice(0, 2).toLowerCase(); return ['es','en','pt','fr','de','it'].indexOf(l) > -1 ? l : 'es'; }
+  function userLang() { return I18N.lang; }   // los nombres de los platos se traducen al idioma de la interfaz
   function translateNames() {
     var lang = userLang(), same = (LANG_BY_COUNTRY[lang] || []).indexOf(state.countryCode) > -1;
     var todo = state.items.filter(function (it) { return !it.tr && it.name && /\p{L}/u.test(it.name) && (!same || /[^\u0000-\u024F\s\d.,()&'\/+\-]/.test(it.name)); }).slice(0, 60);
@@ -936,10 +944,10 @@
         cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
         var url = cv.toDataURL('image/jpeg', 0.85); tlog('foto reducida a ' + cv.width + 'x' + cv.height + ' · ' + Math.round(url.length / 1024) + ' KB'); cb(url.split(',')[1], url);
       };
-      img.onerror = function () { tlog('✗ no se pudo decodificar la imagen'); (onFail || fail)('No pudimos abrir esa imagen. Si es una foto HEIC, prueba sacándola de nuevo o con una captura.'); };
+      img.onerror = function () { tlog('✗ no se pudo decodificar la imagen'); (onFail || fail)(L('No pudimos abrir esa imagen. Si es una foto HEIC, prueba sacándola de nuevo o con una captura.')); };
       img.src = ev.target.result;
     };
-    reader.onerror = function () { tlog('✗ no se pudo leer el archivo'); (onFail || fail)('No pudimos leer el archivo de la foto.'); };
+    reader.onerror = function () { tlog('✗ no se pudo leer el archivo'); (onFail || fail)(L('No pudimos leer el archivo de la foto.')); };
     reader.readAsDataURL(file);
   }
 
@@ -949,7 +957,7 @@
   function startSharing() {
     if (!SYNC) return;
     var me = state.people[0];
-    toast('Creando el link…');
+    toast(L('Creando el link…'));
     SYNC.createBill(me ? me.name : 'Yo', state)
       .then(function (st) {
         state.share = { role: 'host', token: st.token, billId: st.billId }; track('shared', { p: state.people.length });
@@ -961,9 +969,9 @@
           if (a && (a.people || []).indexOf(me.id) > -1) SYNC.setClaim(it.id, a.units && a.units[me.id] != null ? a.units[me.id] : null);
         });
         save(); render(); listen();
-        toast('Listo: comparte el link');
+        toast(L('Listo: comparte el link'));
       })
-      .catch(function (e) { toast(e.message === 'SIN_CONEXION' ? 'No se pudo conectar. Sigue en este teléfono.' : 'No se pudo compartir'); });
+      .catch(function (e) { toast(e.message === 'SIN_CONEXION' ? L('No se pudo conectar. Sigue en este teléfono.') : L('No se pudo compartir')); });
   }
 
   function loadInvite(token) {
@@ -971,8 +979,8 @@
     return SYNC.peekBill(token).then(function (inv) { ui.invite = inv; ui.inviteLoading = false; render(); })
       .catch(function (e) {
         ui.inviteLoading = false; ui.invite = null;
-        if (e.message === 'LINK_INVALIDO') { ui.invalid = true; ui.joinError = 'Ese link ya no sirve: la cuenta se cerró o venció.'; }
-        else if (e.message === 'DEMASIADOS_INTENTOS') { ui.invalid = true; ui.joinError = 'Demasiados intentos. Espera unos minutos.'; }
+        if (e.message === 'LINK_INVALIDO') { ui.invalid = true; ui.joinError = L('Ese link ya no sirve: la cuenta se cerró o venció.'); }
+        else if (e.message === 'DEMASIADOS_INTENTOS') { ui.invalid = true; ui.joinError = L('Demasiados intentos. Espera unos minutos.'); }
         render();   // sin conexión a la lista: igual se puede entrar escribiendo el nombre
       });
   }
@@ -990,10 +998,10 @@
       })
       .catch(function (e) {
         ui.joining = false;
-        if (e.message === 'NOMBRE_TOMADO') { ui.joinError = 'Ese nombre ya lo eligió otra persona. Elige otro.'; loadInvite(token); return; }
-        ui.joinError = e.message === 'LINK_INVALIDO' ? 'Ese link ya no sirve: la cuenta se cerró o venció.'
-          : e.message === 'DEMASIADOS_INTENTOS' ? 'Demasiados intentos. Espera unos minutos.'
-          : 'No se pudo entrar. Revisa tu conexión.';
+        if (e.message === 'NOMBRE_TOMADO') { ui.joinError = L('Ese nombre ya lo eligió otra persona. Elige otro.'); loadInvite(token); return; }
+        ui.joinError = e.message === 'LINK_INVALIDO' ? L('Ese link ya no sirve: la cuenta se cerró o venció.')
+          : e.message === 'DEMASIADOS_INTENTOS' ? L('Demasiados intentos. Espera unos minutos.')
+          : L('No se pudo entrar. Revisa tu conexión.');
         render();
       });
   }
@@ -1109,7 +1117,7 @@
     var who = pids || state.people.map(function (p) { return p.id; }), calls = [];
     ids.forEach(function (id) { who.forEach(function (pid) { if (memberIdOf(pid)) calls.push(claimCall(id, pid)); }); });
     if (!calls.length) return;
-    Promise.all(calls).then(function (rs) { if (rs.some(function (r) { return r && r.error; })) toast('No se pudo guardar esa marca'); });
+    Promise.all(calls).then(function (rs) { if (rs.some(function (r) { return r && r.error; })) toast(L('No se pudo guardar esa marca')); });
     pushClaims(calls);
   }
 
@@ -1123,9 +1131,9 @@
   function remindText(pid) {
     var r = split(), row = r.perPerson.filter(function (p) { return p.id === pid; })[0], payer = person(payerPid());
     if (!row) return '';
-    var lines = ['Hola ' + row.name + '! 👋 La cuenta' + (state.restaurant ? ' de ' + state.restaurant : '') + ' fue ' + money(r.grandTotal) + ' y tu parte es ' + money(row.amount) + '.'];
-    if (state.payInfo) lines.push('', 'Para transferir' + (payer ? ' a ' + payer.name : '') + ':', state.payInfo);
-    lines.push('', '¡Gracias!');
+    var lines = [L('Hola {name}! 👋 La cuenta{de} fue {total} y tu parte es {part}.', { name: row.name, de: state.restaurant ? L(' de {r}', { r: state.restaurant }) : '', total: money(r.grandTotal), part: money(row.amount) })];
+    if (state.payInfo) lines.push('', payer ? L('Para transferir a {payer}:', { payer: payer.name }) : L('Para transferir:'), state.payInfo);
+    lines.push('', L('¡Gracias!'));
     return lines.join('\n');
   }
   function remindPay(pid) {
@@ -1140,7 +1148,7 @@
     if (next) { track('paid', {}); if (state.people.every(function (x) { return x.paid; })) track('all_paid', { p: state.people.length }); }
     if (SYNC && state.share && p.memberId) {
       SYNC.setPaid(p.memberId, next).then(function (r) {
-        if (r && r.error) toast('No se pudo guardar el pago');
+        if (r && r.error) toast(L('No se pudo guardar el pago'));
         return pull(true);
       });
     }
@@ -1148,7 +1156,7 @@
 
   function toggleClaim(itemId) {
     var mine = state.myMemberId, it = item(itemId), cur = state.assigns[itemId];
-    if (it && it.qty > 1 && !(cur && (cur.people || []).indexOf(mine) > -1) && othersUnits(itemId, mine) >= it.qty) { toast('Ya se repartieron todas las unidades'); return; }
+    if (it && it.qty > 1 && !(cur && (cur.people || []).indexOf(mine) > -1) && othersUnits(itemId, mine) >= it.qty) { toast(L('Ya se repartieron todas las unidades')); return; }
     // Optimista: se ve al instante y la base confirma (o corrige) por tiempo real.
     togglePerson(itemId, mine);
     var a = state.assigns[itemId];
@@ -1198,16 +1206,16 @@
 
   // ── compartir ──────────────────────────────────────────────────────────────
   function shareText() {
-    var r = split(), lines = ['🧾 ' + (state.restaurant || 'Cuenta') + ' — total ' + money(r.grandTotal), ''];
+    var r = split(), lines = ['🧾 ' + (state.restaurant || L('Cuenta')) + ' ' + L('— total {x}', { x: money(r.grandTotal) }), ''];
     var payer = state.people.length > 1 ? person(payerPid()) : null;
-    r.perPerson.forEach(function (p) { var q = person(p.id); lines.push('• ' + p.name + ': ' + money(p.amount) + (payer && p.id !== payer.id && q && q.paid ? ' ✓ pagó' : '')); });
-    if (payer) lines.push('', 'Pagó ' + payer.name + (state.payInfo ? '. Para transferir: ' + state.payInfo : ''));
-    if (r.extrasTotal) lines.push('', 'Impuesto y cargos repartidos según lo que consumió cada uno.');
-    lines.push('', 'Dividido con DiviCuenta · ' + location.origin + '/v2/');
+    r.perPerson.forEach(function (p) { var q = person(p.id); lines.push('• ' + p.name + ': ' + money(p.amount) + (payer && p.id !== payer.id && q && q.paid ? ' ' + L('✓ pagó') : '')); });
+    if (payer) lines.push('', L('Pagó {name}', { name: payer.name }) + (state.payInfo ? L('. Para transferir: {x}', { x: state.payInfo }) : ''));
+    if (r.extrasTotal) lines.push('', L('Impuesto y cargos repartidos según lo que consumió cada uno.'));
+    lines.push('', L('Dividido con DiviCuenta · {url}', { url: location.origin + '/v2/' }));
     return lines.join('\n');
   }
   function copyText(t) {
-    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast('Copiado'); }, function () { toast('No se pudo copiar'); });
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { toast(L('Copiado')); }, function () { toast(L('No se pudo copiar')); });
   }
 
   // Pantalla de entrada: se oculta sola a los ~1,6 s; si ya se vio en esta sesión ni aparece.

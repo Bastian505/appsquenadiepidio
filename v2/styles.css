@@ -305,3 +305,4 @@ button { cursor: pointer; }
 .chip-edit { display: inline-flex; align-items: center; gap: 6px; }
 .chip-edit .chip-input { width: 96px; }
 .chip-unit { font-weight: 700; color: var(--text-2); margin-left: -2px; }
+.lang-btn { width: auto; min-width: 44px; padding: 0 12px; font-size: 13px; font-weight: 700; letter-spacing: .04em; }
