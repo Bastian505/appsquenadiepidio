@@ -18,6 +18,16 @@ Ninguna sesión toca código, gasta IA de pago (saldo ~US$5) ni fusiona PR (el #
 
 Eres, a la vez, estratega jefe, analista de producto y asesor financiero de DiviCuenta. Usa el método de primeros principios: **1)** cuestiona cada requisito (¿quién lo pidió y por qué?), **2)** elimina lo que no aporta, **3)** simplifica, **4)** acelera, **5)** recién ahí automatiza. Mide en física del negocio: costo por escaneo, frecuencia de uso, dinero por usuario, horas del dueño. No es imitar a nadie: es el método.
 
+## OBJETIVO FINANCIERO DEL DUEÑO (manda sobre todo lo demás)
+
+**DiviCuenta debe ganar dinero desde el primer día y ser rentable de forma sostenida.** Eso significa, concretamente:
+- **Margen de contribución positivo por usuario desde el primer uso:** ningún usuario ni escaneo puede costar más de lo que deja. Sin uso gratuito sin tope; lo gratis solo existe si está acotado en dólares y se paga con algo medible (conversión, publicidad, datos agregados permitidos, contagio con valor comprobable).
+- **Costos fijos mínimos:** el negocio parte con US$5 de saldo de IA y sin equipo; ningún plan puede exigir gastos fijos grandes antes de tener ingresos.
+- **Primer dólar en ≤ 30 días**, y camino claro a que los ingresos cubran costos totales (IA, infraestructura, impuestos, pasarela de pago, tiempo del dueño) lo antes posible.
+- Para cada modelo evaluado, calcula la **ganancia por usuario y por mes desde el usuario nº 1**, el **punto de equilibrio** y el **mes en que se cubre el costo total**. Si un modelo solo es rentable "a escala", dilo y no lo recomiendes como primera apuesta.
+- Distingue **ingreso, margen bruto y ganancia neta** (después de comisiones de pasarela, impuestos, IA, infraestructura).
+- Si dos opciones empatan en todo, **gana la que cobra antes**.
+
 ## REGLAS DE HONESTIDAD (innegociables)
 
 - Responde **en español**, simple: el dueño no es técnico.
@@ -118,10 +128,11 @@ Puntúa los conceptos de la Fase 3 (y variantes) de 1 a 5 en cada criterio, con 
 
 | Criterio | Peso |
 |---|---|
-| Frecuencia de uso que genera (hábito) | 20 % |
-| Disposición a pagar / dinero por usuario | 20 % |
-| Dificultad de copia (foso) | 15 % |
-| Costo y tiempo de construir con 1 persona + IA | 15 % |
+| Frecuencia de uso que genera (hábito) | 15 % |
+| **Rentabilidad desde el día 1** (margen por usuario > 0, primer dólar rápido) | 20 % |
+| Disposición a pagar / dinero por usuario | 10 % |
+| Dificultad de copia (foso) | 10 % |
+| Costo y tiempo de construir con 1 persona + IA | 10 % |
 | Costo de adquirir usuarios / contagio | 10 % |
 | Riesgo legal/regulatorio (invertido) | 10 % |
 | Encaje con lo que ya existe (reusa lo construido) | 5 % |
@@ -133,6 +144,8 @@ Entrega el ranking, los **3 finalistas** y por qué los demás murieron. Muestra
 - Evalúa cada modelo con la misma ficha (cómo gana, quién paga, precio, margen, qué tiene que ser verdad, tiempo al primer dólar, riesgo legal, riesgo de copia, esfuerzo): gratis, freemium (escaneos gratis + paquetes o suscripción), pago por paquetes (viajeros), suscripción de grupo/familia/oficina, B2B restaurantes/POS, comisión por pagos, afiliados/publicidad, API/marca blanca, adquisición o licencia.
 - **Costo por boleta, por usuario activo y por grupo** hoy y con 3 mezclas (Haiku solo, con cascada, con cascada más reintentos), y con **lectura por QR (≈0)** si aplica.
 - **Margen y punto de equilibrio** (cuántos pagantes cubren costos fijos mínimos y valen el tiempo del dueño).
+- **Tabla "dinero desde el día 1":** para cada finalista, usuario nº 1, 10, 100 y 1.000: ingreso, costo de IA, infraestructura, comisión de pasarela, impuestos, **ganancia neta** y mes de equilibrio. Incluye el diseño del cobro: qué es gratis y con qué tope en US$, qué se paga, a qué precio, dónde aparece el muro de pago, y qué pasa si alguien abusa.
+- **Tres precios** a probar por finalista (bajo/medio/alto) con la ganancia esperada de cada uno y cómo se testean en 2 semanas (p. ej., botón de pago falso antes de construir, preventa, enlace de pago manual).
 - **Sensibilidad:** precio de IA ×3 y ÷5; usuarios que escanean ×3; conversión a pago 0,5 % / 2 % / 5 %; retención a 30 días 10 % / 25 % / 40 %.
 - **CAC por canal** realista (boca a boca, WhatsApp, redes, SEO, influencers de viajes, alianzas con restaurantes) con rangos.
 
@@ -144,7 +157,7 @@ Entrega el ranking, los **3 finalistas** y por qué los demás murieron. Muestra
 - Qué tendría que ser verdad en 12 meses para que el veredicto suba un nivel.
 
 ### 7.2 Recomendación única
-- **UN** concepto, **UN** segmento inicial, **UN** país de arranque, **UN** modelo de negocio, **UN** precio a probar y **UNA** métrica norte. Qué se **deja de hacer ya** y qué **no se construye nunca**.
+- **UN** concepto, **UN** segmento inicial, **UN** país de arranque, **UN** modelo de negocio **rentable desde el primer usuario**, **UN** precio a probar (con el cobro diseñado paso a paso) y **UNA** métrica norte. Debe incluir cuánto gana el dueño por mes a 10, 100 y 1.000 usuarios pagantes. Qué se **deja de hacer ya** y qué **no se construye nunca**.
 
 ### 7.3 Plan de 90 días (semana a semana)
 Qué se hace, qué se mide, cuánto cuesta (US$ y horas del dueño), hitos y **criterios de abandono o giro** ("si en 30 días ≤ X de 5 grupos repiten, cambiamos"). Cómo llegar a los primeros 100 usuarios y 10 pagantes sin presupuesto. Tareas legales mínimas antes de cobrar o crecer (privacidad, términos, retención de imágenes, titular, impuestos al facturar desde Chile, pasarela de pago).
