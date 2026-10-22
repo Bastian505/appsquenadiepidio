@@ -67,6 +67,29 @@ Eres, a la vez, estratega jefe, analista de producto y asesor financiero de Divi
 5. "PWA basta." → ¿sin tiendas de apps se puede crecer y, si se cobra, cobrar?
 
 
+## LO QUE YA TENEMOS Y SE PUEDE APROVECHAR (activos reutilizables)
+
+- **"Cobros pendientes"** en la portada: guarda en el teléfono del anfitrión quién le debe cuánto de cuentas anteriores (45 días, hasta 30 cuentas) y permite "Recordar" por WhatsApp y marcar "Ya pagó". **Es el germen de un libro de saldos**, pero vive solo en ese teléfono.
+- **Cuentas compartidas en vivo**: invitados entran sin registrarse (sesión anónima), marcan lo suyo, el anfitrión ve los totales; se guardan "datos para transferir".
+- **Quién pagó** la cuenta, **quién ya pagó**, recordatorio por WhatsApp, imagen resumen para compartir.
+- **Lectura de boletas de ~46 países** con reglas de impuestos/servicio/propina por país, traducción de nombres de platos, español e inglés, asignar hablando (prototipo).
+- Métricas de embudo ya programadas, sin datos de personas todavía.
+- **Lo que NO hay y limita el retorno:** identidad del usuario entre cuentas (los invitados son anónimos y desaparecen), grupos permanentes, historial, saldos netos entre varias cuentas, avisos fuera de la app, cobro de dinero.
+
+## CONTENDOR PRINCIPAL DEL ASISTENTE (a destruir o confirmar con evidencia)
+
+Para que el análisis no parta de cero, esta es la apuesta que hoy considero más plausible. **Tu trabajo es intentar destruirla y compararla con tus propios conceptos**; si gana, que gane con números.
+
+**"DiviCuenta Grupos": el libro de saldos del grupo, con la boleta como puerta de entrada.**
+- Un **grupo permanente** (compañeros de piso, pareja, amigos del asado/fútbol, almuerzo de la oficina, familia, grupo de viaje). Cada boleta escaneada **suma al saldo** del grupo.
+- La app dice en una línea quién le debe cuánto a quién **neto entre todas las cuentas** y propone **la mínima cantidad de transferencias** para quedar a mano ("Ana le paga $12.300 a Beto y quedan a mano").
+- **Por qué vuelven** (el motivo no es "dividir otra cuenta", es **"la deuda sigue abierta"**): saldo pendiente visible, recordatorios amables por WhatsApp, "cuadrar el mes", cuentas recurrentes (arriendo, gastos comunes, internet, suscripciones compartidas) que se repiten solas, y resumen de fin de mes o de viaje.
+- **Dónde se diferencia de Splitwise** (que ya hace saldos): escaneo de boletas de cualquier país con reglas locales de propina/servicio/impuesto, español primero, invitados sin registro para la primera cuenta, datos para transferir y recordatorio por WhatsApp (el canal real en Latinoamérica), foco inicial en Chile. **Pregunta incómoda que debes responder:** ¿eso basta para que alguien deje Splitwise o para que alguien que nunca usó nada nos elija?
+- **Tensión que debes resolver:** para que un grupo sea permanente hay que **reconocer a las personas entre cuentas** (hoy los invitados son anónimos). ¿Cuál es el mínimo de identidad (Google, número de WhatsApp, enlace mágico) que no mate la entrada sin registro? ¿Cuándo se pide? ¿Cuánta gente se pierde?
+- **Cómo gana dinero desde el primer día (hipótesis para calcular):** gratis = 1 grupo activo y N escaneos al mes (con tope en US$); de pago = varios grupos, historial ilimitado, cuentas recurrentes, exportar, cuadre automático y recordatorios; precio de partida del orden de US$2–4 al mes o plan por viaje **[ESTIMACIÓN: testear 3 precios]**. Un escaneo cuesta ~US$0,006–0,012, así que el costo de IA por usuario es casi irrelevante frente al precio: el riesgo no es el costo, es que **nadie pague**.
+- **Variantes que debes comparar** (elige la mejor o propón otra): **(a)** grupos permanentes y saldos; **(b)** "modo viaje" de pago por viaje (paquete cerrado, para viajeros, con fecha de fin, sin suscripción); **(c)** cuentas recurrentes del hogar (gastos comunes y suscripciones) como producto propio; **(d)** versión B2B para restaurantes que ofrecen "dividir la cuenta" en la mesa.
+- **Qué lo haría fracasar** (investígalo): que dividir y deber entre amigos sea un dolor demasiado pequeño para pagar; que Splitwise o los bancos lo regalen; que las personas prefieran "yo pago hoy, tú pagas la próxima vez" sin ninguna app; que pedir identidad destruya el crecimiento.
+
 ## LAS CREENCIAS QUE DEBES ATACAR (no confirmar)
 
 1. "La lectura de boletas de cualquier país con precisión alta es nuestra ventaja." → ¿foso real o se copia en una semana con el mismo modelo?
@@ -98,7 +121,7 @@ Eres, a la vez, estratega jefe, analista de producto y asesor financiero de Divi
 Objetivo: encontrar qué puede hacer DiviCuenta que los demás **no pueden o no quieren** hacer.
 **Genera como mínimo 15 conceptos**, de ideas pequeñas a apuestas grandes. Cada concepto con una ficha de 6 líneas: *qué es · para quién · por qué es distinto · por qué nadie lo hace · qué se necesita construir (horas, costo) · cómo se prueba en 2 semanas*.
 Rutas que DEBES explorar (más las que se te ocurran; no te limites):
-- **Escaneo sin IA donde ya existe el dato:** boletas electrónicas con código QR o timbre (Chile SII, México CFDI, Perú, Brasil NFC-e/cupom fiscal) traen los ítems estructurados. ¿Se puede leer el QR/PDF en vez de la foto? Costo de lectura ≈ 0 y precisión ≈ 100 %. **[verificar con fuentes si es técnica y legalmente posible país por país]**
+- **(Idea secundaria, solo si sobra tiempo)** Leer el código QR que traen algunas boletas electrónicas (en Chile las que emite el SII, el Servicio de Impuestos Internos; en México el CFDI; en Brasil la NFC-e) en vez de interpretar la foto: ahorraría el costo de IA y daría 100 % de precisión, pero solo sirve donde la boleta lo trae, no cambia que la gente vuelva y exige verificar cada país. **No es la apuesta principal.**
 - **WhatsApp como interfaz** (dominante en Latinoamérica): mandas la foto a un número, recibes el link o el resumen, los amigos reaccionan ahí. Cero instalación. ¿Qué cuesta (API de WhatsApp Business) y qué retención da?
 - **Libro de deudas permanente entre personas y grupos** ("quién le debe a quién desde siempre", saldos netos entre varias cuentas, recordatorios amables): ya existe un germen en "cobros pendientes".
 - **Gastos recurrentes** (arriendo, gastos comunes, cuentas del hogar, suscripciones compartidas): uso mensual obligatorio, no ocasional.
@@ -115,7 +138,7 @@ Rutas que DEBES explorar (más las que se te ocurran; no te limites):
 **Regla de calidad:** para cada concepto responde "¿por qué un grupo de amigos lo usaría **sin que nadie se lo pida**, la semana siguiente?". Si la respuesta es "porque es útil", descártalo: la utilidad no crea hábito.
 
 ## FASE 4 (Sesión B) — De USO OCASIONAL a HÁBITO (retención)
-Diseña **el sistema de retorno** de DiviCuenta, no funciones sueltas.
+Diseña **el sistema de retorno** de DiviCuenta, no funciones sueltas. Parte del **contendor principal** (Grupos con saldos) y de sus variantes, y diseña **el recorrido completo de 30 días** de un grupo real: día 0 (primera boleta), día 1, día 7, día 14, día 30 (qué ve, qué recibe, qué lo hace volver, qué paga). Compáralo con el mejor concepto alternativo de la Fase 3.
 1. **Mapa de frecuencia:** para cada segmento, ¿cuántas veces al mes aparece naturalmente la necesidad? Si es menos de 2, ¿qué se agrega para crear **más ocasiones** (recurrentes, viajes, deudas pendientes, grupos fijos) o para **ocupar los espacios entre cuentas** (saldos, recordatorios, cobros)?
 2. **Bucle de hábito** (disparador → acción → recompensa → inversión del usuario): descríbelo para el mejor concepto y di qué dato del usuario se guarda y hace más difícil irse (costo de cambio).
 3. **Efectos de red:** ¿cada invitado puede convertirse en anfitrión? Con qué mecanismo exacto y qué conversión mínima la haría rentable (modelo de contagio: coeficiente k, aunque sea estimado).
