@@ -36,3 +36,19 @@
 **Qué queda por probar:** un modelo más potente para toda la lectura de fotos difíciles, o pedir al usuario una foto más recta cuando la suma no cuadra (ya se muestra el aviso en rojo y los ítems dudosos).
 
 Las evals ahora pueden pasar cada boleta por el mismo flujo de la app (`--pipeline`), con lo que miden reconciliación y segunda lectura, no solo la lectura cruda.
+
+## 2026-10-22 · Reconciliación: cargo ya incluido y signo cambiado (aritmética exacta, cualquier país)
+
+**Problema (2 de las 32 boletas nuevas no cuadraban, Haiku 5.5 + cascada Sonnet 5.5):**
+- `PE/isolina-barranco`: los platos suman 370 = total, pero el lector agregó "Servicio 36,72" del desglose impreso (ya incluido en los precios). Sobran 36,72.
+- `VN/bar-hcm-holiday-surcharge`: los montos de los cargos están corridos una fila; el servicio 1.864.000 quedó como "Giảm giá Discount −1.864.000". Faltan 3.728.000 = 2 × 1.864.000.
+
+**Decisión:** dos reglas nuevas en `reconcile()` (`api/scan-receipt.js`), sin tocar el prompt ni gastar IA, solo cuando la diferencia calza **al peso** (tolerancia 0,15 % del total):
+1. **Cargo ya incluido:** si la suma supera el total justo en lo que suman 1 a 3 cargos leídos (servicio, IGV, VAT, propina…), se quitan esos cargos. Nunca quita platos.
+2. **Signo cambiado:** si cambiar el signo de una línea deja la suma exacta, se cambia: un negativo pasa a cargo (renombrado "Servicio" si decía descuento) o un descuento/redondeo positivo pasa a restar. Un plato positivo nunca se vuelve negativo.
+
+Como las otras correcciones automáticas, marcan `auto_fixed` y dejan `user_message`; ahora la corrección puede devolver la lista completa (`auto_fix_items`), no solo un ítem agregado. Si la reconciliación corrige, la cascada no relee (ahorra la llamada a Sonnet).
+
+**Evidencia (sin costo):** repetida la reconciliación sobre 48 respuestas reales guardadas de las evals (32 nuevas + 16 anteriores): cuadraban 46 → ahora 48, y ninguna otra cambia. Casos en `tests/check-reconcile.mjs` (incluye los que NO deben corregirse).
+
+**Aviso en la app:** la v2 muestra `user_message` de toda corrección automática como "Corregí la lectura: …" en la revisión, con un botón "Entendido" que lo cierra (antes no se mostraba ninguna).

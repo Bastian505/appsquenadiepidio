@@ -248,6 +248,20 @@ const evs = page => page.evaluate(() => (window.__rpc || []).filter(x => x[0] ==
   await page.click('[data-action="fix-qty"]'); await page.waitForSelector('.banner.ok', { timeout: 4000 });
   ok(/Cuadra/.test(await page.innerText('.banner.ok')), 'dejar una unidad menos: cuadra');
 }
+{ // corrección automática del servidor (Isolina, Perú: quitó el servicio ya incluido): se avisa qué hizo y se puede cerrar
+  const body = { ok: true, restaurante: 'Isolina', moneda: 'PEN', pais: 'PE', pais_nombre: 'Perú', items: [{ nombre: 'CAU CAU C/SA', precio_unitario: 45, cantidad: 1 }, { nombre: 'CODILLO', precio_unitario: 100, cantidad: 1 }],
+    reconciliation: { ok: true, total_boleta: 145, auto_fixed: true, auto_fix_type: 'charge_included', user_message: 'Quité Servicio (36.72): ya venía incluido en los precios, los platos suman justo el total. Revísalo antes de dividir.' } };
+  const { page, errs } = await open({ status: 200, body });
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('[data-autofix]', { timeout: 9000 });
+  ok(/Corregí la lectura/.test(await page.innerText('[data-autofix]')) && /Quité Servicio/.test(await page.innerText('[data-autofix]')), 'corrección automática: dice qué cambió y por qué');
+  ok(await page.locator('.banner.ok').count() === 1, 'corrección automática: igual confirma que cuadra');
+  await shot(page, 'v2-autofix.png');
+  await page.click('[data-action="autofix-ok"]'); await page.waitForTimeout(200);
+  ok(await page.locator('[data-autofix]').count() === 0, '"Entendido" cierra el aviso');
+  await page.reload(); await page.waitForSelector('.banner.ok', { timeout: 4000 });
+  ok(await page.locator('[data-autofix]').count() === 0, 'el aviso cerrado no vuelve al recargar');
+  ok(errs.length === 0, 'sin errores JS');
+}
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} comprobaciones v2 OK`);
 process.exit(fails ? 1 : 0);

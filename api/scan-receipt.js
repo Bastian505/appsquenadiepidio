@@ -491,6 +491,57 @@ function reconcile(items, totalReported, countryCode) {
     return { ok:true, sum, total:totalReported, diff, ratio, note:null, auto_fixed:false };
   }
 
+  // Reglas por aritmética EXACTA (valen para cualquier país): la diferencia calza al peso con un error típico de lectura.
+  const tolExacta = Math.max(0.05, totalReported * 0.0015);
+  const importe = it => it.precio_unitario * (it.cantidad || 1);
+
+  // Cargo ya incluido: la suma SUPERA el total justo en lo que suman uno o más cargos leídos (servicio, IGV, VAT…). Pasa cuando la boleta
+  // imprime el desglose de lo que ya está dentro de los precios y el lector lo suma como cargo aparte. Se quitan esos cargos.
+  // (Caso real: Isolina, Perú: 'SERVICIO S/36.72' es parte de los S/370 que ya suman los platos.)
+  if (diff < 0) {
+    const CARGO_RE = /servicio|service|propina|\btip\b|gratuity|impuesto|\btax|iva\b|igv|vat\b|gst|sst|ppn|pb1|recargo|surcharge/i;
+    const cargos = items.map((it, i) => ({ it, i })).filter(c => !c.it.auto_created && importe(c.it) > 0 && CARGO_RE.test(c.it.nombre || '')).slice(0, 8);
+    let quitar = null;
+    for (let mask = 1; mask < (1 << cargos.length) && !quitar; mask++) {
+      const sub = cargos.filter((_, k) => mask & (1 << k));
+      if (sub.length > 3) continue;
+      if (Math.abs(sub.reduce((a, c) => a + importe(c.it), 0) + diff) <= tolExacta) quitar = sub;
+    }
+    if (quitar) {
+      const fuera = new Set(quitar.map(c => c.i)), nombres = quitar.map(c => c.it.nombre).join(' + ');
+      const nuevos = items.filter((_, i) => !fuera.has(i));
+      const nsum = nuevos.reduce((a, it) => a + importe(it), 0);
+      return { ok:true, sum:Math.round(nsum*100)/100, total:totalReported, diff:totalReported - nsum, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'charge_included', auto_fix_items:nuevos, user_action_required:true,
+        user_message:`Quité ${nombres} (${Math.round(-diff*100)/100}): ya venía incluido en los precios, los platos suman justo el total. Revísalo antes de dividir.` };
+    }
+  }
+
+  // Signo cambiado: cambiar el signo de UNA línea deja la suma exacta. Un 'descuento' negativo que en realidad es un cargo (columnas de
+  // cargos corridas una fila: el monto del servicio queda junto a la etiqueta 'Descuento') o un descuento leído como positivo.
+  // (Caso real: bar de Vietnam, 'Giảm giá Discount −1.864.000' era el servicio 5 %.)
+  {
+    const DESC_RE = /descuento|discount|desc\b|dto\b|rebaja|gentileza|bonif|rabatt|remise|sconto|korting|indirim|diskon|potongan|giảm giá|скидка|الحسم|خصم|折扣|割引|할인|redondeo|rounding|ajuste/i;
+    const k = items.findIndex(it => {
+      const a = importe(it);
+      if (Math.abs(diff + 2 * a) > tolExacta) return false;
+      return a < 0 ? diff > 0 : (diff < 0 && DESC_RE.test(it.nombre || ''));
+    });
+    if (k > -1) {
+      const orig = items[k], aCargo = importe(orig) < 0;
+      const cambiado = { ...orig, precio_unitario: -orig.precio_unitario, auto_fix_type:'sign_flip', confianza:0.50,
+        nombre: aCargo && DESC_RE.test(orig.nombre || '') ? 'Servicio' : orig.nombre,
+        auto_fix_evidence: `Con el signo de '${orig.nombre}' cambiado la suma da justo el total impreso` };
+      const nuevos = items.map((it, i) => i === k ? cambiado : it);
+      const nsum = nuevos.reduce((a, it) => a + importe(it), 0);
+      return { ok:true, sum:Math.round(nsum*100)/100, total:totalReported, diff:totalReported - nsum, ratio:0, note:null, auto_fixed:true,
+        auto_fix_type:'sign_flip', auto_fix_item:cambiado, auto_fix_items:nuevos, user_action_required:true,
+        user_message: aCargo
+          ? `'${orig.nombre}' (${Math.abs(importe(orig))}) parece un cargo, no un descuento: lo sumé como servicio y ahora cuadra. Revísalo antes de dividir.`
+          : `'${orig.nombre}' (${importe(orig)}) se resta, no se suma: lo cambié y ahora cuadra. Revísalo antes de dividir.` };
+    }
+  }
+
   // Canadá: si lo que falta es EXACTAMENTE una tasa de impuesto provincial sobre la suma, es el impuesto (no un ítem perdido).
   if (countryCode === 'CA' && diff > 0 && sum > 0 && ratio <= 0.22) {
     const rate = diff / sum, known = CA_TAX_RATES.find(r => Math.abs(rate - r) <= 0.006);
@@ -951,7 +1002,9 @@ async function handleScan(req, res) {
 
     // Aplicar auto-fix (siempre marcado, nunca silencioso)
     let finalItems = normalizedBase;
-    if (recon.auto_fixed && recon.auto_fix_item) {
+    if (recon.auto_fixed && recon.auto_fix_items) {
+      finalItems = recon.auto_fix_items;   // quitar un cargo ya incluido o cambiar un signo: la lista completa corregida
+    } else if (recon.auto_fixed && recon.auto_fix_item) {
       const fix = recon.auto_fix_item;
       finalItems = [...normalizedBase, normalizeAutoFix(fix, currency)];
     }
