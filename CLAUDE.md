@@ -16,7 +16,7 @@ Dueño del proyecto: no técnico, chileno, prueba en iPhone con boletas reales. 
 - `core/` — lógica pura compartida: `split.js` (reparto, `EXTRA_RE` nombres multi-idioma de servicio/impuesto), `currencies.js` y `country-rules.js` (fuentes únicas de verdad).
 - `api/` — serverless Vercel: `scan-receipt.js` (OCR, `maxDuration` 60), `translate.js`, `assign.js`, `_lib/quota.js` (cuota + costo).
 - `supabase/migrations/` — esquema, RLS, RPC `dc_*` (SECURITY DEFINER), Realtime, eventos (`dc_track_event`).
-- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 148 fixtures / 32 países, `fixtures/<PAIS>/<nombre>.jpg`).
+- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 159 fixtures / 33 países, `fixtures/<PAIS>/<nombre>.jpg`).
 - `docs/` — `DECISIONES.md` (decisiones de arquitectura, leer antes de cambiar algo estructural), `ALCANCE.md`, `PROMPT_MAESTRO.md`, `CUOTA_Y_USO.md`, `CUENTAS_COMPARTIDAS.md`, `auditoria/`.
 
 ## Arquitectura clave
@@ -33,7 +33,7 @@ Variables de entorno (Vercel): `OCR_MODEL` (hoy `claude-haiku-5-5`), `OCR_CACHE`
 
 ## Evals
 - Harness: `services/ocr/evals/run.mjs`; workflow `evals.yml` (inputs model, pipeline, country, extra_env). Requiere el secreto `ANTHROPIC_API_KEY` de GitHub con saldo.
-- El emparejamiento de nombres usa solo `a-z0-9`: **nombres no latinos (árabe, hebreo…) nunca coinciden**; no hay fixtures en árabe todavía.
+- El emparejamiento de nombres usa solo `a-z0-9`: los nombres no latinos ahora coinciden (letras Unicode; árabe sin vocales ni variantes de alef/ta marbuta); hay 7 fixtures de Siria y Arabia Saudita, con los nombres transcritos a mano (pueden tener errores: mirar sobre todo si la suma cuadra).
 - Fixtures se guardan como `.jpg` aunque sean PNG. Flag `total_visible:false` para boletas recortadas. Al añadir al `manifest.json`, agregar el texto a mano (no reformatear el archivo entero).
 
 ## Tests (sin costo)
