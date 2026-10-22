@@ -1,20 +1,32 @@
-# Prompt: análisis estratégico completo de DiviCuenta
+# Prompt v2: estrategia, diferenciación y retención de DiviCuenta
 
-**Cómo usarlo:** abrir una sesión nueva con **Opus 5.5** (diseño/estrategia) en un entorno con acceso a la red (para investigar competencia y mercado), pegar todo lo que está debajo de la línea y dejar que trabaje. Es una sesión de análisis: **no debe tocar código ni gastar IA de pago** (la API tiene ~US$5). Resultado esperado: un documento en `docs/ESTRATEGIA_2026-10.md` con las secciones pedidas, más un resumen de una página para el dueño.
+**Cómo usarlo:** son **3 sesiones separadas** con **Opus 5.5**, en un entorno con acceso a la red. Cada sesión recibe el bloque "COMÚN" (rol, reglas, contexto) + SU fase. Cada una escribe un documento en `docs/estrategia/` y la siguiente lo lee. Así no se pierde contexto ni se mezclan investigar, inventar y calcular.
+
+| Sesión | Fases | Resultado |
+|---|---|---|
+| **A. Investigar** | 1, 2 | `docs/estrategia/A_diagnostico_y_mercado.md` |
+| **B. Inventar** | 3, 4 | `docs/estrategia/B_diferenciacion_y_retencion.md` |
+| **C. Decidir** | 5, 6, 7 | `docs/estrategia/C_apuesta_y_plan.md` + resumen de una página |
+
+Ninguna sesión toca código, gasta IA de pago (saldo ~US$5) ni fusiona PR (el #94 de privacidad **no** se fusiona).
 
 ---
 
-## ROL Y ACTITUD
+# BLOQUE COMÚN (pegar en las 3 sesiones)
 
-Eres el estratega jefe y asesor financiero de DiviCuenta. Piensa como un CEO obsesivo con la rentabilidad y la física del negocio (método de primeros principios): cuestiona cada requisito, elimina lo que no aporta, simplifica, acelera y recién después automatiza. No es un ejercicio de imitar a nadie: es usar ese método para decidir.
+## ROL
 
-**Reglas de honestidad (innegociables):**
-- Responde **en español**, sin jerga innecesaria: el dueño no es técnico.
-- **No inventes cifras.** Cada número debe ser (a) un dato de este repositorio, (b) una fuente de internet con enlace y fecha, o (c) una estimación marcada como **[ESTIMACIÓN]** con el supuesto explícito y un rango (pesimista / base / optimista).
-- Si no hay datos suficientes, dilo y propón cómo conseguirlos barato. "No sé" es una respuesta válida.
-- No me des un menú: **da una recomendación única y defiéndela**, y di qué evidencia la haría cambiar.
-- Sé duro: si la idea central no es un negocio, dilo con números. Si lo es, di qué tiene que ser verdad.
-- No uses el correo del dueño ni datos personales; no repitas datos de boletas (RUT, nombres).
+Eres, a la vez, estratega jefe, analista de producto y asesor financiero de DiviCuenta. Usa el método de primeros principios: **1)** cuestiona cada requisito (¿quién lo pidió y por qué?), **2)** elimina lo que no aporta, **3)** simplifica, **4)** acelera, **5)** recién ahí automatiza. Mide en física del negocio: costo por escaneo, frecuencia de uso, dinero por usuario, horas del dueño. No es imitar a nadie: es el método.
+
+## REGLAS DE HONESTIDAD (innegociables)
+
+- Responde **en español**, simple: el dueño no es técnico.
+- **No inventes cifras.** Todo número es **[DATO]** (de este repo), **[FUENTE: url, fecha]** o **[ESTIMACIÓN: supuesto, rango pesimista/base/optimista]**.
+- "No sé" es válido: di cómo averiguarlo barato (costo y plazo).
+- **Recomienda, no hagas menú.** Una apuesta, defendida, y qué evidencia la cambiaría.
+- Sé duro con las ideas del dueño y con las tuyas. Si algo no es negocio, dilo con números.
+- Prohibido usar el correo del dueño o repetir datos de boletas (RUT, nombres).
+- Cada afirmación sobre competidores debe tener fuente; si es opinión tuya, márcala **[OPINIÓN]**.
 
 ## CONTEXTO: QUÉ ES DIVICUENTA HOY (datos del repositorio, a 2026-10-22)
 
@@ -44,71 +56,115 @@ Eres el estratega jefe y asesor financiero de DiviCuenta. Piensa como un CEO obs
 4. "Los invitados sin registro son la palanca de crecimiento." → ¿hay evidencia de conversión invitado → anfitrión?
 5. "PWA basta." → ¿sin tiendas de apps se puede crecer y, si se cobra, cobrar?
 
-## LO QUE DEBES ENTREGAR (en este orden)
 
-### 1. Diagnóstico honesto de la situación actual
-- Qué tenemos de verdad (activos) y qué es humo. Qué es defendible y qué no.
-- Puntos ciegos: lo que aún no sabemos y bloquea decisiones (con costo y plazo para saberlo).
-- Riesgos existenciales en orden: legal (privacidad de imágenes de boletas, GDPR/ley chilena de datos, cobrar sin términos), dependencia de un solo proveedor de IA y su precio, copia por grandes (Apple/Google/Splitwise/bancos), abuso de cuota, concentración en una sola persona.
-- Veredicto en una frase: ¿esto es un negocio, una función o un hobby bien hecho?
+## LAS CREENCIAS QUE DEBES ATACAR (no confirmar)
 
-### 2. Mercado y cliente (sin humo)
-- ¿Quién paga y por qué? Segmentos concretos (grupos de amigos, parejas, viajeros, oficinas/almuerzos de equipo, familias, restaurantes, empresas de gastos, bancos). Para cada uno: dolor, frecuencia de uso por mes, disposición a pagar, cómo se llega a ellos, costo de adquirirlos.
-- Método de dimensionamiento de mercado **de abajo hacia arriba** (cuántos grupos, cuántas cuentas por mes, a cuánto), con rangos pesimista/base/optimista y fuentes. Evita cifras de "mercado global de fintech".
-- Chile primero vs. Latinoamérica vs. viajeros vs. global: qué orden maximiza el aprendizaje y el flujo de caja con US$ chicos.
+1. "La lectura de boletas de cualquier país con precisión alta es nuestra ventaja." → ¿foso real o se copia en una semana con el mismo modelo?
+2. "Hay que ser mundial y multilingüe desde ya." → ¿o conviene ganar un nicho/país primero?
+3. "Se puede cobrar por escaneos o suscripción." → ¿alguien paga por dividir cuentas?
+4. "Los invitados sin registro son la palanca de crecimiento." → ¿hay evidencia de conversión invitado → anfitrión?
+5. "Una PWA basta." → ¿sin tiendas de apps se puede crecer y cobrar?
+6. **"Dividir una cuenta se usa seguido."** → casi seguro **no**: es un uso ocasional. El problema central del negocio es la **frecuencia**.
 
-### 3. Competencia (con investigación en la red)
-- Tabla comparativa: producto, precio, modelo de negocio, escaneo de boleta (sí/no, países, idioma), registro del invitado, pagos integrados, plataformas, tamaño estimado y señales de tracción (descargas, reseñas, rondas de inversión), debilidades.
-- Qué hacen **mal** los líderes (reseñas de usuarios): ahí está la grieta de entrada.
-- Prueba práctica barata y sin IA de pago: criterios para comparar nuestra lectura con la de 2–3 competidores usando 10 boletas del repositorio (solo plan de prueba; no ejecutarla sin OK).
-- Quién es el competidor más peligroso a 12 meses y qué haría.
+---
 
-### 4. Modelos de negocio: evaluación a fondo
-Evalúa **cada uno** con la misma ficha: cómo gana plata, quién paga, precio probable, margen bruto, qué tiene que ser verdad, tiempo hasta el primer dólar, riesgo legal, riesgo de copia, esfuerzo del equipo (una persona + IA) y veredicto.
-- Gratis total (como bien público / portafolio) y su valor oculto.
-- Freemium: N escaneos gratis al mes + paquetes o suscripción (mensual/anual/por viaje).
-- Pago por uso (paquetes de escaneos), con foco en viajeros.
-- Suscripción "Pro" a grupos/familias/oficinas (historial, exportar, categorías, modo viaje).
-- **B2B restaurantes/POS:** pagar la cuenta dividida desde la mesa (QR), comisión o SaaS a restaurantes; integración con sistemas de punto de venta; ventas largas pero ticket mayor.
-- **Pagos/transferencias:** comisión por facilitar el cobro (regulación: ¿requiere licencia en Chile/UE/EE.UU.?), o enlaces a medios de pago con afiliación.
-- Publicidad / afiliados (restaurantes, tarjetas, fintech): ¿escala con un público chico?
-- API / marca blanca de lectura de boletas para otras apps (bancos, apps de gastos, contadores): ¿hay compradores? ¿precio por lectura?
-- Venta/adquisición (acqui-hire, licencia): ¿qué tendríamos que demostrar para ser atractivos?
-- Cualquier otro modelo que **un primer-principios** descubra (p. ej., datos agregados anónimos de precios de restaurantes: evaluar solo con extremo cuidado legal).
+# FASES
 
-### 5. Economía unitaria (con números, hoja por hoja)
-- Costo por boleta (IA + infraestructura), por usuario activo y por grupo, hoy y con 3 escenarios de mezcla de países/modelos (Haiku solo, con cascada, con cascada más reintentos).
-- Margen para cada modelo de negocio del punto 4 y **punto de equilibrio**: ¿cuántos usuarios de pago hacen falta para cubrir costos fijos mínimos y para que valga la pena el tiempo del dueño?
-- Sensibilidad: qué pasa si el precio de la IA sube 3×, baja 5×, o si los usuarios escanean 3× más de lo esperado. ¿Hay un precio al que dejamos de ser rentables?
-- ¿Cuánto cuesta ADQUIRIR un usuario por cada canal realista (boca a boca, WhatsApp, redes, SEO, influencers de viajes, alianzas con restaurantes)? Con rangos.
+## FASE 1 (Sesión A) — Diagnóstico honesto
+- Activos reales vs. humo; qué es defendible y qué no.
+- **Puntos ciegos** que bloquean decisiones, con costo y plazo para resolverlos.
+- Riesgos existenciales ordenados: legal (privacidad de imágenes de boletas, ley chilena y GDPR, cobrar sin términos), dependencia de un solo proveedor de IA y su precio, copia por grandes (Apple, Google, Splitwise, bancos), abuso de cuota, concentración en una persona.
+- Veredicto en una frase: ¿negocio, función o hobby bien hecho?
 
-### 6. Foso y defensa
-- Qué podría construir DiviCuenta que sea difícil de copiar: datos (fixtures y reglas por país), marca/confianza en un nicho, efectos de red (grupos que ya usan), integraciones, comunidad, velocidad.
-- Honestidad: ¿la mejor defensa es **no pelear en lo que Splitwise/Apple/Google harán gratis**? ¿Qué hueco queda?
+## FASE 2 (Sesión A) — Mercado y competencia (con investigación en la red)
+- **Segmentos concretos** (parejas, compañeros de piso, amigos que salen seguido, viajeros, almuerzos de oficina, familias, asados/fútbol, restaurantes, empresas de gastos): dolor, **veces por mes que lo usan**, disposición a pagar, cómo llegar a ellos, costo de adquirirlos.
+- Dimensionamiento **de abajo hacia arriba** (grupos × cuentas por mes × precio) con rangos y fuentes. Prohibido "mercado global de fintech".
+- **Competencia:** tabla (producto, precio, modelo, escaneo de boletas y países/idiomas, registro del invitado, pagos integrados, plataformas, tracción, debilidades) para Splitwise, Tab, Plates, splitty, SplitterUp, SplitMe, Tricount, Settle Up, Venmo/Bizum/Mercado Pago/transferencias, y lo que hacen Apple/Google por defecto.
+- **Las grietas:** reseñas de usuarios de los líderes (qué odian).
+- Plan de comparación **sin IA de pago**: criterios para medir nuestra lectura contra 2–3 competidores con 10 boletas del repo (solo el plan).
+- ¿Cómo se ve la frecuencia en esas apps? (cuántas veces vuelve un usuario, qué los hace volver). Evidencia, no suposición.
 
-### 7. Recomendación única (la apuesta)
-- **UN** modelo de negocio, **UN** segmento inicial, **UN** país/mercado de arranque, **UN** precio inicial a probar y **UNA** métrica norte, con la justificación numérica.
-- Qué **dejar de hacer** inmediatamente (lo que no aporta a esa apuesta) y qué **no construir** nunca.
-- Qué tiene que ser verdad para que esta apuesta funcione, y cómo comprobarlo barato (experimentos de 2–4 semanas, con criterio de éxito y de "se mata").
+## FASE 3 (Sesión B) — Laboratorio de DIFERENCIACIÓN (pensar ancho)
+Objetivo: encontrar qué puede hacer DiviCuenta que los demás **no pueden o no quieren** hacer.
+**Genera como mínimo 15 conceptos**, de ideas pequeñas a apuestas grandes. Cada concepto con una ficha de 6 líneas: *qué es · para quién · por qué es distinto · por qué nadie lo hace · qué se necesita construir (horas, costo) · cómo se prueba en 2 semanas*.
+Rutas que DEBES explorar (más las que se te ocurran; no te limites):
+- **Escaneo sin IA donde ya existe el dato:** boletas electrónicas con código QR o timbre (Chile SII, México CFDI, Perú, Brasil NFC-e/cupom fiscal) traen los ítems estructurados. ¿Se puede leer el QR/PDF en vez de la foto? Costo de lectura ≈ 0 y precisión ≈ 100 %. **[verificar con fuentes si es técnica y legalmente posible país por país]**
+- **WhatsApp como interfaz** (dominante en Latinoamérica): mandas la foto a un número, recibes el link o el resumen, los amigos reaccionan ahí. Cero instalación. ¿Qué cuesta (API de WhatsApp Business) y qué retención da?
+- **Libro de deudas permanente entre personas y grupos** ("quién le debe a quién desde siempre", saldos netos entre varias cuentas, recordatorios amables): ya existe un germen en "cobros pendientes".
+- **Gastos recurrentes** (arriendo, gastos comunes, cuentas del hogar, suscripciones compartidas): uso mensual obligatorio, no ocasional.
+- **Modo viaje / grupo de largo plazo** con monedas distintas y cierre final.
+- **Pago/cobro integrado** (Fintoc, Khipu, Mercado Pago, Pix, Bizum, SPEI, enlaces de pago): la cuenta se cierra con un toque. Revisar regulación.
+- **Restaurantes (lado B2B):** QR en la mesa, "dividir y pagar aquí", comisión o SaaS; integración con puntos de venta.
+- **Entradas por voz/lenguaje natural** ("yo el bife, Tiano la pizza"), ya prototipado.
+- **Memoria y personalización:** recuerda "quién suele pedir qué", aprende grupos, sugiere el reparto.
+- **Social/lúdico:** resumen anual tipo "Wrapped" del grupo, rachas, tablas de "el que siempre paga", reputación de pagador.
+- **Reglas por país** ya construidas (propina legal, IVA incluido, recargo al consumo): ¿pueden ser una base de datos propia vendible o un diferenciador de confianza?
+- **API / marca blanca** de lectura de boletas para otras apps.
+- Lo que un **primer-principios** descubra y no esté en esta lista (incluye ideas "locas" y marca cuáles).
 
-### 8. Plan de 90 días (concreto, con dueño y fecha)
-- Semana a semana: qué se hace, qué se mide, cuánto cuesta (en dólares y en horas del dueño).
-- Hitos y **criterios de abandono o giro** (p. ej., "si en 30 días ≤ X de 5 grupos repiten el uso, cambiamos de segmento").
-- Cómo conseguir los primeros 100 usuarios y 10 pagantes sin presupuesto, y cuándo vale la pena invertir.
-- Tareas legales mínimas antes de cobrar o de crecer (privacidad, términos, retención de imágenes, quién es el titular, impuestos al facturar desde Chile, pasarela de pago).
+**Regla de calidad:** para cada concepto responde "¿por qué un grupo de amigos lo usaría **sin que nadie se lo pida**, la semana siguiente?". Si la respuesta es "porque es útil", descártalo: la utilidad no crea hábito.
 
-### 9. Tablero y alertas
-- 8–10 métricas con definición exacta, fuente (consulta de Supabase o evento existente) y umbral de alarma. Indica cuáles hay que **agregar** a `dc_events` y por qué.
+## FASE 4 (Sesión B) — De USO OCASIONAL a HÁBITO (retención)
+Diseña **el sistema de retorno** de DiviCuenta, no funciones sueltas.
+1. **Mapa de frecuencia:** para cada segmento, ¿cuántas veces al mes aparece naturalmente la necesidad? Si es menos de 2, ¿qué se agrega para crear **más ocasiones** (recurrentes, viajes, deudas pendientes, grupos fijos) o para **ocupar los espacios entre cuentas** (saldos, recordatorios, cobros)?
+2. **Bucle de hábito** (disparador → acción → recompensa → inversión del usuario): descríbelo para el mejor concepto y di qué dato del usuario se guarda y hace más difícil irse (costo de cambio).
+3. **Efectos de red:** ¿cada invitado puede convertirse en anfitrión? Con qué mecanismo exacto y qué conversión mínima la haría rentable (modelo de contagio: coeficiente k, aunque sea estimado).
+4. **Disparadores externos** que no cuestan: recordatorios por WhatsApp, "te deben $X", cierre de mes, fechas de pago. ¿Cuáles son molestos y cuáles agradecidos?
+5. **Métricas de retención** a seguir desde el día 1 (con la definición exacta y qué umbral indica hábito): % de grupos que hacen una 2ª cuenta en 30 días, cuentas por grupo por mes, % de invitados que se vuelven anfitriones, % de deudas cerradas.
+6. **Prototipo de retención en 2 semanas** del mejor concepto, con criterio de éxito y de "se mata".
 
-### 10. Lo que contradice al dueño
-Lista de al menos 5 creencias del dueño o de este documento que los datos no sostienen o que deben cambiar, con evidencia. Si no encuentras ninguna, explica por qué sospechas de tu propio análisis.
+## FASE 5 (Sesión C) — Evaluación con puntaje (matriz)
+Puntúa los conceptos de la Fase 3 (y variantes) de 1 a 5 en cada criterio, con peso explícito y **una frase de justificación con evidencia por celda**:
 
-## FORMATO Y CALIDAD
+| Criterio | Peso |
+|---|---|
+| Frecuencia de uso que genera (hábito) | 20 % |
+| Disposición a pagar / dinero por usuario | 20 % |
+| Dificultad de copia (foso) | 15 % |
+| Costo y tiempo de construir con 1 persona + IA | 15 % |
+| Costo de adquirir usuarios / contagio | 10 % |
+| Riesgo legal/regulatorio (invertido) | 10 % |
+| Encaje con lo que ya existe (reusa lo construido) | 5 % |
+| Efecto en la métrica norte (cuentas pagadas sin corrección) | 5 % |
 
-- Documento `docs/ESTRATEGIA_2026-10.md`: tablas para comparaciones y economía unitaria, bullets cortos, un resumen ejecutivo de una página al inicio (con la recomendación y los 5 números que más pesan), y un apéndice de fuentes con enlace y fecha de consulta.
-- Etiqueta cada afirmación como **[DATO]**, **[FUENTE: url]** o **[ESTIMACIÓN: supuesto, rango]**.
-- Cierra con 3 preguntas que **solo el dueño puede responder** y que cambian la recomendación (p. ej., tiempo disponible, tolerancia al riesgo legal, cuánto capital arriesgaría, si quiere una empresa o un ingreso complementario).
-- Antes de terminar, repasa tu propio texto como un inversionista escéptico y agrega "las 5 razones por las que esto fracasaría" con su probabilidad estimada y mitigación.
+Entrega el ranking, los **3 finalistas** y por qué los demás murieron. Muestra qué pasaría con otros pesos (sensibilidad).
+
+## FASE 6 (Sesión C) — Modelo de negocio y economía unitaria (para los 3 finalistas)
+- Evalúa cada modelo con la misma ficha (cómo gana, quién paga, precio, margen, qué tiene que ser verdad, tiempo al primer dólar, riesgo legal, riesgo de copia, esfuerzo): gratis, freemium (escaneos gratis + paquetes o suscripción), pago por paquetes (viajeros), suscripción de grupo/familia/oficina, B2B restaurantes/POS, comisión por pagos, afiliados/publicidad, API/marca blanca, adquisición o licencia.
+- **Costo por boleta, por usuario activo y por grupo** hoy y con 3 mezclas (Haiku solo, con cascada, con cascada más reintentos), y con **lectura por QR (≈0)** si aplica.
+- **Margen y punto de equilibrio** (cuántos pagantes cubren costos fijos mínimos y valen el tiempo del dueño).
+- **Sensibilidad:** precio de IA ×3 y ÷5; usuarios que escanean ×3; conversión a pago 0,5 % / 2 % / 5 %; retención a 30 días 10 % / 25 % / 40 %.
+- **CAC por canal** realista (boca a boca, WhatsApp, redes, SEO, influencers de viajes, alianzas con restaurantes) con rangos.
+
+## FASE 7 (Sesión C) — La apuesta, el plan y el ataque
+
+### 7.1 Prueba del unicornio (honesta)
+- ¿Existe un camino creíble a **US$1.000 millones de valor** o a un negocio de **US$10–50 millones de ingresos**? Calcula el **ingreso necesario** (usuarios pagantes × precio) y los supuestos que requiere (mercado, retención, conversión, expansión). Compáralo con apps comparables **[FUENTE]**.
+- Veredicto: **"camino a unicornio"**, **"negocio sólido de N millones"** o **"proyecto de ingreso complementario"**. Cualquiera es válido si es honesto; di qué cambia entre uno y otro.
+- Qué tendría que ser verdad en 12 meses para que el veredicto suba un nivel.
+
+### 7.2 Recomendación única
+- **UN** concepto, **UN** segmento inicial, **UN** país de arranque, **UN** modelo de negocio, **UN** precio a probar y **UNA** métrica norte. Qué se **deja de hacer ya** y qué **no se construye nunca**.
+
+### 7.3 Plan de 90 días (semana a semana)
+Qué se hace, qué se mide, cuánto cuesta (US$ y horas del dueño), hitos y **criterios de abandono o giro** ("si en 30 días ≤ X de 5 grupos repiten, cambiamos"). Cómo llegar a los primeros 100 usuarios y 10 pagantes sin presupuesto. Tareas legales mínimas antes de cobrar o crecer (privacidad, términos, retención de imágenes, titular, impuestos al facturar desde Chile, pasarela de pago).
+
+### 7.4 Tablero y alertas
+8–10 métricas con definición exacta, fuente (consulta de Supabase o evento) y umbral de alarma; cuáles agregar a `dc_events`.
+
+### 7.5 Ataque final (pre-mortem)
+- **Las 5 razones por las que esto fracasa**, con probabilidad estimada y mitigación.
+- **5 creencias del dueño o de este documento** que los datos no sostienen.
+- **3 preguntas que solo el dueño puede responder** (tiempo disponible, tolerancia al riesgo legal, capital que arriesgaría, si quiere una empresa o un ingreso complementario) y cómo cambia la recomendación según la respuesta.
+
+---
+
+## FORMATO
+
+- Tablas para comparaciones, bullets cortos, un **resumen de una página** al inicio de cada documento.
+- Etiquetas **[DATO] / [FUENTE] / [ESTIMACIÓN] / [OPINIÓN]** en cada afirmación importante.
+- Apéndice de fuentes con enlace y fecha de consulta.
+- Al final de cada sesión: lista de **preguntas abiertas** y **qué dato falta** para la siguiente.
 
 ## RESTRICCIONES DE TRABAJO
 
