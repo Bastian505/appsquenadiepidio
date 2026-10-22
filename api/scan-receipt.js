@@ -667,7 +667,11 @@ function normalizeItems(items, currency) {
     // R22: si el lector marcó la línea como cargo, el nombre se normaliza a la etiqueta que la app reparte
     // proporcionalmente (Servicio / Impuesto / Propina), sea cual sea el idioma de la boleta.
     const CARGOS = { servicio:'Servicio', impuesto:'Impuesto', propina:'Propina' };
-    const cargo = CARGOS[String(it.cargo || '').toLowerCase().trim()];
+    const cargoKey = String(it.cargo || '').toLowerCase().trim();
+    let cargo = CARGOS[cargoKey];
+    // Varios impuestos en la misma boleta (CGST, SGST, VAT…): se conserva el nombre original entre paréntesis para distinguirlos.
+    const original = String(it.nombre || it.name || '').replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (cargo === 'Impuesto' && original && original.length <= 36 && !/^(impuesto|tax|taxes|iva|impuestos)$/i.test(original)) cargo = 'Impuesto (' + original + ')';
     return {
       nombre:          cargo || it.nombre || it.name || ("Item " + (i+1)),
       precio_unitario: precioFinal,
