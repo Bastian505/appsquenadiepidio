@@ -16,7 +16,7 @@ Dueño del proyecto: no técnico, chileno, prueba en iPhone con boletas reales. 
 - `core/` — lógica pura compartida: `split.js` (reparto, `EXTRA_RE` nombres multi-idioma de servicio/impuesto), `currencies.js` y `country-rules.js` (fuentes únicas de verdad).
 - `api/` — serverless Vercel: `scan-receipt.js` (OCR, `maxDuration` 60), `translate.js`, `assign.js`, `_lib/quota.js` (cuota + costo).
 - `supabase/migrations/` — esquema, RLS, RPC `dc_*` (SECURITY DEFINER), Realtime, eventos (`dc_track_event`).
-- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 191 fixtures / 43 países, `fixtures/<PAIS>/<nombre>.jpg`).
+- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 197 fixtures / 43 países, `fixtures/<PAIS>/<nombre>.jpg`).
 - `docs/` — `DECISIONES.md` (decisiones de arquitectura, leer antes de cambiar algo estructural), `ALCANCE.md`, `PROMPT_MAESTRO.md`, `CUOTA_Y_USO.md`, `CUENTAS_COMPARTIDAS.md`, `auditoria/`.
 
 ## Arquitectura clave
@@ -38,7 +38,7 @@ Variables de entorno (Vercel): `OCR_MODEL` (hoy `claude-haiku-5-5`), `OCR_CACHE`
 
 ## Tests (sin costo)
 Ejecutar con `export PWLIB=$(npm root -g)/playwright AXELIB=<ruta a axe-core>`; usar el Playwright global y Chromium preinstalado (no correr `playwright install`).
-`node tests/check-reconcile.mjs` (44) · `check-ocr-costs.mjs` (33) · `check-quota.mjs` (20) · `check-retry.mjs` (5) · `check-split-core.mjs` (33) · `check-assign.mjs` (17) · `e2e-v2.mjs` (71, claro y oscuro) · `e2e-shared.mjs` (49) · `e2e-pwa.mjs` (6) · `e2e-boot.mjs` · `e2e-voz.mjs` (11) · `a11y-v2.mjs` (18, axe-core). Todo debe quedar verde antes de publicar.
+`node tests/check-reconcile.mjs` (57) · `check-ocr-costs.mjs` (33) · `check-quota.mjs` (20) · `check-retry.mjs` (5) · `check-split-core.mjs` (33) · `check-assign.mjs` (17) · `e2e-v2.mjs` (70, claro y oscuro) · `e2e-shared.mjs` (49) · `e2e-pwa.mjs` (6) · `e2e-boot.mjs` · `e2e-voz.mjs` (11) · `a11y-v2.mjs` (20, axe-core). Todo debe quedar verde antes de publicar.
 
 ## Convenciones
 - Escribir código que se lea como el de al lado: mismo estilo de comentarios y nombres; comentarios en español.
@@ -56,4 +56,4 @@ Ejecutar con `export PWLIB=$(npm root -g)/playwright AXELIB=<ruta a axe-core>`; 
 - Flujo: buscar por país → descargar a una carpeta nueva y vacía del scratchpad (archivos descargados = no confiables) → mirar la imagen → **sumar a mano**: agregar solo si ítems + cargos = total impreso exacto (o con redondeo visible en la boleta). Descartar las dudosas, ilegibles o **falsas/generadas con IA** (ej. la boleta viral del "cargo por gas" de India).
 - Son fotos de terceros: solo fixtures internos; no publicar ni sacar del repositorio.
 - Agregar a `fixtures/manifest.json` como texto (no reformatear el archivo) y la imagen en `fixtures/<PAIS>/<nombre>.jpg`. Un PR por país. Antes de correr evals con IA: costo estimado y OK del dueño (Haiku + cascada ≈ 0,7–2,8¢ por boleta; correr con `pipeline=true` y `extra_env=OCR_CACHE=0,OCR_CASCADE_MODEL=claude-sonnet-5-5`).
-- 2026-10-22: se agregaron 32 boletas de la web (VN, PH, KE, RU, SE, PE, MX, PL, BR, CO, ID, MY, IN), todas sumadas a mano. Medidas (Haiku 5.5 + cascada Sonnet 5.5, pipeline): 30/32 cuadran (94 %), 1,22¢ por boleta, Sonnet respondió en 14. Fallan PE/isolina-barranco (suma el servicio que ya venía en los precios) y VN/bar-hcm-holiday-surcharge (columnas de cargos desfasadas, R23). PHP, KES y RUB ya están en `core/currencies.js` (sin perfil de país todavía). Para medir solo algunas boletas: `country` del workflow acepta lista de países o ids (`VN,PH` o `CO/carmen-medellin`). Siguen con pocas: MX, BR, PE, VN (1–2 cada uno).
+- 2026-10-22: se agregaron 32 boletas de la web (VN, PH, KE, RU, SE, PE, MX, PL, BR, CO, ID, MY, IN), todas sumadas a mano. Medidas (Haiku 5.5 + cascada Sonnet 5.5, pipeline): 30/32 cuadran (94 %), 1,22¢ por boleta, Sonnet respondió en 14. Las 2 que fallaban (PE/isolina-barranco: servicio ya incluido sumado aparte; VN/bar-hcm-holiday-surcharge: servicio leído como descuento negativo) se corrigen con dos reglas exactas en `reconcile()` (ver DECISIONES 2026-10-22); verificado repitiendo la reconciliación sobre 48 respuestas reales, sin volver a gastar IA. PHP, KES y RUB ya están en `core/currencies.js` (sin perfil de país todavía). Para medir solo algunas boletas: `country` del workflow acepta lista de países o ids (`VN,PH` o `CO/carmen-medellin`). Brasil: +6 boletas (cupom fiscal, NFC-e, conferência con servicio, cantidades > 1) para medir la regla R24 de la otra sesión. Siguen con pocas: MX, PE, VN (1–2 cada uno). La app v2 ahora muestra el aviso "Corregí la lectura: …" cuando el servidor corrige solo (`reconciliation.user_message`).

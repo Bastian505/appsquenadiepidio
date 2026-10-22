@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-22.a';
+  var BUILD = '2026-10-22.b';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -375,6 +375,8 @@
       banner = '<div class="banner warn">El total impreso (' + money(printed) + ') incluye un servicio del ' + state.tipSuggested + ' %. Actívalo en Propina para que la cuenta sume lo mismo.' +
         '<div class="actions"><button class="btn sm primary" data-action="apply-service" data-pct="' + state.tipSuggested + '">Aplicar servicio del ' + state.tipSuggested + ' %</button></div></div>';
     } else if (c.ok) banner = '<div class="banner ok">✓ Cuadra con el total impreso de la boleta (' + money(printed) + ')' + (c.viaTip ? ': ítems + servicio del ' + state.tipSuggested + ' %' : '') + '.</div>';
+    if (state.autoFix) banner += '<div class="banner warn" data-autofix><b>Corregí la lectura:</b> ' + esc(state.autoFix) +
+      '<div class="actions"><button class="btn sm" data-action="autofix-ok">Entendido</button></div></div>';
 
     return top(esc(state.restaurant || 'Tu cuenta'), 'home') +
       '<p class="muted" style="margin:-6px 4px 12px">' + esc(state.country ? state.country + ' · ' : '') + esc(state.currency) + ' · toca un nombre o precio para corregirlo</p>' +
@@ -723,6 +725,7 @@
       case 'reset': if (confirm('¿Empezar una cuenta nueva? Se borra la actual.')) { state = fresh(); ui.error = null; save(); render(); } break;
       case 'manual': state = fresh(); state.currency = prefCurrency(); state.step = 'review'; addItem('Ítem 1', 0); save(); render(); break;
       case 'add-item': state.edits = (state.edits || 0) + 1; addItem('Nuevo ítem', 0); save(); render(); break;
+      case 'autofix-ok': state.autoFix = null; save(); render(); break;
       case 'add-missing': var miss = recon().diff; if (miss > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'agregar'; addItem('Ítem que faltaba', C.decimals(state.currency) === 0 ? Math.round(miss) : Math.round(miss * 100) / 100); save(); render(); toast('Agregué lo que falta. Toca el nombre para corregirlo.'); } break;
       case 'fix-qty': var fq = item(id); if (fq && fq.qty > 1) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'cantidad'; fq.qty -= 1; if (state.assigns[id]) state.assigns[id].units = {}; save(); render(); } break;
       case 'add-extra': addItem('Impuesto', 0); save(); render(); break;
@@ -887,6 +890,8 @@
     state.restaurant = d.restaurante || null; state.country = d.pais_nombre || null; state.countryCode = d.pais || null;
     var rec = d.reconciliation || {};
     state.receiptTotal = rec.total_boleta || d.total_referencia || null;
+    // Corrección automática del servidor (agregó un impuesto, quitó un cargo ya incluido, cambió un signo): se avisa qué hizo y por qué.
+    state.autoFix = rec.auto_fixed && rec.user_message ? String(rec.user_message).slice(0, 300) : null;
     (d.items || []).forEach(function (it) {
       state.items.push({ id: state.nextId++, name: it.nombre || 'Ítem', price: Number(it.precio_unitario) || 0, qty: Math.max(1, Number(it.cantidad) || 1), confidence: it.confianza == null ? null : Number(it.confianza) });
     });

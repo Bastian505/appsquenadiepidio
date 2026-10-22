@@ -86,5 +86,25 @@ ok(!midoriSinDesc.ok && midoriSinDesc.diff < 0, 'ID Midori: si se pierde la lín
 // Siria: tasas sumadas aparte ("إنفاق استهلاكي", "إدارة محلية", "إعادة إعمار") que el lector omite (Al Jallab real: 72.808 + 4.300 − 108 = 77.000)
 ok(near(fixed(reconcile([it('قرص صفيحة', 8510, 4), it('جبنة', 4728, 4), it('محمرة', 3782, 2), it('مياه', 9456), it('شاي خمير', 2836)], 77000, 'SY')), 4192), 'SY: faltan los cargos (4.192 = 3.700 + 400 + 200 − 108) → se agregan como Impuesto');
 ok(!reconcile([it('platos', 57600), it('Impuesto', 2880), it('Impuesto', 150), it('Impuesto', 290)], 60920, 'SY').auto_fixed, 'SY: con los cargos ya listados no se agrega otro');
+
+// Cargo ya incluido (cualquier país): la suma supera el total justo en lo que suma un cargo leído → se quita
+// (Isolina, Perú, lectura real: los platos suman 370 = total; 'SERVICIO 36,72' es desglose de lo ya incluido)
+const isolinaPlatos = [it('CAU CAU C/SA', 45), it('RIÑONCITOS A', 42), it('JARRA CHICHA', 25), it('ANDEAN C/G', 8), it('OPI MALBEC', 90), it('CODILLO', 100), it('JARRA CHICHA', 25), it('GUISO DE MOL', 35)];
+const isolina = reconcile([...isolinaPlatos, it('Servicio', 36.72)], 370, 'PE');
+ok(isolina.auto_fix_type === 'charge_included' && isolina.auto_fix_items.length === 8 && !isolina.auto_fix_items.some(x => x.nombre === 'Servicio'), 'PE Isolina: quita el Servicio 36,72 que ya venía en los precios');
+const isolina2 = reconcile([...isolinaPlatos, it('IGV', 50.84), it('Servicio', 36.72)], 370, 'PE');
+ok(isolina2.auto_fix_type === 'charge_included' && isolina2.auto_fix_items.length === 8, 'PE: si suma IGV y servicio ya incluidos, quita los dos');
+ok(!reconcile([it('platos', 400), it('Servicio', 40)], 420, 'PE').auto_fixed, 'sobran 20 y el servicio es 40 → no quita nada (no calza exacto)');
+ok(!reconcile([it('platos', 400), it('Pisco sour', 36.72)], 400, 'PE').auto_fixed, 'un plato con el mismo monto que lo que sobra no se quita (solo cargos)');
+
+// Signo cambiado (cualquier país): un 'descuento' negativo que en realidad es un cargo, o un descuento sumado en vez de restado
+// (bar de Vietnam, lectura real de Sonnet: columnas de cargos corridas; el servicio 1.864.000 quedó como 'Giảm giá Discount −1.864.000')
+const vnBar = reconcile([it("RƯỢU HENDRICK'S 70CL", 4500000), it('THE BALVENIE 12 YO', 7000000), it('GLENFIDDICH 12 YO', 4000000, 2), it('818 ANEJO', 14500000), it('COCA COLA', 80000, 29), it('SPRITE', 80000), it('ACQUA PANNA 330ML', 80000, 11), it('Giảm giá Discount', -1864000), it('Servicio', 3728000), it('Servicio', 3632000), it('Impuesto (VAT 10%)', 524160)], 47028160, 'VN');
+ok(vnBar.auto_fix_type === 'sign_flip' && vnBar.auto_fix_item.precio_unitario === 1864000 && vnBar.auto_fix_item.nombre === 'Servicio' && Math.abs(vnBar.diff) < 1, 'VN bar: el "descuento" −1.864.000 era el servicio → +1.864.000 y cuadra');
+const descPos = reconcile([it('platos', 5000), it('Descuento socio', 500)], 4500, 'CL');
+ok(descPos.auto_fix_type === 'sign_flip' && descPos.auto_fix_item.precio_unitario === -500 && descPos.auto_fix_item.nombre === 'Descuento socio', 'descuento leído como positivo (sobran 1.000 = 2 × 500) → se resta');
+ok(!reconcile([it('platos', 1000), it('Pisco sour', 50)], 900, 'PE').auto_fix_type, 'un plato positivo no se vuelve negativo aunque calce (solo descuentos/redondeo)');
+ok(reconcile([it('platos', 1000), it('Descuento 10%', -100)], 900, 'CL').ok && !reconcile([it('platos', 1000), it('Descuento 10%', -100)], 900, 'CL').auto_fixed, 'un descuento real que cuadra no se toca');
+ok(!reconcile([it('platos', 1000), it('Descuento 10%', -100)], 1150, 'CL').auto_fix_type, 'faltan 250 con descuento de 100 → no cambia el signo (no calza exacto)');
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de reconciliación OK`);
 process.exit(fails ? 1 : 0);
