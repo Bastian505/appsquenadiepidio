@@ -77,5 +77,11 @@ ok(!at.auto_fixed && at.diff < 0, 'AT: suma > total → sin auto-fix');
 // Cuadra: sin ruido
 ok(reconcile([it('a', 43.5)], 43.5, 'AT').ok, 'AT: suma = total → ok');
 
+// Indonesia (Midori): descuento como ítem negativo; el SUB TOTAL impreso es pre-descuento y servicio/tax van sobre el monto sin descuento
+const midori = reconcile([it('GYURAMEN (L)', 74000), it('WAKAME SALAD', 36000), it('CHIRASI MIDORI', 86000), it('(Discount) 30 %', -25800), it('TAMAGO YAKI', 20000), it('USUYAKI TAMAGO', 20000), it('ICE TEA', 16000, 2), it('HOT OCHA', 14000), it('TAI SASHIMI', 36000), it('SASHIMI MOR (B)', 70000), it('Servicio 5 %', 19400), it('Impuesto 10 %', 40740)], 422340, 'ID');
+ok(midori.ok && !midori.auto_fixed, 'ID Midori: con el descuento negativo la suma cuadra con el total, sin inventar nada');
+const midoriSinDesc = reconcile([it('GYURAMEN (L)', 74000), it('WAKAME SALAD', 36000), it('CHIRASI MIDORI', 86000), it('TAMAGO YAKI', 20000), it('USUYAKI TAMAGO', 20000), it('ICE TEA', 16000, 2), it('HOT OCHA', 14000), it('TAI SASHIMI', 36000), it('SASHIMI MOR (B)', 70000), it('Servicio 5 %', 19400), it('Impuesto 10 %', 40740)], 422340, 'ID');
+ok(!midoriSinDesc.ok && midoriSinDesc.diff < 0, 'ID Midori: si se pierde la línea de descuento, avisa que sobran 25.800');
+
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de reconciliación OK`);
 process.exit(fails ? 1 : 0);
