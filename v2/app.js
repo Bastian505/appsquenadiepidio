@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-08.a';
+  var BUILD = '2026-10-22.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -55,8 +55,10 @@
   function initials(n) { return String(n || '?').trim().split(/\s+/).map(function (w) { return w[0]; }).join('').slice(0, 2).toUpperCase(); }
   function person(id) { return state.people.filter(function (p) { return p.id === id; })[0]; }
   function item(id) { return state.items.filter(function (i) { return i.id === id; })[0]; }
-  function baseItems() { return state.items.filter(function (i) { return !S.isExtra(i); }); }
-  function extraItems() { return state.items.filter(S.isExtra); }
+  // base: lo que se asigna a personas · extras: impuestos, cargos y descuentos globales · linked: descuento de un plato (se aplica solo a quien lo consumió)
+  function baseItems() { return S.classify(state.items).base; }
+  function extraItems() { return S.classify(state.items).extras; }
+  function linkedItems() { return S.classify(state.items).linked; }
   function split() { return S.compute({ items: state.items, people: state.people, assigns: state.assigns, tip: state.tip, currency: state.currency }); }
   // Métricas sin contenido: solo pasos, números y códigos (ver docs/CUOTA_Y_USO.md). Nunca ítems, nombres ni precios.
   function track(ev, props) { try { if (SYNC && SYNC.track) SYNC.track(ev, props || {}); } catch (e) {} }
@@ -354,7 +356,7 @@
   }
 
   function review() {
-    var c = recon(), r = c.r, base = baseItems(), extras = extraItems(), diff = c.diff, printed = c.printed;
+    var c = recon(), r = c.r, cl = S.classify(state.items), base = state.items.filter(function (i) { return cl.base.indexOf(i) >= 0 || cl.linked.indexOf(i) >= 0; }), extras = cl.extras, diff = c.diff, printed = c.printed;
     ui.suspects = c.bad ? suspects(diff) : {};
     // Métricas (una vez por boleta): se mostró el aviso de que no cuadra / el usuario lo arregló.
     if (c.bad && !state.mmShown) { state.mmShown = true; track('mismatch_shown', { pct: Math.round(Math.abs(diff) / printed * 100), dir: diff > 0 ? 'falta' : 'sobra' }); }
@@ -389,7 +391,7 @@
       (r.tipAmount ? '<div class="row"><span>Propina</span><span class="spacer"></span><span>' + money(r.tipAmount) + '</span></div>' : '') +
       '<div class="row grand"><span>Total</span><span class="spacer"></span><span>' + money(r.grandTotal) + '</span></div>' + fxLine(r.grandTotal, true) +
       '</div></div>' +
-      footer('<button class="btn primary" data-action="go" data-to="people"' + (base.length ? '' : ' disabled') + '>Agregar personas →</button>');
+      footer('<button class="btn primary" data-action="go" data-to="people"' + (cl.base.length ? '' : ' disabled') + '>Agregar personas →</button>');
   }
 
   function itemRow(it) {
