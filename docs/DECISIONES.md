@@ -52,3 +52,18 @@ Como las otras correcciones automáticas, marcan `auto_fixed` y dejan `user_mess
 **Evidencia (sin costo):** repetida la reconciliación sobre 48 respuestas reales guardadas de las evals (32 nuevas + 16 anteriores): cuadraban 46 → ahora 48, y ninguna otra cambia. Casos en `tests/check-reconcile.mjs` (incluye los que NO deben corregirse).
 
 **Aviso en la app:** la v2 muestra `user_message` de toda corrección automática como "Corregí la lectura: …" en la revisión, con un botón "Entendido" que lo cierra (antes no se mostraba ninguna).
+
+## 2026-10-22 — R24 (número de línea ≠ cantidad) probada y NO fusionada
+
+**Hipótesis:** en el cupom fiscal de Brasil el lector leía el número de ítem como cantidad (`Galinha Chic 18x2` en vez de `36x1`, boleta `BR/pimenta-verde-sp`). Se escribió una regla de prompt (R24) en la rama `fix/brasil-numero-de-item`.
+
+**Medición** (Haiku 5.5 solo, 8 boletas de Brasil, `EVAL_NOHINT=1`, 0,11¢ por boleta, una corrida cada una):
+| | La suma cuadra | Ítems exactos |
+|---|---|---|
+| Sin R24 (main) | 7/8 | 65/69 (94 %) |
+| Con R24 | 6/8 | 62/69 (90 %) |
+Regresión con R24 (PE, VN, CL, GB, TR; 14 boletas con cascada): 14/14 cuadran, 89 % ítems (sin R24: 88 %).
+
+**Conclusión:** sin mejora medible. La diferencia (3 ítems) cae dentro del ruido entre corridas de Haiku (se vio lo mismo con Table 9: la misma boleta lee distinto en dos intentos), y el error original de Pimenta Verde no se reproduce de forma estable. No se agrega una regla de prompt que no demuestra su efecto (cada regla puede romper otras boletas). Para decidir con datos haría falta repetir cada corrida 3–5 veces (≈ 5¢) o juntar más boletas con ese formato.
+
+**Fallo de Brasil que sí se repite (con y sin R24):** `BR/torres-amores-gavea-2024`, sobran 62,76 de 170,24: un plato con 100 % de descuento aparece sumado y la línea de descuento no se lee. Es la clase "descuento no leído"; candidato a regla determinista en `reconcile()` solo si calza al peso con un único ítem (hoy lo mitiga el aviso "Si este ítem no va, la suma cuadra" de la pantalla de revisión).
