@@ -38,6 +38,10 @@ const args = Object.fromEntries(
 
 const MODEL = args.model || 'claude-sonnet-4-6';
 const COUNTRY_FILTER = (typeof args.country === 'string' && args.country.trim()) ? args.country.trim().toUpperCase() : null;
+// --country acepta una lista separada por comas de países ("VN,PH") o de boletas ("CO/carmen-medellin"),
+// para medir solo las boletas nuevas sin pagar por las antiguas del mismo país.
+const FILTERS = COUNTRY_FILTER ? COUNTRY_FILTER.split(',').map(s => s.trim()).filter(Boolean) : [];
+const matchesFilter = f => FILTERS.some(x => x.includes('/') ? f.id.toUpperCase() === x : f.pais === x);
 
 const manifest = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'fixtures/manifest.json'), 'utf8')
@@ -203,7 +207,7 @@ async function main() {
   }
 
   let fixtures = manifest.fixtures;
-  if (COUNTRY_FILTER) fixtures = fixtures.filter(f => f.pais === COUNTRY_FILTER);
+  if (COUNTRY_FILTER) fixtures = fixtures.filter(matchesFilter);
   if (!fixtures.length) {
     const paises = [...new Set(manifest.fixtures.map(f => f.pais))].sort().join(', ');
     console.error(`No hay boletas para el país "${COUNTRY_FILTER}". Países disponibles: ${paises}`);
