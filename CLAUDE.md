@@ -16,7 +16,7 @@ Dueño del proyecto: no técnico, chileno, prueba en iPhone con boletas reales. 
 - `core/` — lógica pura compartida: `split.js` (reparto, `EXTRA_RE` nombres multi-idioma de servicio/impuesto), `currencies.js` y `country-rules.js` (fuentes únicas de verdad).
 - `api/` — serverless Vercel: `scan-receipt.js` (OCR, `maxDuration` 60), `translate.js`, `assign.js`, `_lib/quota.js` (cuota + costo).
 - `supabase/migrations/` — esquema, RLS, RPC `dc_*` (SECURITY DEFINER), Realtime, eventos (`dc_track_event`).
-- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 197 fixtures / 43 países, `fixtures/<PAIS>/<nombre>.jpg`).
+- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 203 fixtures / 44 países, `fixtures/<PAIS>/<nombre>.jpg`).
 - `docs/` — `DECISIONES.md` (decisiones de arquitectura, leer antes de cambiar algo estructural), `ALCANCE.md`, `PROMPT_MAESTRO.md`, `CUOTA_Y_USO.md`, `CUENTAS_COMPARTIDAS.md`, `auditoria/`.
 
 ## Arquitectura clave
@@ -38,7 +38,7 @@ Variables de entorno (Vercel): `OCR_MODEL` (hoy `claude-haiku-5-5`), `OCR_CACHE`
 
 ## Tests (sin costo)
 Ejecutar con `export PWLIB=$(npm root -g)/playwright AXELIB=<ruta a axe-core>`; usar el Playwright global y Chromium preinstalado (no correr `playwright install`).
-`node tests/check-reconcile.mjs` (57) · `check-ocr-costs.mjs` (33) · `check-quota.mjs` (20) · `check-retry.mjs` (5) · `check-split-core.mjs` (33) · `check-assign.mjs` (17) · `e2e-v2.mjs` (70, claro y oscuro) · `e2e-shared.mjs` (49) · `e2e-pwa.mjs` (6) · `e2e-boot.mjs` · `e2e-voz.mjs` (11) · `a11y-v2.mjs` (20, axe-core). Todo debe quedar verde antes de publicar.
+`node tests/check-reconcile.mjs` (57) · `check-ocr-costs.mjs` (33) · `check-quota.mjs` (20) · `check-retry.mjs` (5) · `check-split-core.mjs` (46) · `check-assign.mjs` (17) · `e2e-v2.mjs` (70, claro y oscuro) · `e2e-shared.mjs` (49) · `e2e-pwa.mjs` (6) · `e2e-boot.mjs` · `e2e-voz.mjs` (11) · `a11y-v2.mjs` (20, axe-core). Todo debe quedar verde antes de publicar.
 
 ## Convenciones
 - Escribir código que se lea como el de al lado: mismo estilo de comentarios y nombres; comentarios en español.
