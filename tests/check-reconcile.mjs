@@ -83,5 +83,8 @@ ok(midori.ok && !midori.auto_fixed, 'ID Midori: con el descuento negativo la sum
 const midoriSinDesc = reconcile([it('GYURAMEN (L)', 74000), it('WAKAME SALAD', 36000), it('CHIRASI MIDORI', 86000), it('TAMAGO YAKI', 20000), it('USUYAKI TAMAGO', 20000), it('ICE TEA', 16000, 2), it('HOT OCHA', 14000), it('TAI SASHIMI', 36000), it('SASHIMI MOR (B)', 70000), it('Servicio 5 %', 19400), it('Impuesto 10 %', 40740)], 422340, 'ID');
 ok(!midoriSinDesc.ok && midoriSinDesc.diff < 0, 'ID Midori: si se pierde la línea de descuento, avisa que sobran 25.800');
 
+// Siria: tasas sumadas aparte ("إنفاق استهلاكي", "إدارة محلية", "إعادة إعمار") que el lector omite (Al Jallab real: 72.808 + 4.300 − 108 = 77.000)
+ok(near(fixed(reconcile([it('قرص صفيحة', 8510, 4), it('جبنة', 4728, 4), it('محمرة', 3782, 2), it('مياه', 9456), it('شاي خمير', 2836)], 77000, 'SY')), 4192), 'SY: faltan los cargos (4.192 = 3.700 + 400 + 200 − 108) → se agregan como Impuesto');
+ok(!reconcile([it('platos', 57600), it('Impuesto', 2880), it('Impuesto', 150), it('Impuesto', 290)], 60920, 'SY').auto_fixed, 'SY: con los cargos ya listados no se agrega otro');
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de reconciliación OK`);
 process.exit(fails ? 1 : 0);
