@@ -468,7 +468,7 @@ const DEPOSIT_COUNTRIES = new Set(['DE','AT','NL']);
 // Canadá: impuestos por provincia (sobre el precio sin impuesto): GST 5 % (AB/TERR.), SK 11 %, BC y MB 12 %,
 // HST Ontario 13 %, Quebec TPS 5 % + TVQ 9,975 % = 14,975 %, HST Atlántico 15 %.
 const CA_TAX_RATES = [0.05, 0.11, 0.12, 0.13, 0.14975, 0.15];
-const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK','SG']);
+const TAX_ON_TOP_HIGH           = new Set(['PK','MY','NG','LK','SG','SY']);   // SY: gasto de consumo + administración local + reconstrucción, sumados aparte (3–10 %)
 
 function reconcile(items, totalReported, countryCode) {
   const sum = items.reduce((a,it) => a+(it.precio_unitario*(it.cantidad||1)), 0);
