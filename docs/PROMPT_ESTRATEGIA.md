@@ -128,7 +128,7 @@ Puntúa los conceptos de la Fase 3 (y variantes) de 1 a 5 en cada criterio, con 
 
 | Criterio | Peso |
 |---|---|
-| Frecuencia de uso que genera (hábito) | 15 % |
+| Frecuencia de uso que genera (hábito) | 20 % |
 | **Rentabilidad desde el día 1** (margen por usuario > 0, primer dólar rápido) | 20 % |
 | Disposición a pagar / dinero por usuario | 10 % |
 | Dificultad de copia (foso) | 10 % |
