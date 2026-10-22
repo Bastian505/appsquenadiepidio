@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       country:
-        description: "Código de país (ej. PK). Vacío = todos"
+        description: "Código de país (ej. PK), lista (VN,PH) o ids de boletas (CO/carmen-medellin). Vacío = todos"
         required: false
         default: ""
       model:

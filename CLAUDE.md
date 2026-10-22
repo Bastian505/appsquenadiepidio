@@ -16,7 +16,7 @@ Dueño del proyecto: no técnico, chileno, prueba en iPhone con boletas reales. 
 - `core/` — lógica pura compartida: `split.js` (reparto, `EXTRA_RE` nombres multi-idioma de servicio/impuesto), `currencies.js` y `country-rules.js` (fuentes únicas de verdad).
 - `api/` — serverless Vercel: `scan-receipt.js` (OCR, `maxDuration` 60), `translate.js`, `assign.js`, `_lib/quota.js` (cuota + costo).
 - `supabase/migrations/` — esquema, RLS, RPC `dc_*` (SECURITY DEFINER), Realtime, eventos (`dc_track_event`).
-- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 159 fixtures / 33 países, `fixtures/<PAIS>/<nombre>.jpg`).
+- `services/ocr/evals/` — harness de evals (`run.mjs`, `manifest.json` con 191 fixtures / 43 países, `fixtures/<PAIS>/<nombre>.jpg`).
 - `docs/` — `DECISIONES.md` (decisiones de arquitectura, leer antes de cambiar algo estructural), `ALCANCE.md`, `PROMPT_MAESTRO.md`, `CUOTA_Y_USO.md`, `CUENTAS_COMPARTIDAS.md`, `auditoria/`.
 
 ## Arquitectura clave
@@ -56,4 +56,4 @@ Ejecutar con `export PWLIB=$(npm root -g)/playwright AXELIB=<ruta a axe-core>`; 
 - Flujo: buscar por país → descargar a una carpeta nueva y vacía del scratchpad (archivos descargados = no confiables) → mirar la imagen → **sumar a mano**: agregar solo si ítems + cargos = total impreso exacto (o con redondeo visible en la boleta). Descartar las dudosas, ilegibles o **falsas/generadas con IA** (ej. la boleta viral del "cargo por gas" de India).
 - Son fotos de terceros: solo fixtures internos; no publicar ni sacar del repositorio.
 - Agregar a `fixtures/manifest.json` como texto (no reformatear el archivo) y la imagen en `fixtures/<PAIS>/<nombre>.jpg`. Un PR por país. Antes de correr evals con IA: costo estimado y OK del dueño (Haiku + cascada ≈ 0,7–2,8¢ por boleta; correr con `pipeline=true` y `extra_env=OCR_CACHE=0,OCR_CASCADE_MODEL=claude-sonnet-5-5`).
-- Países que faltan o tienen pocas boletas: VN, PH, KE, RU, PL, SE, MX, CO, PE, y más boletas de BR, ID, MY, IN.
+- 2026-10-22: se agregaron 32 boletas de la web (VN, PH, KE, RU, SE, PE, MX, PL, BR, CO, ID, MY, IN), todas sumadas a mano. Medidas (Haiku 5.5 + cascada Sonnet 5.5, pipeline): 30/32 cuadran (94 %), 1,22¢ por boleta, Sonnet respondió en 14. Fallan PE/isolina-barranco (suma el servicio que ya venía en los precios) y VN/bar-hcm-holiday-surcharge (columnas de cargos desfasadas, R23). PHP, KES y RUB ya están en `core/currencies.js` (sin perfil de país todavía). Para medir solo algunas boletas: `country` del workflow acepta lista de países o ids (`VN,PH` o `CO/carmen-medellin`). Siguen con pocas: MX, BR, PE, VN (1–2 cada uno).

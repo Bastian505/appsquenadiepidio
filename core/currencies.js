@@ -22,11 +22,12 @@
     HUF: { symbol: 'Ft',  decimals: 0, suffix: true }, RON: { symbol: 'lei', decimals: 2, suffix: true },
     ALL: { symbol: 'Lek', decimals: 0, suffix: true }, HRK: { symbol: 'kn', decimals: 2, suffix: true },
     RSD: { symbol: 'RSD', decimals: 2, suffix: true }, TRY: { symbol: '₺',  decimals: 2 },
+    RUB: { symbol: '₽',   decimals: 2, suffix: true },
     // Medio Oriente y África
     ILS: { symbol: '₪',   decimals: 2 }, AED: { symbol: 'AED', decimals: 2, suffix: true },
     SAR: { symbol: 'SAR', decimals: 2, suffix: true }, ZAR: { symbol: 'R', decimals: 2 },
     NAD: { symbol: 'N$',  decimals: 2 },
-    NGN: { symbol: '₦',   decimals: 2 },
+    NGN: { symbol: '₦',   decimals: 2 }, KES: { symbol: 'KSh', decimals: 2 },
     LKR: { symbol: 'LKR', decimals: 2, suffix: true },
   MAD: { symbol: 'MAD', decimals: 2, suffix: true },
     // Asia y Oceanía
@@ -36,7 +37,7 @@
     THB: { symbol: '฿',   decimals: 2 }, VND: { symbol: '₫',   decimals: 0 },
     SGD: { symbol: 'S$',  decimals: 2 }, AUD: { symbol: 'A$',  decimals: 2 },
     NZD: { symbol: 'NZ$', decimals: 2 }, IDR: { symbol: 'Rp',  decimals: 0 },
-    TWD: { symbol: 'NT$', decimals: 0 }
+    TWD: { symbol: 'NT$', decimals: 0 }, PHP: { symbol: '₱',   decimals: 2 }
   };
   // Monedas sin centavos en la práctica que aún no tienen perfil de país (solo afectan redondeo).
   var EXTRA_NO_DECIMAL = ['KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA','IRR','IQD','LBP','SYP'];
