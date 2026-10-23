@@ -479,6 +479,34 @@ function reconcile(items, totalReported, countryCode) {
   const diff  = totalReported - sum;
   const ratio = Math.abs(diff) / totalReported;
 
+  // Cargo con signo menos + desglose ya incluido (cualquier país): el servicio/propina se leyó restando (−10,08) y además se sumó el
+  // IVA que la boleta solo desglosa. Se invierte el signo de UNA línea de cargo y se quitan hasta 2 cargos ya incluidos si, y solo si,
+  // la suma da justo el total impreso. Corre antes de la tolerancia del 3 %: un servicio negativo no es un redondeo.
+  // (Caso real: Dubái 2026, 'Konjiki Service 4%' −10,08 y 'VAT 5%' 12,48 sobre 252 = 262,08; la diferencia quedaba en 2,9 %.)
+  {
+    const NEG_RE = /servicio|service|propina|\btip\b|gratuity|recargo|surcharge|bedienung|apkalpo/i;
+    const INC_RE = /servicio|service|propina|\btip\b|gratuity|impuesto|\btax|iva\b|igv|vat\b|gst|sst|recargo|surcharge/i;
+    const imp = it => it.precio_unitario * (it.cantidad || 1);
+    const tol = Math.max(0.05, totalReported * 0.0015);
+    const neg = items.map((it, i) => ({ it, i })).filter(c => !c.it.auto_created && imp(c.it) < 0 && NEG_RE.test(c.it.nombre || ''));
+    if (neg.length === 1) {
+      const inc = items.map((it, i) => ({ it, i })).filter(c => c.i !== neg[0].i && !c.it.auto_created && imp(c.it) > 0 && INC_RE.test(c.it.nombre || '')).slice(0, 6);
+      for (let mask = 0; mask < (1 << inc.length); mask++) {
+        const sub = inc.filter((_, k) => mask & (1 << k));
+        if (sub.length > 2) continue;
+        if (Math.abs(sum - 2 * imp(neg[0].it) - sub.reduce((a, c) => a + imp(c.it), 0) - totalReported) > tol) continue;
+        const fuera = new Set(sub.map(c => c.i));
+        const nuevos = items.filter((_, i) => !fuera.has(i)).map((it, _i, arr) => it === neg[0].it ? { ...it, precio_unitario: -it.precio_unitario, auto_fix_type: 'sign_flip', confianza: 0.50,
+          auto_fix_evidence: `Con el signo de '${it.nombre}' cambiado la suma da justo el total impreso` } : it);
+        const nsum = nuevos.reduce((a, it) => a + imp(it), 0);
+        const quitados = sub.map(c => c.it.nombre).join(' + ');
+        return { ok:true, sum:Math.round(nsum*100)/100, total:totalReported, diff:totalReported - nsum, ratio:0, note:null, auto_fixed:true,
+          auto_fix_type:'sign_flip', auto_fix_items:nuevos, user_action_required:true,
+          user_message:`'${neg[0].it.nombre}' (${Math.abs(imp(neg[0].it))}) es un cargo que se suma, no se resta${quitados ? `; quité ${quitados} porque ya venía incluido en los precios` : ''}, y ahora cuadra. Revísalo antes de dividir.` };
+      }
+    }
+  }
+
   // 0-3%: diferencia silenciosa de redondeo
   if (ratio < 0.03) {
     return { ok:true, sum, total:totalReported, diff, ratio, note:null, auto_fixed:false };
