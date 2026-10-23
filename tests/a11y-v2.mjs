@@ -17,8 +17,8 @@ const srv = http.createServer((q, r) => { let p = decodeURIComponent(q.url.split
 const BASE = `http://localhost:${srv.address().port}/v2/`;
 const browser = await chromium.launch();
 
-async function pagina(scheme, scan) {
-  const ctx = await browser.newContext({ locale: 'es-CL', viewport: { width: 390, height: 844 }, colorScheme: scheme });
+async function pagina(scheme, scan, locale) {
+  const ctx = await browser.newContext({ locale: locale || 'es-CL', viewport: { width: 390, height: 844 }, colorScheme: scheme });
   const page = await ctx.newPage();
   await page.route('**/api/scan-receipt', rt => rt.fulfill({ status: scan.status || 200, contentType: 'application/json', body: JSON.stringify(scan.body || OK) }));
   await page.route('**/api/translate', rt => rt.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, translations: [] }) }));
@@ -59,6 +59,13 @@ for (const scheme of ['light', 'dark']) {
   ({ page, ctx } = await pagina(scheme, { body: { ...OK, reconciliation: { ok: true, total_boleta: 260, auto_fixed: true, user_message: 'Quité Servicio (36.72): ya venía incluido en los precios. Revísalo antes de dividir.' } } }));
   await page.setInputFiles('#photo', IMG); await page.waitForSelector('[data-autofix]', { timeout: 9000 }); await page.waitForTimeout(300);
   await axe(page, 'revisión con corrección automática', scheme); await ctx.close();
+}
+// Interfaz en inglés (con el botón de idioma): inicio y revisión
+for (const scheme of ['light', 'dark']) {
+  const { page, ctx } = await pagina(scheme, {}, 'en-US');
+  await axe(page, 'inicio en inglés', scheme);
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 }); await page.waitForTimeout(300);
+  await axe(page, 'revisión en inglés', scheme); await ctx.close();
 }
 await browser.close(); srv.close();
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `\n✓ ${n} pantallas sin problemas de accesibilidad`);
