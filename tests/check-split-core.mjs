@@ -89,5 +89,12 @@ cl = S.classify([{ id: 1, name: 'Discount Cocktail', price: 12, qty: 1 }]);
 ok(cl.base.length === 1, 'Un plato llamado "Discount Cocktail" con precio positivo no es descuento');
 
 ok(S.isExtra({ name: 'Impuesto (SGST 2.5%)' }) && S.isExtra({ name: 'Impuesto (VAT 25 %)' }) && !S.isExtra({ name: 'Servicio (de mesa especial)' }), 'Impuesto con el nombre original entre paréntesis es cargo; un plato con paréntesis no');
+// Redondeo automático ('Auto Round' en Bangladesh): no es un plato, se reparte como cargo (también si es negativo)
+ok(['Auto Round', 'Rounding', 'Rounding Adjustment', 'Redondeo'].every(n => S.isExtra({ name: n })) && !S.isExtra({ name: 'Round of drinks' }), 'Auto Round / Rounding / Redondeo son cargo; "Round of drinks" no');
+r = S.compute({ currency: 'BDT', people: P.slice(0, 2), items: [
+  { id: 1, name: 'Tiramisu', price: 395, qty: 1 }, { id: 2, name: 'Chicken Roulade', price: 955, qty: 1 },
+  { id: 3, name: 'Impuesto (VAT 5.00%)', price: 130.25, qty: 1 }, { id: 4, name: 'Auto Round', price: -0.25, qty: 1 }],
+  assigns: { 1: { people: ['a'] }, 2: { people: ['b'] } } });
+ok(r.unassigned === 0 && near(total(r), 1480, 0.001), `Auto Round negativo: se reparte proporcional, total ${total(r)} = 1480`);
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones del núcleo de reparto OK`);
 process.exit(fails ? 1 : 0);
