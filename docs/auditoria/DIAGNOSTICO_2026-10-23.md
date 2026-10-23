@@ -58,16 +58,19 @@ Actualiza `AUDITORIA_2026-10-04.md`. Estados de evidencia: ✅ verificado hoy (l
 |---|---|---|---|
 | 25 variadas | 25 | 96 % | ~0,7¢ |
 | Web 2026-10-22 (VN, PH, KE, RU, SE, PE, MX…) | 32 | 94 % (30/32; las 2 fallas se corrigieron con reglas exactas) | 1,22¢ |
-| **Países faltantes (hoy)** | 24 | **92 % (22/24)**, ítems 93 %, país 23/24 | **0,80¢** (≈19¢ total) |
+| **Países faltantes (23/10)** | 24 | **92 % (22/24)**, ítems 93 %, país 23/24 | **0,80¢** (≈19¢ total) |
 | 13 prioritarios (CL, MX, PE, PT, AU, NZ) | 13 | medidas el 22/10; 1 falla real (Rosa Negra: propina impresa) y 1 error mío de etiqueta (Majestic) | — |
-| 13 "complicados" 2025-26 y 14 "ciegas" (#115) | 27 | **sin medir** (necesito su OK de costo: ≈22–60¢) | — |
+| 14 "ciegas" (CN, KR, DE, JP, HK, TW, FR, IT — #115) | 14 | **100 % (14/14)**, ítems 97 %, país 13/14 | 0,98¢ |
+| 13 "complicados" 2025-26 (IN, JP, PL, LK, PH, HK, IT, NG) | 13 | **85 % (11/13)**, ítems 91 % | 1,09¢ |
+
+Fallos de las 13 "complicadas": `HK/cafe-boheme-2025` **rehusada** ("no es boleta": es una reimpresión con dedos sobre el ticket; ni Haiku ni la cascada la leyeron) e `IN/cafe-dotpe-token14` (un solo producto: omitió CGST y SGST 9 %, faltan 50 de 325). Además `PL/bar-ustka-2025` (pescado por peso) leyó bien la suma pero con ítems distintos, e `IT/nannarella` dejó el servicio como "Coperto".
 
 ⚠️ Honestidad sobre la cifra: sigue siendo un conjunto que nosotros armamos. Las "ciegas" y las de hoy se suman a mano y no se usaron para ajustar reglas, así que sirven más que las antiguas, pero **ninguna es una muestra aleatoria de lo que sacará la gente en un restaurante cualquiera**. El número real solo lo da el uso real.
 
 ### 4.2 Clases de fallo conocidas (hoy con ejemplos)
 1. **"Cuadra pero está mal"** — columnas desfasadas por papel inclinado o foto lejana. Hoy: `RO/la-latina-orsova-2021` (letra diminuta): leyó nombres en italiano, **país IT y moneda EUR en vez de RON** y la suma "cuadró". Mitigación existente: R23 y cascada; **no hay forma determinista de detectarlo** salvo pedir al usuario confirmar país/moneda cuando el sello fiscal indica otra cosa. 💭 Esta es la clase más peligrosa.
 2. **Cargo con signo o base equivocada** — `AE/guest-bill-dubai-2026`: el servicio 4 % quedó como −10,08 y se agregó encima el VAT del desglose (que ya estaba incluido). La regla de "signo cambiado" no alcanzó porque dos errores se mezclaron.
-3. **Redondeo de caja** — `HU/trattoria-toscana-2023`: `Kerekítés −2 Ft` no se aplica y la suma da 23.877 vs 23.875 impresos. Debería tolerarse por país (HUF, CHF, DKK, etc. redondean al efectivo): lógica determinista en `core/country-rules.js`, no un prompt.
+3. **Redondeo de caja** — `HU/trattoria-toscana-2023`: la suma da 23.877 vs 23.875 impresos (`Kerekítés −2 Ft`). **Corrección posterior:** no es un fallo de la app (la tolerancia del 3 % lo absorbe en silencio); solo el evaluador, que exige igualdad exacta, lo marca. Sin acción.
 4. **Cargos con nombre local no reconocido** — `Apkalpošana 10%` (Letonia) y `BACSIS` (Rumania) llegan con el nombre original; la app los trata como plato en vez de servicio/propina, y el reparto cambia. R22 pide renombrar, pero el modelo barato no siempre lo hace. 💭 Solución barata: ampliar `EXTRA_RE` en `core/split.js` con las palabras de servicio/propina de más idiomas (letón, rumano, húngaro `Szervizdíj`, checo, búlgaro…).
 5. **Boletas que no son de restaurante** (`KR/namsan-cablecar`): rechazadas como "no es boleta"; problema conocido.
 6. **Latencia sin diagnosticar** ❓: el 23/10 una boleta de Dhaka "no cargó" y la segunda fue inmediata. Hipótesis: arranque en frío o llamada lenta al modelo (timeout de 50 s, función de 60 s, el cliente aborta a los 75 s). No hay registro de tiempos; propuse medirlos (necesita una columna en Supabase).
@@ -139,7 +142,7 @@ Actualiza `AUDITORIA_2026-10-04.md`. Estados de evidencia: ✅ verificado hoy (l
 3. Fusionar, una por una, las ramas sin PR que ya pasaron pruebas: inglés, fixtures. *(Sonnet 5.5.)*
 
 **2–4 semanas (confianza y calidad):**
-4. Redondeo de caja por país y nombres de servicio/propina en más idiomas (casos 3 y 4 de 4.2) — **lógica determinista con tests**, sin tocar el prompt. *(Sonnet 5.5.)*
+4. ✅ **Hecho el 23/10** (rama `fix/redondeo-caja-y-cargos-locales`): servicio con signo menos + IVA ya incluido (caso 2) y nombres de servicio/IVA en más idiomas (caso 4), con tests; sin tocar el prompt. Pendiente: el caso de la boleta rehusada (reimpresión/dedos) y el de un solo producto con impuestos omitidos.
 5. Aviso de "confirma país y moneda" cuando el sello fiscal no coincide (caso 1 de 4.2). *(Opus 5.5 para el diseño; Sonnet 5.5 para el código.)*
 6. Cabeceras de seguridad y versiones fijas de scripts con `integrity` (S-2, S-3). *(Sonnet 5.5; ojo con no romper la PWA.)*
 7. Registro de tiempos de lectura + aviso "tarda más de lo normal" (4.2.6). *(Sonnet 5.5.)*
@@ -154,7 +157,7 @@ Actualiza `AUDITORIA_2026-10-04.md`. Estados de evidencia: ✅ verificado hoy (l
 
 ## 10. Decisiones que le tocan a usted
 
-1. ¿Autoriza medir con IA las **27 boletas sin medir** (#115 y complicados; ≈22–60¢)?
+1. ~~¿Autoriza medir las 27 boletas?~~ **Hecho** (≈29¢ en total; resultados en 4.1).
 2. ¿Quién será el **titular legal** y qué correo se usará en la política? (bloquea #94).
 3. ¿Hace usted la **prueba de 5 grupos** esta semana? Sin eso, ninguna otra mejora se puede validar.
 4. ¿Apruebo fusionar las ramas de fixtures y el inglés (una a una, con PR), o prefiere revisarlas antes?
