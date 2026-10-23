@@ -106,5 +106,11 @@ ok(descPos.auto_fix_type === 'sign_flip' && descPos.auto_fix_item.precio_unitari
 ok(!reconcile([it('platos', 1000), it('Pisco sour', 50)], 900, 'PE').auto_fix_type, 'un plato positivo no se vuelve negativo aunque calce (solo descuentos/redondeo)');
 ok(reconcile([it('platos', 1000), it('Descuento 10%', -100)], 900, 'CL').ok && !reconcile([it('platos', 1000), it('Descuento 10%', -100)], 900, 'CL').auto_fixed, 'un descuento real que cuadra no se toca');
 ok(!reconcile([it('platos', 1000), it('Descuento 10%', -100)], 1150, 'CL').auto_fix_type, 'faltan 250 con descuento de 100 → no cambia el signo (no calza exacto)');
+
+// Cargo con signo menos + IVA ya incluido (Dubái 2026, lectura real de Haiku: servicio 4 % leído como −10,08 y VAT 12,48 sumado encima; diferencia 2,9 %)
+const dubai = reconcile([it('Tempura Prawns', 52), it('Fr Vegetable Fried Rice', 44), it('Ramen Shoyu', 72), it('Iz Honey Chicken Karaage', 48), it('Bubble Tea Dark Chocolate', 26), it('Water Sparkling Small', 10), it('Servicio', -10.08), it('Impuesto (VAT 5%)', 12.48)], 262.08, 'AE');
+ok(dubai.auto_fix_type === 'sign_flip' && dubai.auto_fix_items.length === 7 && dubai.auto_fix_items.find(x => x.nombre === 'Servicio').precio_unitario === 10.08 && Math.abs(dubai.diff) < 0.01, 'AE Dubái: servicio −10,08 pasa a +10,08 y se quita el VAT ya incluido');
+ok(!reconcile([it('platos', 100), it('Servicio', -5)], 100, 'AE').auto_fixed, 'un servicio negativo que NO calza exacto al darlo vuelta no se toca');
+ok(reconcile([it('platos', 100), it('Servicio', -5)], 95, 'AE').ok && !reconcile([it('platos', 100), it('Servicio', -5)], 95, 'AE').auto_fixed, 'un servicio negativo que ya cuadra (descuento de servicio) queda igual');
 console.log(fails ? `\n${fails} fallo(s) de ${n}` : `✓ ${n} comprobaciones de reconciliación OK`);
 process.exit(fails ? 1 : 0);
