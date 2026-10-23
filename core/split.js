@@ -14,7 +14,7 @@
 // se reparten proporcionalmente al consumo de cada persona, igual que la propina.
 // La suma de lo que paga cada persona + lo no asignado = total, exacto (método del mayor resto).
 (function (root) {
-  var EXTRA_RE = /^\s*(impuesto(\s*\([^()]{1,40}\))?|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|sst|fbr pos charges?|sc|stamp duty|card surcharge|credit card (fee|surcharge)|card fee|cargo (por )?servicio|servi[cç]o|taxa( de)? servi[cç]o|gorjeta|impostos?|servizio|bedienung|service compris|pourboire|trinkgeld|bediening|auto[\s-]?round(ing)?|round(ing)?( adjustment| off)?|redondeo|ajuste( por)? redondeo)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
+  var EXTRA_RE = /^\s*(impuesto(\s*\([^()]{1,40}\))?|servicio|propina|sales tax|taxes|service charges?|service fee|gratuity|tax|gst|vat|iva|sst|fbr pos charges?|sc|stamp duty|card surcharge|credit card (fee|surcharge)|card fee|cargo (por )?servicio|servi[cç]o|taxa( de)? servi[cç]o|gorjeta|impostos?|servizio|bedienung|service compris|pourboire|trinkgeld|bediening|apkalpo[sš]ana|szervizd[ií]j|teenindus(tasu|lisa)|ba[cț]?[sș]i[sș]|baci[sș]|drikkepenge|obsluha|tva|mwst|ust|btw|kdv|moms|mva|dph|[aá]fa|alv|pdv|auto[\s-]?round(ing)?|round(ing)?( adjustment| off)?|redondeo|ajuste( por)? redondeo)(\s*[@(]?\s*\d+([.,]\d+)?\s*%\)?)?\s*$/i;
   function isExtra(item) { return EXTRA_RE.test((item && item.name) || ''); }
 
   // Descuentos: una línea con importe NEGATIVO y nombre de descuento. Dos casos, que se distinguen por aritmética (sin IA):
