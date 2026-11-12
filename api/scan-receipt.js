@@ -920,7 +920,10 @@ async function handleScan(req, res) {
 
     const finalCountry = parsed.pais !== 'UNKNOWN' ? (parsed.pais || country_hint || 'UNKNOWN') : 'UNKNOWN';
     // Fix: nunca asumir CLP como fallback — si Claude no detectó moneda, pedir confirmación
-    const currency = parsed.moneda || COUNTRY_RULES[finalCountry]?.currency || 'AMBIGUOUS_DOLLAR';
+    let currency = parsed.moneda || COUNTRY_RULES[finalCountry]?.currency || 'AMBIGUOUS_DOLLAR';
+    // "Dólar" o "yen" ambiguo pero el país se leyó: la moneda se deduce del país (HK → HKD) en vez de preguntar o mostrar el código interno.
+    const AMBIGUA_POR_PAIS = { HK:'HKD', TW:'TWD', SG:'SGD', AU:'AUD', NZ:'NZD', JP:'JPY', CN:'CNY' };
+    if ((currency === 'AMBIGUOUS_DOLLAR' || currency === 'AMBIGUOUS_YEN') && AMBIGUA_POR_PAIS[finalCountry]) currency = AMBIGUA_POR_PAIS[finalCountry];
 
     // Moneda ambigua → pedir confirmación al usuario
     if ((currency === 'AMBIGUOUS_DOLLAR' || currency === 'AMBIGUOUS_YEN') && !is_confirmation) {

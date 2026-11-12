@@ -37,7 +37,11 @@
     THB: { symbol: '฿',   decimals: 2 }, VND: { symbol: '₫',   decimals: 0 },
     SGD: { symbol: 'S$',  decimals: 2 }, AUD: { symbol: 'A$',  decimals: 2 },
     NZD: { symbol: 'NZ$', decimals: 2 }, IDR: { symbol: 'Rp',  decimals: 0 },
-    TWD: { symbol: 'NT$', decimals: 0 }, PHP: { symbol: '₱',   decimals: 2 }
+    TWD: { symbol: 'NT$', decimals: 0 }, PHP: { symbol: '₱',   decimals: 2 },
+    HKD: { symbol: 'HK$', decimals: 2 }, KZT: { symbol: '₸',   decimals: 2 },
+    AZN: { symbol: '₼',   decimals: 2 }, AMD: { symbol: '֏',   decimals: 0, suffix: true },
+    GEL: { symbol: '₾',   decimals: 2 }, BGN: { symbol: 'лв',  decimals: 2, suffix: true },
+    QAR: { symbol: 'QAR', decimals: 2, suffix: true }, LAK: { symbol: '₭',   decimals: 0 }
   };
   // Monedas sin centavos en la práctica que aún no tienen perfil de país (solo afectan redondeo).
   var EXTRA_NO_DECIMAL = ['KHR','MMK','UGX','RWF','TZS','XOF','XAF','GNF','BIF','MGA','IRR','IQD','LBP','SYP'];

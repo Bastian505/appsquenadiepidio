@@ -80,3 +80,11 @@ Regresión con R24 (PE, VN, CL, GB, TR; 14 boletas con cascada): 14/14 cuadran, 
 
 **No cambia (aclaración):** `HU/trattoria-toscana-2023` (redondeo de −2 Ft, 0,0 %) NO es un fallo de la app: la tolerancia del 3 % ya lo absorbe en silencio; el "no cuadra" lo marca solo el evaluador, que exige igualdad exacta. Tampoco se resuelve `RO/la-latina` (foto lejana con país y moneda mal leídos): requiere confirmar país/moneda con el usuario, pendiente de diseño (Opus 5.5).
 
+## 2026-11-12 — Botón "Es un descuento", moneda ambigua por país y 8 monedas nuevas
+
+**Problemas vistos por el dueño en el teléfono:** (1) Noruega/Collinson: dos líneas "Collinson group / discount −36" (nombre en 2 líneas) se omitieron y la app dijo "sobran 72" sin salida útil. (2) HK/One Dim Sum: la moneda salió como `AMBIGUOUS_DOLLAR` en pantalla aunque el país (HK) se leyó bien. (3) Nombres largos se cortaban sin indicar que seguían.
+
+**Decisión:** (1) cuando sobran montos, la revisión ofrece "Es un descuento: restar X" (agrega un ítem negativo "Descuento" editable; se reparte como los demás descuentos, #107). (2) Si la moneda es `AMBIGUOUS_DOLLAR/YEN` pero el país es HK, TW, SG, AU, NZ, JP o CN, se usa la moneda del país en vez de preguntar (US y CA siguen preguntando: el `$` sí es ambiguo allí). (3) `core/currencies.js` suma HKD, KZT, AZN, AMD, GEL, BGN, QAR y LAK; los nombres largos llevan puntos suspensivos. Sin tocar el prompt.
+
+**Pruebas (sin costo):** e2e-v2 73 (claro y oscuro), e2e-shared 49, a11y 20, check-currencies (57 monedas), check-reconcile 60.
+

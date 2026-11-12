@@ -240,6 +240,16 @@ const evs = page => page.evaluate(() => (window.__rpc || []).filter(x => x[0] ==
   const e2 = await evs(page); const rd = e2.find(x => x.e === 'review_done');
   ok(rd && rd.p.ok === true && rd.p.edits >= 1, 'métricas: review_done dice que cuadró y cuántas correcciones hubo');
 }
+{ // sobran por descuentos que el lector omitió (Noruega, 2 × "group discount" −36): botón "Es un descuento"
+  const body = { ok: true, restaurante: 'Salgskvittering', moneda: 'NOK', pais: 'NO', pais_nombre: 'Noruega', items: [{ nombre: 'Bolognese Kids', precio_unitario: 134, cantidad: 1 }, { nombre: 'Pizza Quattro Formaggi', precio_unitario: 265, cantidad: 1 }, { nombre: 'Imsdal 50cl', precio_unitario: 52, cantidad: 2 }, { nombre: 'Pant 2,-', precio_unitario: 2, cantidad: 2 }, { nombre: 'Imsdal 2 50%', precio_unitario: -26, cantidad: 1 }], reconciliation: { ok: false, total_boleta: 409 } };
+  const { page, errs } = await open({ status: 200, body });
+  await page.evaluate(FAKE_SB);
+  await page.setInputFiles('#photo', IMG); await page.waitForSelector('.banner.warn', { timeout: 9000 });
+  ok(/Es un descuento: restar/.test(await page.innerText('.banner.warn')), 'sobran montos: ofrece "Es un descuento: restar"');
+  await page.click('[data-action="add-discount"]'); await page.waitForSelector('.banner.ok', { timeout: 4000 });
+  ok(await page.locator('input.name[value="Descuento"]').count() === 1 && /Cuadra con el total/.test(await page.innerText('.banner.ok')), 'el descuento restado cuadra la boleta y el ítem queda editable');
+  ok(errs.length === 0, 'sin errores JS');
+}
 { // unidades de más: sugiere dejar una menos
   const body = { ok: true, restaurante: 'X', moneda: 'CLP', pais: 'CL', pais_nombre: 'Chile', items: [{ nombre: 'Cerveza', precio_unitario: 3000, cantidad: 3 }, { nombre: 'Pizza', precio_unitario: 9000, cantidad: 1 }], reconciliation: { ok: false, total_boleta: 15000 } };
   const { page } = await open({ status: 200, body });
