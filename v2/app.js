@@ -9,7 +9,7 @@
   var STEPS = ['review', 'people', 'assign', 'summary'];
   var DRAFT_KEY = 'dc_v2_draft';
 
-  var BUILD = '2026-10-22.c';
+  var BUILD = '2026-11-12.a';
   // El registro técnico solo se muestra si algo falló o si se activa con ?debug=1 (y se apaga con ?debug=0).
   try { var dq = /[?&]debug=([01])/.exec(location.search); if (dq) localStorage.setItem('dc_debug', dq[1]); } catch (e) {}
   function debugOn() { try { return localStorage.getItem('dc_debug') === '1'; } catch (e) { return false; } }
@@ -369,6 +369,7 @@
         '<div class="actions">' +
         (c.servicePct ? '<button class="btn sm primary" data-action="apply-service" data-pct="' + c.servicePct + '">Es el servicio del ' + c.servicePct + ' % (' + money(diff) + ')</button>' : '') +
         (diff > 0 ? '<button class="btn sm" data-action="add-missing">+ Agregar lo que falta (' + money(diff) + ')</button>' : '') +
+        (diff < 0 ? '<button class="btn sm primary" data-action="add-discount">Es un descuento: restar ' + money(-diff) + '</button>' : '') +
         '<label class="btn sm photo-btn"><input id="photo" class="sr-only" type="file" accept="image/*" data-action="photo">' + ic('camera') + ' Sacar otra foto</label>' +
         '</div></div>';
     } else if (c.ok && c.viaTip && !(state.tip && state.tip.pct === state.tipSuggested)) {
@@ -726,6 +727,7 @@
       case 'manual': state = fresh(); state.currency = prefCurrency(); state.step = 'review'; addItem('Ítem 1', 0); save(); render(); break;
       case 'add-item': state.edits = (state.edits || 0) + 1; addItem('Nuevo ítem', 0); save(); render(); break;
       case 'autofix-ok': state.autoFix = null; save(); render(); break;
+      case 'add-discount': var sob = -recon().diff; if (sob > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'descuento'; addItem('Descuento', -(C.decimals(state.currency) === 0 ? Math.round(sob) : Math.round(sob * 100) / 100)); save(); render(); toast('Resté el descuento. Toca el nombre para corregirlo.'); } break;
       case 'add-missing': var miss = recon().diff; if (miss > 0) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'agregar'; addItem('Ítem que faltaba', C.decimals(state.currency) === 0 ? Math.round(miss) : Math.round(miss * 100) / 100); save(); render(); toast('Agregué lo que falta. Toca el nombre para corregirlo.'); } break;
       case 'fix-qty': var fq = item(id); if (fq && fq.qty > 1) { state.edits = (state.edits || 0) + 1; ui.lastFix = 'cantidad'; fq.qty -= 1; if (state.assigns[id]) state.assigns[id].units = {}; save(); render(); } break;
       case 'add-extra': addItem('Impuesto', 0); save(); render(); break;
